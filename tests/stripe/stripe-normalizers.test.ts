@@ -18,7 +18,19 @@ const subscription = (
       {
         current_period_end: 1_800_000_000,
         id: 'si_a',
-        price: { id: 'price_a', recurring: { interval: 'month' } },
+        price: {
+          active: true,
+          currency: 'usd',
+          id: 'price_a',
+          livemode: false,
+          lookup_key: 'crewframe_basic_monthly',
+          recurring: {
+            interval: 'month',
+            interval_count: 1,
+            usage_type: 'licensed',
+          },
+          unit_amount: 4_900,
+        },
       },
     ],
   },
@@ -34,6 +46,7 @@ describe('Stripe 22 payload normalization', () => {
       active: true,
       customerId: 'cus_a',
       currentPeriodEnd: 1_800_000_000,
+      price: subscription().items.data[0].price,
       priceId: 'price_a',
       subscriptionId: 'sub_a',
     })

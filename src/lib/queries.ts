@@ -5,7 +5,6 @@ import { db } from './db'
 import {
   Agency,
   Lane,
-  Plan,
   Prisma,
   SubAccount,
   Tag,
@@ -156,7 +155,7 @@ export const deleteAgency = async (agencyId: string) => {
   return response
 }
 
-export const upsertAgency = async (agency: Agency, price?: Plan) => {
+export const upsertAgency = async (agency: Agency) => {
   if (!agency.companyEmail) return null
   const providerUser = await currentUser()
   if (!providerUser) throw new AccessError('UNAUTHENTICATED')

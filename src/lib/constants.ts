@@ -27,6 +27,13 @@ import Tune from '@/components/icons/tune'
 import Video from '@/components/icons/video_recorder'
 import Wallet from '@/components/icons/wallet'
 import Warning from '@/components/icons/warning'
+import { crewframeBillingPlans } from '@/lib/stripe/billing-catalog'
+
+const basicPlan = crewframeBillingPlans.find((plan) => plan.plan === 'BASIC')!
+const unlimitedPlan = crewframeBillingPlans.find(
+  (plan) => plan.plan === 'UNLIMITED'
+)!
+
 export const pricingCards = [
   {
     title: 'Starter',
@@ -35,16 +42,18 @@ export const pricingCards = [
     duration: '',
     highlight: 'Key features',
     features: ['3 Sub accounts', '2 Team members', 'Unlimited pipelines'],
-    priceId: '',
+    lookupKey: null,
+    plan: null,
   },
   {
-    title: 'Unlimited Saas',
+    title: 'Unlimited SaaS',
     description: 'The ultimate agency kit',
     price: '$199',
     duration: 'month',
     highlight: 'Key features',
     features: ['Rebilling', '24/7 Support team'],
-    priceId: 'price_1OYxkqFj9oKEERu1KfJGWxgN',
+    lookupKey: unlimitedPlan.lookupKey,
+    plan: unlimitedPlan.plan,
   },
   {
     title: 'Basic',
@@ -53,13 +62,12 @@ export const pricingCards = [
     duration: 'month',
     highlight: 'Everything in Starter, plus',
     features: ['Unlimited Sub accounts', 'Unlimited Team members'],
-    priceId: 'price_1OYxkqFj9oKEERu1NbKUxXxN',
+    lookupKey: basicPlan.lookupKey,
+    plan: basicPlan.plan,
   },
 ]
 
-export const addOnProducts = [
-  { title: 'Priority Support', id: 'prod_PNjJAE2EpP16pn' },
-]
+export const addOnProducts: Array<{ id: string; title: string }> = []
 
 export const icons = [
   {

@@ -1,6 +1,10 @@
 'use client'
-import { PricesList, TicketDetails } from '@/lib/types'
-import { Agency, Contact, Plan, User } from '@prisma/client'
+import { TicketDetails } from '@/lib/types'
+import type {
+  CrewframePlan,
+  CrewframePriceOption,
+} from '@/lib/stripe/billing-catalog'
+import { Agency, Contact, User } from '@prisma/client'
 import {
   createContext,
   useCallback,
@@ -19,8 +23,8 @@ export type ModalData = {
   ticket?: TicketDetails[0]
   contact?: Contact
   plans?: {
-    defaultPriceId: Plan
-    plans: PricesList['data']
+    defaultPlan: CrewframePlan | null
+    plans: CrewframePriceOption[]
   }
 }
 type ModalContextType = {

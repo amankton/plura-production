@@ -7,7 +7,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { pricingCards } from '@/lib/constants'
-import { getStripeServerClient } from '@/lib/stripe'
+import { getCrewframePriceOptions } from '@/lib/stripe/billing-catalog-server'
 import clsx from 'clsx'
 import { Check } from 'lucide-react'
 import Image from 'next/image'
@@ -16,17 +16,11 @@ import Link from 'next/link'
 export const dynamic = 'force-dynamic'
 
 export default async function Home() {
-  const productId = process.env.NEXT_PLURA_PRODUCT_ID
   const stripeConfigured = Boolean(
-    process.env.STRIPE_SECRET_KEY && productId
+    process.env.STRIPE_SECRET_KEY && process.env.STRIPE_CATALOG_MODE
   )
   const prices = stripeConfigured
-    ? (
-        await getStripeServerClient().prices.list({
-          product: productId,
-          active: true,
-        })
-      ).data
+    ? await getCrewframePriceOptions()
     : []
 
   return (
@@ -66,42 +60,37 @@ export default async function Home() {
           </p>
         )}
         <div className="flex  justify-center gap-4 flex-wrap mt-6">
-          {prices.map((card) => (
-            //WIP: Wire up free product from stripe
-            <Card
-              key={card.nickname}
-              className={clsx('w-[300px] flex flex-col justify-between', {
-                'border-2 border-primary': card.nickname === 'Unlimited Saas',
-              })}
-            >
-              <CardHeader>
-                <CardTitle
-                  className={clsx('', {
-                    'text-muted-foreground': card.nickname !== 'Unlimited Saas',
-                  })}
-                >
-                  {card.nickname}
-                </CardTitle>
-                <CardDescription>
-                  {
-                    pricingCards.find((c) => c.title === card.nickname)
-                      ?.description
-                  }
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <span className="text-4xl font-bold">
-                  {card.unit_amount && card.unit_amount / 100}
-                </span>
-                <span className="text-muted-foreground">
-                  <span>/ {card.recurring?.interval}</span>
-                </span>
-              </CardContent>
-              <CardFooter className="flex flex-col items-start gap-4">
-                <div>
-                  {pricingCards
-                    .find((c) => c.title === card.nickname)
-                    ?.features.map((feature) => (
+          {prices.map((price) => {
+            const card = pricingCards.find((entry) => entry.plan === price.plan)
+            if (!card) return null
+            return (
+              <Card
+                key={price.plan}
+                className={clsx('w-[300px] flex flex-col justify-between', {
+                  'border-2 border-primary': price.plan === 'UNLIMITED',
+                })}
+              >
+                <CardHeader>
+                  <CardTitle
+                    className={clsx('', {
+                      'text-muted-foreground': price.plan !== 'UNLIMITED',
+                    })}
+                  >
+                    {card.title}
+                  </CardTitle>
+                  <CardDescription>{card.description}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <span className="text-4xl font-bold">
+                    ${price.unitAmount / 100}
+                  </span>
+                  <span className="text-muted-foreground">
+                    <span>/ {price.interval}</span>
+                  </span>
+                </CardContent>
+                <CardFooter className="flex flex-col items-start gap-4">
+                  <div>
+                    {card.features.map((feature) => (
                       <div
                         key={feature}
                         className="flex gap-2"
@@ -110,22 +99,22 @@ export default async function Home() {
                         <p>{feature}</p>
                       </div>
                     ))}
-                </div>
-                <Link
-                  href={`/agency?plan=${card.id}`}
-                  className={clsx(
-                    'w-full text-center bg-primary p-2 rounded-md',
-                    {
-                      '!bg-muted-foreground':
-                        card.nickname !== 'Unlimited Saas',
-                    }
-                  )}
-                >
-                  Get Started
-                </Link>
-              </CardFooter>
-            </Card>
-          ))}
+                  </div>
+                  <Link
+                    href={`/agency?plan=${price.plan}`}
+                    className={clsx(
+                      'w-full text-center bg-primary p-2 rounded-md',
+                      {
+                        '!bg-muted-foreground': price.plan !== 'UNLIMITED',
+                      }
+                    )}
+                  >
+                    Get Started
+                  </Link>
+                </CardFooter>
+              </Card>
+            )
+          })}
           <Card className={clsx('w-[300px] flex flex-col justify-between')}>
             <CardHeader>
               <CardTitle

@@ -3,7 +3,7 @@ import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from '@/components/ui/use-toast'
 import { pricingCards } from '@/lib/constants'
 import { useModal } from '@/providers/modal-provider'
-import { Plan } from '@prisma/client'
+import type { CrewframePlan } from '@/lib/stripe/billing-catalog'
 import { StripeElementsOptions } from '@stripe/stripe-js'
 import clsx from 'clsx'
 import { useRouter } from 'next/navigation'
@@ -21,8 +21,8 @@ type Props = {
 const SubscriptionFormWrapper = ({ customerId, planExists }: Props) => {
   const { data, setClose } = useModal()
   const router = useRouter()
-  const [selectedPriceId, setSelectedPriceId] = useState<Plan | ''>(
-    data?.plans?.defaultPriceId || ''
+  const [selectedPlan, setSelectedPlan] = useState<CrewframePlan | null>(
+    data?.plans?.defaultPlan ?? null
   )
   const [subscription, setSubscription] = useState<{
     subscriptionId: string
@@ -40,7 +40,7 @@ const SubscriptionFormWrapper = ({ customerId, planExists }: Props) => {
   )
 
   useEffect(() => {
-    if (!selectedPriceId) return
+    if (!selectedPlan) return
     const createSecret = async () => {
       const subscriptionResponse = await fetch(
         '/api/stripe/create-subscription',
@@ -51,7 +51,7 @@ const SubscriptionFormWrapper = ({ customerId, planExists }: Props) => {
           },
           body: JSON.stringify({
             customerId,
-            priceId: selectedPriceId,
+            plan: selectedPlan,
           }),
         }
       )
@@ -70,52 +70,52 @@ const SubscriptionFormWrapper = ({ customerId, planExists }: Props) => {
       }
     }
     createSecret()
-  }, [customerId, planExists, router, selectedPriceId, setClose])
+  }, [customerId, planExists, router, selectedPlan, setClose])
 
   return (
     <div className="border-none transition-all">
       <div className="flex flex-col gap-4">
         {data.plans?.plans.map((price) => (
           <Card
-            onClick={() => setSelectedPriceId(price.id as Plan)}
-            key={price.id}
+            onClick={() => setSelectedPlan(price.plan)}
+            key={price.plan}
             className={clsx('relative cursor-pointer transition-all', {
-              'border-primary': selectedPriceId === price.id,
+              'border-primary': selectedPlan === price.plan,
             })}
           >
             <CardHeader>
               <CardTitle>
-                ${price.unit_amount ? price.unit_amount / 100 : '0'}
+                ${price.unitAmount / 100}
                 <p className="text-sm text-muted-foreground">
-                  {price.nickname}
+                  {pricingCards.find((card) => card.plan === price.plan)?.title}
                 </p>
                 <p className="text-sm text-muted-foreground">
                   {
-                    pricingCards.find((p) => p.priceId === price.id)
+                    pricingCards.find((p) => p.plan === price.plan)
                       ?.description
                   }
                 </p>
               </CardTitle>
             </CardHeader>
-            {selectedPriceId === price.id && (
+            {selectedPlan === price.plan && (
               <div className="w-2 h-2 bg-emerald-500 rounded-full absolute top-4 right-4" />
             )}
           </Card>
         ))}
 
-        {options.clientSecret && !planExists && (
+        {options.clientSecret && !planExists && selectedPlan && (
           <>
             <h1 className="text-xl">Payment Method</h1>
             <Elements
               stripe={getStripe()}
               options={options}
             >
-              <SubscriptionForm selectedPriceId={selectedPriceId} />
+              <SubscriptionForm selectedPlan={selectedPlan} />
             </Elements>
           </>
         )}
 
-        {!options.clientSecret && selectedPriceId && (
+        {!options.clientSecret && selectedPlan && (
           <div className="flex items-center justify-center w-full h-40">
             <Loading />
           </div>

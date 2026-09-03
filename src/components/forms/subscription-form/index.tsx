@@ -1,22 +1,22 @@
 'use client'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/components/ui/use-toast'
-import { Plan } from '@prisma/client'
+import type { CrewframePlan } from '@/lib/stripe/billing-catalog'
 import { PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js'
 import React, { useState } from 'react'
 
 type Props = {
-  selectedPriceId: string | Plan
+  selectedPlan: CrewframePlan
 }
 
-const SubscriptionForm = ({ selectedPriceId }: Props) => {
+const SubscriptionForm = ({ selectedPlan }: Props) => {
   const { toast } = useToast()
   const elements = useElements()
   const stripeHook = useStripe()
   const [priceError, setPriceError] = useState('')
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    if (!selectedPriceId) {
+    if (!selectedPlan) {
       setPriceError('You need to select a plan to subscribe.')
       return
     }

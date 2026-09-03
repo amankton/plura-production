@@ -15,6 +15,8 @@ import {
 import clsx from 'clsx'
 import SubscriptionHelper from './_components/subscription-helper'
 import { getExpandedPrice } from '@/lib/stripe/stripe-normalizers'
+import { getCrewframePriceOptions } from '@/lib/stripe/billing-catalog-server'
+import { resolveLegacyCrewframePlan } from '@/lib/stripe/billing-catalog'
 
 type Props = {
   params: { agencyId: string }
@@ -23,10 +25,14 @@ type Props = {
 const page = async ({ params }: Props) => {
   const stripe = getStripeServerClient()
   //CHALLENGE : Create the add on  products
-  const addOns = await stripe.products.list({
-    ids: addOnProducts.map((product) => product.id),
-    expand: ['data.default_price'],
-  })
+  const addOns = addOnProducts.length
+    ? (
+        await stripe.products.list({
+          ids: addOnProducts.map((product) => product.id),
+          expand: ['data.default_price'],
+        })
+      ).data
+    : []
 
   const agencySubscription = await db.agency.findUnique({
     where: {
@@ -38,13 +44,13 @@ const page = async ({ params }: Props) => {
     },
   })
 
-  const prices = await stripe.prices.list({
-    product: process.env.NEXT_PLURA_PRODUCT_ID,
-    active: true,
-  })
+  const prices = await getCrewframePriceOptions()
 
+  const currentPlan =
+    agencySubscription?.Subscription?.logicalPlan ??
+    resolveLegacyCrewframePlan(agencySubscription?.Subscription?.plan)
   const currentPlanDetails = pricingCards.find(
-    (c) => c.priceId === agencySubscription?.Subscription?.priceId
+    (card) => card.plan === currentPlan
   )
 
   const charges = await stripe.charges.list({
@@ -67,7 +73,7 @@ const page = async ({ params }: Props) => {
   return (
     <>
       <SubscriptionHelper
-        prices={prices.data}
+        prices={prices}
         customerId={agencySubscription?.customerId || ''}
         planExists={agencySubscription?.Subscription?.active === true}
       />
@@ -77,7 +83,7 @@ const page = async ({ params }: Props) => {
       <div className="flex flex-col lg:!flex-row justify-between gap-8">
         <PricingCard
           planExists={agencySubscription?.Subscription?.active === true}
-          prices={prices.data}
+          prices={prices}
           customerId={agencySubscription?.customerId || ''}
           amt={
             agencySubscription?.Subscription?.active === true
@@ -112,12 +118,12 @@ const page = async ({ params }: Props) => {
               : 'Starter'
           }
         />
-        {addOns.data.map((addOn) => {
+        {addOns.map((addOn) => {
           const defaultPrice = getExpandedPrice(addOn)
           return (
             <PricingCard
               planExists={agencySubscription?.Subscription?.active === true}
-              prices={prices.data}
+              prices={prices}
               customerId={agencySubscription?.customerId || ''}
               key={addOn.id}
               amt={

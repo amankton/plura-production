@@ -10,7 +10,10 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { PricesList } from '@/lib/types'
+import {
+  isCrewframePlan,
+  type CrewframePriceOption,
+} from '@/lib/stripe/billing-catalog'
 import { useModal } from '@/providers/modal-provider'
 import { useSearchParams } from 'next/navigation'
 import React from 'react'
@@ -25,7 +28,7 @@ type Props = {
   highlightTitle: string
   highlightDescription: string
   customerId: string
-  prices: PricesList['data']
+  prices: CrewframePriceOption[]
   planExists: boolean
 }
 
@@ -59,7 +62,7 @@ const PricingCard = ({
       </CustomModal>,
       async () => ({
         plans: {
-          defaultPriceId: plan ? plan : '',
+          defaultPlan: isCrewframePlan(plan) ? plan : null,
           plans: prices,
         },
       })

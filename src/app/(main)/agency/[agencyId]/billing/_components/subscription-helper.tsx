@@ -1,13 +1,16 @@
 'use client'
 import SubscriptionFormWrapper from '@/components/forms/subscription-form/subscription-form-wrapper'
 import CustomModal from '@/components/global/custom-modal'
-import { PricesList } from '@/lib/types'
+import {
+  isCrewframePlan,
+  type CrewframePriceOption,
+} from '@/lib/stripe/billing-catalog'
 import { useModal } from '@/providers/modal-provider'
 import { useSearchParams } from 'next/navigation'
 import React, { useEffect } from 'react'
 
 type Props = {
-  prices: PricesList['data']
+  prices: CrewframePriceOption[]
   customerId: string
   planExists: boolean
 }
@@ -18,7 +21,7 @@ const SubscriptionHelper = ({ customerId, planExists, prices }: Props) => {
   const plan = searchParams.get('plan')
 
   useEffect(() => {
-    if (plan)
+    if (isCrewframePlan(plan))
       setOpen(
         <CustomModal
           title="Upgrade Plan!"
@@ -31,7 +34,7 @@ const SubscriptionHelper = ({ customerId, planExists, prices }: Props) => {
         </CustomModal>,
         async () => ({
           plans: {
-            defaultPriceId: plan ? plan : '',
+            defaultPlan: plan,
             plans: prices,
           },
         })

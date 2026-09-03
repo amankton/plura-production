@@ -4,12 +4,13 @@ import {
   requireSingleRecurringSubscriptionItem,
   requireSubscriptionClientSecret,
 } from '@/lib/stripe/stripe-normalizers'
+import { getCrewframePriceForPlan } from '@/lib/stripe/billing-catalog-server'
 import { NextResponse } from 'next/server'
 
 export async function POST(req: Request) {
-  const { customerId, priceId } = await req.json()
-  if (!customerId || !priceId)
-    return new NextResponse('Customer Id or price id is missing', {
+  const { customerId, plan } = await req.json()
+  if (!customerId || !plan)
+    return new NextResponse('Customer ID or plan is missing', {
       status: 400,
     })
 
@@ -20,6 +21,10 @@ export async function POST(req: Request) {
 
   try {
     const stripe = getStripeServerClient()
+    const selectedPrice = await getCrewframePriceForPlan(plan)
+    if (!selectedPrice) {
+      return new NextResponse('Unknown billing plan', { status: 400 })
+    }
     if (
       subscriptionExists?.Subscription?.subscritiptionId &&
       subscriptionExists.Subscription.active
@@ -46,7 +51,7 @@ export async function POST(req: Request) {
               id: currentItem.itemId,
               deleted: true,
             },
-            { price: priceId },
+            { price: selectedPrice.id },
           ],
           expand: ['latest_invoice.confirmation_secret'],
         }
@@ -61,7 +66,7 @@ export async function POST(req: Request) {
         customer: customerId,
         items: [
           {
-            price: priceId,
+            price: selectedPrice.id,
           },
         ],
         payment_behavior: 'default_incomplete',

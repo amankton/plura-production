@@ -17,8 +17,17 @@ export type StripeSubscriptionInput = {
       current_period_end: number
       id: string
       price: {
+        active: boolean
+        currency: string
         id: string
-        recurring: unknown | null
+        livemode: boolean
+        lookup_key: string | null
+        recurring: {
+          interval: string
+          interval_count: number
+          usage_type: string
+        } | null
+        unit_amount: number | null
       }
     }>
   }
@@ -52,11 +61,25 @@ const isSubscriptionItem = (
   value: unknown
 ): value is StripeSubscriptionInput['items']['data'][number] => {
   if (!isRecord(value) || !isRecord(value.price)) return false
+  const recurring = value.price.recurring
+  const recurringIsValid =
+    recurring === null ||
+    (isRecord(recurring) &&
+      typeof recurring.interval === 'string' &&
+      typeof recurring.interval_count === 'number' &&
+      typeof recurring.usage_type === 'string')
   return (
     typeof value.id === 'string' &&
     typeof value.current_period_end === 'number' &&
+    typeof value.price.active === 'boolean' &&
+    typeof value.price.currency === 'string' &&
     typeof value.price.id === 'string' &&
-    (value.price.recurring === null || isRecord(value.price.recurring))
+    typeof value.price.livemode === 'boolean' &&
+    (value.price.lookup_key === null ||
+      typeof value.price.lookup_key === 'string') &&
+    recurringIsValid &&
+    (value.price.unit_amount === null ||
+      typeof value.price.unit_amount === 'number')
   )
 }
 
@@ -97,6 +120,7 @@ export const requireSingleRecurringSubscriptionItem = (
   return {
     currentPeriodEnd: item.current_period_end,
     itemId: requireNonBlank(item.id, 'Subscription item ID'),
+    price: item.price,
     priceId: requireNonBlank(item.price.id, 'Subscription price ID'),
   }
 }
@@ -109,6 +133,7 @@ export const normalizeStripeSubscription = (
     active: subscription.status === 'active',
     customerId: requireReferenceId(subscription.customer, 'Customer ID'),
     currentPeriodEnd: item.currentPeriodEnd,
+    price: item.price,
     priceId: item.priceId,
     subscriptionId: requireNonBlank(subscription.id, 'Subscription ID'),
   }

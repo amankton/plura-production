@@ -6,16 +6,15 @@ import {
   normalizeStripeSubscription,
   type StripeSubscriptionInput,
 } from './stripe-normalizers'
-
-const isCrewframePlan = (priceId: string): priceId is Plan =>
-  Object.values(Plan).some((plan) => plan === priceId)
+import { resolveEnvironmentCrewframePlan } from './billing-catalog-server'
 
 export const subscriptionCreated = async (
   subscription: StripeSubscriptionInput
 ) => {
   try {
     const normalized = normalizeStripeSubscription(subscription)
-    if (!isCrewframePlan(normalized.priceId)) {
+    const logicalPlan = resolveEnvironmentCrewframePlan(normalized.price)
+    if (!logicalPlan) {
       throw new Error('Subscription price is not a Crewframe plan')
     }
 
@@ -38,7 +37,8 @@ export const subscriptionCreated = async (
       currentPeriodEndDate: new Date(normalized.currentPeriodEnd * 1000),
       priceId: normalized.priceId,
       subscritiptionId: normalized.subscriptionId,
-      plan: normalized.priceId,
+      logicalPlan:
+        logicalPlan === 'BASIC' ? Plan.BASIC : Plan.UNLIMITED,
     }
 
     const res = await db.subscription.upsert({
