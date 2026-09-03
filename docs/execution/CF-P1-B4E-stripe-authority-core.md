@@ -5,8 +5,10 @@
 - Parent: `4a2536627999c03f07f0062542bae64d8067131e`
 - Branch: `codex/crewframe-foundation`
 - Architect entry decision: `GO_B4E_STRIPE_AUTHORITY_CORE`
-- Implementation SHA: pending immutable seal
-- Independent verifier: pending immutable SHA
+- Architect final decision: `GO_B4E_FINAL_CHILD`
+- Implementation SHA: `aedc1bc73f7a285fd05f78f43a065056a49d15b7`
+- Independent verifier: **PASS** for
+  `aedc1bc73f7a285fd05f78f43a065056a49d15b7`
 - Production readiness: **FAIL** (intentional; see blockers)
 
 ## Scope
@@ -99,6 +101,22 @@ and platform fee values after resolving the authenticated tenant context.
 - Secret-pattern filename scan: clear.
 - `bun audit`: 63 inherited advisories (34 high, 25 moderate, 4 low); no
   dependency was changed in this schema-neutral checkpoint.
+
+### Independent verification
+
+The verifier independently checked the immutable implementation SHA and returned
+a checkpoint **PASS** with a separate production-readiness **FAIL**. Fresh runs
+covered the frozen install, 22 focused tests with 103 expectations, all 202 tests
+with 802 expectations, lint, type checking, the production build, Prisma schema
+validation, Git scope/drift checks, secret-pattern scanning, and the dependency
+audit. The worktree was clean during attestation.
+
+The verification specifically confirms that agency charge history performs no
+provider charge-list request for missing, blank, malformed, deleted, unbound, or
+foreign Customers, and that an authorized read always carries the exact verified
+Customer filter. It also confirms that the request-integrity documentation
+correctly distinguishes the declared Content-Length check from the incremental
+16 KiB streamed-body cap.
 
 ## Deliberate exclusions and blockers
 
