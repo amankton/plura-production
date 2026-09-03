@@ -1,19 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
-import Stripe from 'stripe'
-import { stripe } from '@/lib/stripe'
+import type Stripe from 'stripe'
+import { getStripeServerClient } from '@/lib/stripe'
 import { subscriptionCreated } from '@/lib/stripe/stripe-actions'
-
-const stripeWebhookEvents = new Set([
-  'product.created',
-  'product.updated',
-  'price.created',
-  'price.updated',
-  'checkout.session.completed',
-  'customer.subscription.created',
-  'customer.subscription.updated',
-  'customer.subscription.deleted',
-])
+import { selectSubscriptionLifecycleEvent } from '@/lib/stripe/stripe-normalizers'
 
 export async function POST(req: NextRequest) {
   let stripeEvent: Stripe.Event
@@ -28,40 +18,25 @@ export async function POST(req: NextRequest) {
       )
       return
     }
+    const stripe = getStripeServerClient()
     stripeEvent = stripe.webhooks.constructEvent(body, sig, webhookSecret)
-  } catch (error: any) {
-    console.log(`🔴 Error ${error.message}`)
-    return new NextResponse(`Webhook Error: ${error.message}`, { status: 400 })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Invalid webhook'
+    console.log(`🔴 Error ${message}`)
+    return new NextResponse(`Webhook Error: ${message}`, { status: 400 })
   }
 
   //
   try {
-    if (stripeWebhookEvents.has(stripeEvent.type)) {
-      const subscription = stripeEvent.data.object as Stripe.Subscription
+    const selectedEvent = selectSubscriptionLifecycleEvent(stripeEvent)
+    if (selectedEvent) {
+      const { subscription } = selectedEvent
       if (
         !subscription.metadata.connectAccountPayments &&
         !subscription.metadata.connectAccountSubscriptions
       ) {
-        switch (stripeEvent.type) {
-          case 'customer.subscription.created':
-          case 'customer.subscription.updated': {
-            if (subscription.status === 'active') {
-              await subscriptionCreated(
-                subscription,
-                subscription.customer as string
-              )
-              console.log('CREATED FROM WEBHOOK 💳', subscription)
-            } else {
-              console.log(
-                'SKIPPED AT CREATED FROM WEBHOOK 💳 because subscription status is not active',
-                subscription
-              )
-              break
-            }
-          }
-          default:
-            console.log('👉🏻 Unhandled relevant event!', stripeEvent.type)
-        }
+        await subscriptionCreated(subscription)
+        console.log('SYNCHRONIZED FROM WEBHOOK 💳', subscription.id)
       } else {
         console.log(
           'SKIPPED FROM WEBHOOK 💳 because subscription was from a connected account not for the application',

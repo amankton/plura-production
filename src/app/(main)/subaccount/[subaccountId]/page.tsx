@@ -21,7 +21,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { db } from '@/lib/db'
-import { stripe } from '@/lib/stripe'
+import { getStripeServerClient } from '@/lib/stripe'
 import { AreaChart, BadgeDelta } from '@tremor/react'
 import { ClipboardIcon, Contact2, DollarSign, ShoppingCart } from 'lucide-react'
 import Link from 'next/link'
@@ -56,9 +56,10 @@ const SubaccountPageId = async ({ params, searchParams }: Props) => {
   if (!subaccountDetails) return
 
   if (subaccountDetails.connectAccountId) {
-    const response = await stripe.accounts.retrieve({
-      stripeAccount: subaccountDetails.connectAccountId,
-    })
+    const stripe = getStripeServerClient()
+    const response = await stripe.accounts.retrieve(
+      subaccountDetails.connectAccountId
+    )
     currency = response.default_currency?.toUpperCase() || 'USD'
     const checkoutSessions = await stripe.checkout.sessions.list(
       { created: { gte: startDate, lte: endDate }, limit: 100 },

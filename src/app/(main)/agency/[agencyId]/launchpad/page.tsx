@@ -12,7 +12,7 @@ import { CheckCircleIcon } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import React from 'react'
-import { stripe } from '@/lib/stripe'
+import { getStripeServerClient } from '@/lib/stripe'
 
 type Props = {
   params: {
@@ -50,6 +50,7 @@ const LaunchPadPage = async ({ params, searchParams }: Props) => {
   if (searchParams.code) {
     if (!agencyDetails.connectAccountId) {
       try {
+        const stripe = getStripeServerClient()
         const response = await stripe.oauth.token({
           grant_type: 'authorization_code',
           code: searchParams.code,

@@ -10,7 +10,7 @@ import {
 import { Progress } from '@/components/ui/progress'
 import { Separator } from '@/components/ui/separator'
 import { db } from '@/lib/db'
-import { stripe } from '@/lib/stripe'
+import { getStripeServerClient } from '@/lib/stripe'
 import { AreaChart } from '@tremor/react'
 import {
   ClipboardIcon,
@@ -54,9 +54,10 @@ const Page = async ({
   })
 
   if (agencyDetails.connectAccountId) {
-    const response = await stripe.accounts.retrieve({
-      stripeAccount: agencyDetails.connectAccountId,
-    })
+    const stripe = getStripeServerClient()
+    const response = await stripe.accounts.retrieve(
+      agencyDetails.connectAccountId
+    )
 
     currency = response.default_currency?.toUpperCase() || 'USD'
     const checkoutSessions = await stripe.checkout.sessions.list(

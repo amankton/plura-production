@@ -1,16 +1,27 @@
 'use server'
-import Stripe from 'stripe'
+import { Plan } from '@prisma/client'
 import { db } from '../db'
-import { stripe } from '.'
+import { getStripeServerClient } from '.'
+import {
+  normalizeStripeSubscription,
+  type StripeSubscriptionInput,
+} from './stripe-normalizers'
+
+const isCrewframePlan = (priceId: string): priceId is Plan =>
+  Object.values(Plan).some((plan) => plan === priceId)
 
 export const subscriptionCreated = async (
-  subscription: Stripe.Subscription,
-  customerId: string
+  subscription: StripeSubscriptionInput
 ) => {
   try {
+    const normalized = normalizeStripeSubscription(subscription)
+    if (!isCrewframePlan(normalized.priceId)) {
+      throw new Error('Subscription price is not a Crewframe plan')
+    }
+
     const agency = await db.agency.findFirst({
       where: {
-        customerId,
+        customerId: normalized.customerId,
       },
       include: {
         SubAccount: true,
@@ -21,15 +32,13 @@ export const subscriptionCreated = async (
     }
 
     const data = {
-      active: subscription.status === 'active',
+      active: normalized.active,
       agencyId: agency.id,
-      customerId,
-      currentPeriodEndDate: new Date(subscription.current_period_end * 1000),
-      //@ts-ignore
-      priceId: subscription.plan.id,
-      subscritiptionId: subscription.id,
-      //@ts-ignore
-      plan: subscription.plan.id,
+      customerId: normalized.customerId,
+      currentPeriodEndDate: new Date(normalized.currentPeriodEnd * 1000),
+      priceId: normalized.priceId,
+      subscritiptionId: normalized.subscriptionId,
+      plan: normalized.priceId,
     }
 
     const res = await db.subscription.upsert({
@@ -39,13 +48,14 @@ export const subscriptionCreated = async (
       create: data,
       update: data,
     })
-    console.log(`🟢 Created Subscription for ${subscription.id}`)
+    console.log(`🟢 Synchronized Subscription for ${normalized.subscriptionId}`)
   } catch (error) {
     console.log('🔴 Error from Create action', error)
   }
 }
 
 export const getConnectAccountProducts = async (stripeAccount: string) => {
+  const stripe = getStripeServerClient()
   const products = await stripe.products.list(
     {
       limit: 50,

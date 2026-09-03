@@ -1,4 +1,4 @@
-import { stripe } from '@/lib/stripe'
+import { getStripeServerClient } from '@/lib/stripe'
 import { StripeCustomerType } from '@/lib/types'
 import { NextResponse } from 'next/server'
 
@@ -11,6 +11,7 @@ export async function POST(req: Request) {
       status: 400,
     })
   try {
+    const stripe = getStripeServerClient()
     const customer = await stripe.customers.create({
       email,
       name,

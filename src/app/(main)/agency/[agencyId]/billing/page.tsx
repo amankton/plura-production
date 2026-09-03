@@ -1,5 +1,5 @@
 import React from 'react'
-import { stripe } from '@/lib/stripe'
+import { getStripeServerClient } from '@/lib/stripe'
 import { addOnProducts, pricingCards } from '@/lib/constants'
 import { db } from '@/lib/db'
 import { Separator } from '@/components/ui/separator'
@@ -14,12 +14,14 @@ import {
 } from '@/components/ui/table'
 import clsx from 'clsx'
 import SubscriptionHelper from './_components/subscription-helper'
+import { getExpandedPrice } from '@/lib/stripe/stripe-normalizers'
 
 type Props = {
   params: { agencyId: string }
 }
 
 const page = async ({ params }: Props) => {
+  const stripe = getStripeServerClient()
   //CHALLENGE : Create the add on  products
   const addOns = await stripe.products.list({
     ids: addOnProducts.map((product) => product.id),
@@ -110,28 +112,29 @@ const page = async ({ params }: Props) => {
               : 'Starter'
           }
         />
-        {addOns.data.map((addOn) => (
-          <PricingCard
-            planExists={agencySubscription?.Subscription?.active === true}
-            prices={prices.data}
-            customerId={agencySubscription?.customerId || ''}
-            key={addOn.id}
-            amt={
-              //@ts-ignore
-              addOn.default_price?.unit_amount
-                ? //@ts-ignore
-                  `$${addOn.default_price.unit_amount / 100}`
-                : '$0'
-            }
-            buttonCta="Subscribe"
-            description="Dedicated support line & teams channel for support"
-            duration="/ month"
-            features={[]}
-            title={'24/7 priority support'}
-            highlightTitle="Get support now!"
-            highlightDescription="Get priority support and skip the long long with the click of a button."
-          />
-        ))}
+        {addOns.data.map((addOn) => {
+          const defaultPrice = getExpandedPrice(addOn)
+          return (
+            <PricingCard
+              planExists={agencySubscription?.Subscription?.active === true}
+              prices={prices.data}
+              customerId={agencySubscription?.customerId || ''}
+              key={addOn.id}
+              amt={
+                defaultPrice?.unit_amount
+                  ? `$${defaultPrice.unit_amount / 100}`
+                  : '$0'
+              }
+              buttonCta="Subscribe"
+              description="Dedicated support line & teams channel for support"
+              duration="/ month"
+              features={[]}
+              title={'24/7 priority support'}
+              highlightTitle="Get support now!"
+              highlightDescription="Get priority support and skip the long long with the click of a button."
+            />
+          )
+        })}
       </div>
       <h2 className="text-2xl p-4">Payment History</h2>
       <Table className="bg-card border-[1px] border-border rounded-md">

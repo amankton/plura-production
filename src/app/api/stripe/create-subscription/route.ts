@@ -1,5 +1,9 @@
 import { db } from '@/lib/db'
-import { stripe } from '@/lib/stripe'
+import { getStripeServerClient } from '@/lib/stripe'
+import {
+  requireSingleRecurringSubscriptionItem,
+  requireSubscriptionClientSecret,
+} from '@/lib/stripe/stripe-normalizers'
 import { NextResponse } from 'next/server'
 
 export async function POST(req: Request) {
@@ -15,6 +19,7 @@ export async function POST(req: Request) {
   })
 
   try {
+    const stripe = getStripeServerClient()
     if (
       subscriptionExists?.Subscription?.subscritiptionId &&
       subscriptionExists.Subscription.active
@@ -29,24 +34,26 @@ export async function POST(req: Request) {
       const currentSubscriptionDetails = await stripe.subscriptions.retrieve(
         subscriptionExists.Subscription.subscritiptionId
       )
+      const currentItem = requireSingleRecurringSubscriptionItem(
+        currentSubscriptionDetails
+      )
 
       const subscription = await stripe.subscriptions.update(
         subscriptionExists.Subscription.subscritiptionId,
         {
           items: [
             {
-              id: currentSubscriptionDetails.items.data[0].id,
+              id: currentItem.itemId,
               deleted: true,
             },
             { price: priceId },
           ],
-          expand: ['latest_invoice.payment_intent'],
+          expand: ['latest_invoice.confirmation_secret'],
         }
       )
       return NextResponse.json({
         subscriptionId: subscription.id,
-        //@ts-ignore
-        clientSecret: subscription.latest_invoice.payment_intent.client_secret,
+        clientSecret: requireSubscriptionClientSecret(subscription),
       })
     } else {
       console.log('Createing a sub')
@@ -59,12 +66,11 @@ export async function POST(req: Request) {
         ],
         payment_behavior: 'default_incomplete',
         payment_settings: { save_default_payment_method: 'on_subscription' },
-        expand: ['latest_invoice.payment_intent'],
+        expand: ['latest_invoice.confirmation_secret'],
       })
       return NextResponse.json({
         subscriptionId: subscription.id,
-        //@ts-ignore
-        clientSecret: subscription.latest_invoice.payment_intent.client_secret,
+        clientSecret: requireSubscriptionClientSecret(subscription),
       })
     }
   } catch (error) {

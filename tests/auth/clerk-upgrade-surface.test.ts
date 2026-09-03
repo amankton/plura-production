@@ -20,7 +20,7 @@ describe('Clerk v6 upgrade surface', () => {
     expect(manifest.dependencies['react-dom']).toBe('^18.3.1')
     expect(manifest.dependencies['@prisma/client']).toBe('5.22.0')
     expect(manifest.dependencies.uploadthing).toBe('6.13.3')
-    expect(manifest.dependencies.stripe).toBe('14.25.0')
+    expect(manifest.dependencies.stripe).toBe('22.6.1')
   })
 
   test('keeps all server auth helpers on the server-only Clerk entry point', async () => {

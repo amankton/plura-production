@@ -7,7 +7,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { pricingCards } from '@/lib/constants'
-import { stripe } from '@/lib/stripe'
+import { getStripeServerClient } from '@/lib/stripe'
 import clsx from 'clsx'
 import { Check } from 'lucide-react'
 import Image from 'next/image'
@@ -22,7 +22,7 @@ export default async function Home() {
   )
   const prices = stripeConfigured
     ? (
-        await stripe.prices.list({
+        await getStripeServerClient().prices.list({
           product: productId,
           active: true,
         })

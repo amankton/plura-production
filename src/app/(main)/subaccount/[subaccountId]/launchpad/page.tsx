@@ -8,7 +8,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { db } from '@/lib/db'
-import { stripe } from '@/lib/stripe'
+import { getStripeServerClient } from '@/lib/stripe'
 import { getStripeOAuthLink } from '@/lib/utils'
 import { CheckCircleIcon } from 'lucide-react'
 import Image from 'next/image'
@@ -54,6 +54,7 @@ const LaunchPad = async ({ params, searchParams }: Props) => {
   if (searchParams.code) {
     if (!subaccountDetails.connectAccountId) {
       try {
+        const stripe = getStripeServerClient()
         const response = await stripe.oauth.token({
           grant_type: 'authorization_code',
           code: searchParams.code,

@@ -13,7 +13,7 @@ describe('UploadThing security hotfix surface', () => {
     expect(manifest.dependencies.react).toBe('^18.3.1')
     expect(manifest.dependencies['@clerk/nextjs']).toBe('6.39.6')
     expect(manifest.dependencies['@prisma/client']).toBe('5.22.0')
-    expect(manifest.dependencies.stripe).toBe('14.25.0')
+    expect(manifest.dependencies.stripe).toBe('22.6.1')
   })
 
   test('keeps every file route behind server-derived authentication', async () => {

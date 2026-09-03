@@ -1,5 +1,5 @@
 import { db } from '@/lib/db'
-import { stripe } from '@/lib/stripe'
+import { getStripeServerClient } from '@/lib/stripe'
 import { NextResponse } from 'next/server'
 
 export async function POST(req: Request) {
@@ -41,6 +41,7 @@ export async function POST(req: Request) {
   // }
 
   try {
+    const stripe = getStripeServerClient()
     const session = await stripe.checkout.sessions.create(
       {
         line_items: prices.map((price) => ({
@@ -85,8 +86,9 @@ export async function POST(req: Request) {
     )
   } catch (error) {
     console.log('🔴 Error', error)
-    //@ts-ignore
-    return NextResponse.json({ error: error.message })
+    return NextResponse.json({
+      error: error instanceof Error ? error.message : 'Internal Server Error',
+    })
   }
 }
 
