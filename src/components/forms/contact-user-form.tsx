@@ -43,12 +43,13 @@ const ContactUserForm: React.FC<ContactUserFormProps> = ({ subaccountId }) => {
       email: '',
     },
   })
+  const { reset } = form
 
   useEffect(() => {
     if (data.contact) {
-      form.reset(data.contact)
+      reset(data.contact)
     }
-  }, [data, form.reset])
+  }, [data, reset])
 
   const isLoading = form.formState.isLoading
 

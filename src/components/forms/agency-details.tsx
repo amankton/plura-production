@@ -87,13 +87,14 @@ const AgencyDetails = ({ data }: Props) => {
       agencyLogo: data?.agencyLogo,
     },
   })
+  const { reset } = form
   const isLoading = form.formState.isSubmitting
 
   useEffect(() => {
     if (data) {
-      form.reset(data)
+      reset(data)
     }
-  }, [data])
+  }, [data, reset])
 
   const handleSubmit = async (values: z.infer<typeof FormSchema>) => {
     try {

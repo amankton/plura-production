@@ -1,7 +1,13 @@
 'use client'
 import { PricesList, TicketDetails } from '@/lib/types'
 import { Agency, Contact, Plan, User } from '@prisma/client'
-import { createContext, useContext, useEffect, useState } from 'react'
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from 'react'
 
 interface ModalProviderProps {
   children: React.ReactNode
@@ -41,23 +47,24 @@ const ModalProvider: React.FC<ModalProviderProps> = ({ children }) => {
     setIsMounted(true)
   }, [])
 
-  const setOpen = async (
-    modal: React.ReactNode,
-    fetchData?: () => Promise<any>
-  ) => {
-    if (modal) {
-      if (fetchData) {
-        setData({ ...data, ...(await fetchData()) } || {})
+  const setOpen = useCallback(
+    async (modal: React.ReactNode, fetchData?: () => Promise<any>) => {
+      if (modal) {
+        if (fetchData) {
+          const fetchedData = await fetchData()
+          setData((currentData) => ({ ...currentData, ...fetchedData }))
+        }
+        setShowingModal(modal)
+        setIsOpen(true)
       }
-      setShowingModal(modal)
-      setIsOpen(true)
-    }
-  }
+    },
+    []
+  )
 
-  const setClose = () => {
+  const setClose = useCallback(() => {
     setIsOpen(false)
     setData({})
-  }
+  }, [])
 
   if (!isMounted) return null
 

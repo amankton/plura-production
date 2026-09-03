@@ -103,6 +103,7 @@ const UserDetails = ({ id, type, subAccounts, userData }: Props) => {
       role: userData ? userData.role : data?.user?.role,
     },
   })
+  const { reset } = form
 
   useEffect(() => {
     if (!data.user) return
@@ -112,16 +113,16 @@ const UserDetails = ({ id, type, subAccounts, userData }: Props) => {
       setSubAccountsPermissions(permission)
     }
     getPermissions()
-  }, [data, form])
+  }, [data])
 
   useEffect(() => {
     if (data.user) {
-      form.reset(data.user)
+      reset(data.user)
     }
     if (userData) {
-      form.reset(userData)
+      reset(userData)
     }
-  }, [userData, data])
+  }, [data, reset, userData])
 
   const onChangePermission = async (
     subAccountId: string,

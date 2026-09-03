@@ -50,17 +50,18 @@ const FunnelForm: React.FC<CreateFunnelProps> = ({
       subDomainName: defaultData?.subDomainName || '',
     },
   })
+  const { reset } = form
 
   useEffect(() => {
     if (defaultData) {
-      form.reset({
+      reset({
         description: defaultData.description || '',
         favicon: defaultData.favicon || '',
         name: defaultData.name || '',
         subDomainName: defaultData.subDomainName || '',
       })
     }
-  }, [defaultData])
+  }, [defaultData, reset])
 
   const isLoading = form.formState.isLoading
 

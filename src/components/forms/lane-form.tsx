@@ -55,14 +55,15 @@ const LaneForm: React.FC<CreateLaneFormProps> = ({
       name: defaultData?.name || '',
     },
   })
+  const { reset } = form
 
   useEffect(() => {
     if (defaultData) {
-      form.reset({
+      reset({
         name: defaultData.name || '',
       })
     }
-  }, [defaultData])
+  }, [defaultData, reset])
 
   const isLoading = form.formState.isLoading
 

@@ -53,14 +53,15 @@ const CreatePipelineForm: React.FC<CreatePipelineFormProps> = ({
       name: defaultData?.name || '',
     },
   })
+  const { reset } = form
 
   useEffect(() => {
     if (defaultData) {
-      form.reset({
+      reset({
         name: defaultData.name || '',
       })
     }
-  }, [defaultData])
+  }, [defaultData, reset])
 
   const isLoading = form.formState.isLoading
 

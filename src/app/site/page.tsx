@@ -13,11 +13,21 @@ import { Check } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 
+export const dynamic = 'force-dynamic'
+
 export default async function Home() {
-  const prices = await stripe.prices.list({
-    product: process.env.NEXT_PLURA_PRODUCT_ID,
-    active: true,
-  })
+  const productId = process.env.NEXT_PLURA_PRODUCT_ID
+  const stripeConfigured = Boolean(
+    process.env.STRIPE_SECRET_KEY && productId
+  )
+  const prices = stripeConfigured
+    ? (
+        await stripe.prices.list({
+          product: productId,
+          active: true,
+        })
+      ).data
+    : []
 
   return (
     <>
@@ -50,8 +60,13 @@ export default async function Home() {
           {" you're"} not <br />
           ready to commit you can get started for free.
         </p>
+        {!stripeConfigured && (
+          <p role="status" className="text-muted-foreground text-center">
+            Paid plans are temporarily unavailable while billing is configured.
+          </p>
+        )}
         <div className="flex  justify-center gap-4 flex-wrap mt-6">
-          {prices.data.map((card) => (
+          {prices.map((card) => (
             //WIP: Wire up free product from stripe
             <Card
               key={card.nickname}

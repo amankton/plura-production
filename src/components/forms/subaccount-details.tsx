@@ -80,6 +80,7 @@ const SubAccountDetails: React.FC<SubAccountDetailsProps> = ({
       subAccountLogo: details?.subAccountLogo,
     },
   })
+  const { reset } = form
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
@@ -125,9 +126,9 @@ const SubAccountDetails: React.FC<SubAccountDetailsProps> = ({
 
   useEffect(() => {
     if (details) {
-      form.reset(details)
+      reset(details)
     }
-  }, [details])
+  }, [details, reset])
 
   const isLoading = form.formState.isSubmitting
   //CHALLENGE Create this form.

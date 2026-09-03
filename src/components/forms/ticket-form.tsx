@@ -77,6 +77,7 @@ const TicketForm = ({ getNewTicket, laneId, subaccountId }: Props) => {
       value: String(defaultData.ticket?.value || 0),
     },
   })
+  const { reset } = form
   const isLoading = form.formState.isLoading
 
   useEffect(() => {
@@ -91,7 +92,7 @@ const TicketForm = ({ getNewTicket, laneId, subaccountId }: Props) => {
 
   useEffect(() => {
     if (defaultData.ticket) {
-      form.reset({
+      reset({
         name: defaultData.ticket.name || '',
         description: defaultData.ticket?.description || '',
         value: String(defaultData.ticket?.value || 0),
@@ -108,7 +109,7 @@ const TicketForm = ({ getNewTicket, laneId, subaccountId }: Props) => {
       }
       fetchData()
     }
-  }, [defaultData])
+  }, [defaultData, reset])
 
   const onSubmit = async (values: z.infer<typeof TicketFormSchema>) => {
     if (!laneId) return
