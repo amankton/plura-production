@@ -1,10 +1,10 @@
 # CF-P1-B4C1 — Stripe Server SDK Upgrade
 
-Status: implemented; pending independent verification
+Status: verified; accepted as a non-deployable checkpoint
 Branch: `codex/crewframe-foundation`
 Parent checkpoint: `42836265a826397c14a4b141eac94fb385a14cdf`
-Implementation commit: pending
-Verified candidate: pending
+Implementation commit: `9946926df9eabcdb80e0c8e742bbeb4e5854b25b`
+Verified candidate: `9946926df9eabcdb80e0c8e742bbeb4e5854b25b`
 Date: 2026-09-03
 
 ## Objective
@@ -78,9 +78,11 @@ Subscription create and update calls now expand
 
 ## Verification
 
-- Agency architect: `GO_B4C1_SERVER_ONLY` before implementation; final-diff
-  review pending.
-- Independent verifier: pending.
+- Agency architect: `GO_B4C1_SERVER_ONLY` before implementation and
+  `GO_B4C1_FINAL` after reviewing the complete working diff.
+- Independent verifier: PASS against
+  `9946926df9eabcdb80e0c8e742bbeb4e5854b25b`; production readiness remains FAIL
+  by design.
 - `bun install --frozen-lockfile`: passed; 895 installs across 705 packages,
   no changes.
 - `bun run verify`: passed.
