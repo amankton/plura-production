@@ -64,7 +64,7 @@ dependency version, lockfile, Prisma schema, or production data.
   - Bun: 97 tests, 454 expectations, zero failures.
   - Next.js production build: passed, including page generation and traces.
 - `git diff --check`: passed; line-ending notices only.
-- `git diff -- package.json bun.lock prisma/schema.prisma`: empty.
+- `git diff -- package.json bun.lockb prisma/schema.prisma`: empty.
 - `bun audit`: 72 advisories — 1 critical, 37 high, 28 moderate, 6 low.
 
 ## Explicit exclusions and blockers
