@@ -1,10 +1,10 @@
 # CF-P1-B4A — Clerk Core 2 Bridge
 
-Status: implemented; pending independent verification
+Status: verified; accepted as a non-deployable checkpoint
 Branch: `codex/crewframe-foundation`
 Parent checkpoint: `a63148f6b9ff584c94c871d7ef934448fbd2c0bf`
-Implementation commit: pending
-Verified candidate: pending
+Implementation commit: `9567feaac9190958159fc54cfc189e98d280c9d2`
+Verified candidate: `9567feaac9190958159fc54cfc189e98d280c9d2`
 Date: 2026-09-03
 
 ## Objective
@@ -58,7 +58,9 @@ Stripe, design-system, Odoo, or agent-platform migrations.
 ## Verification
 
 - Agency architect: `GO_B4A`; no remaining checkpoint code blocker.
-- Independent verifier: pending exact-commit review.
+- Independent verifier: PASS against
+  `9567feaac9190958159fc54cfc189e98d280c9d2`; production readiness remains FAIL
+  by design.
 - `bun run verify`: passed.
   - ESLint: zero warnings or errors.
   - TypeScript: passed.
