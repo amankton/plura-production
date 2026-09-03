@@ -1,10 +1,10 @@
 # CF-P1-B4D — Stripe Test Catalog and Logical Plans
 
-Status: implementation complete; verification pending
+Status: verified; accepted as a non-deployable checkpoint
 Branch: `codex/crewframe-foundation`
 Parent checkpoint: `e3a595ddd2a1c9f1ac23787460bb7f13efa52e44`
-Implementation commit: pending
-Verified candidate: pending
+Implementation commit: `42bb2cc6c81d07a841b755799380d2837e312079`
+Verified candidate: `42bb2cc6c81d07a841b755799380d2837e312079`
 Date: 2026-09-03
 
 ## Objective
@@ -49,8 +49,8 @@ An initial combined Test product (`prod_VC4xojv7sxW5PT`) and its two prices
 (`price_1UBgoAFHOTtuzKF57zAGpRo0` and
 `price_1UBgoEFHOTtuzKF59htXsyRo`) were created before the product-per-tier rule
 was identified. That product and both prices were made inactive, their lookup
-keys were moved away from the active catalog, and the product's default price
-was cleared. No Live Mode object was read as catalog authority or mutated.
+keys were cleared, and the product's default price was cleared. No Live Mode
+object was read as catalog authority or mutated.
 
 ## Implemented guarantees
 
@@ -94,6 +94,8 @@ was cleared. No Live Mode object was read as catalog authority or mutated.
   two active products and two active recurring prices were returned, matching
   the IDs, lookup keys, amounts, intervals, defaults, and product separation
   recorded above.
+- Stripe Live Mode read-only inventory: zero products, prices, and webhook
+  endpoints. No Stripe write operation was called during independent review.
 - `bun install --frozen-lockfile`: passed; 895 installs across 705 packages,
   no changes.
 - `bun run verify`: passed.
@@ -112,7 +114,9 @@ was cleared. No Live Mode object was read as catalog authority or mutated.
   database connection exists in this checkout. No data was changed.
 - Agency architect final review: `GO_B4D_FINAL` after one required correction
   preserved the legacy plan field during webhook synchronization.
-- Independent verifier: pending.
+- Independent verifier: PASS against
+  `42bb2cc6c81d07a841b755799380d2837e312079`; production readiness remains FAIL
+  by design.
 
 ## Explicit exclusions and blockers
 
@@ -133,6 +137,8 @@ was cleared. No Live Mode object was read as catalog authority or mutated.
 - No credentialed Payment Element, subscription create/change, webhook replay,
   or connected-account smoke test was performed.
 - Existing dependency advisories and inherited production blockers remain open.
+- The inherited Checkout creation route does not yet supply Stripe's current
+  `integration_identifier`; address that with the later Stripe route hardening.
 
 ## Rollback
 
