@@ -1,8 +1,10 @@
 # CF-P1-B3 — Team Authority-Root Lockdown and Migration Readiness
 
-Status: implemented; pending independent verification
+Status: verified; accepted as a non-deployable checkpoint
 Branch: `codex/crewframe-foundation`
 Parent checkpoint: `5ddf6b6989aae8e4d7573de2d028e1a72c4b50c5`
+Implementation commit: `24689ecdadffbaffb6aefe770720c29213666c66`
+Verified candidate: `350f8916ebfbc1349fcca596947e0e1f8b0d8dbf`
 Date: 2026-09-03
 
 ## Objective
@@ -56,6 +58,9 @@ dependency version, lockfile, Prisma schema, or production data.
 
 ## Verification
 
+- Agency architect: GO with no remaining B3 checkpoint blocker.
+- Independent verifier: PASS against `350f8916ebfbc1349fcca596947e0e1f8b0d8dbf`;
+  production readiness remains FAIL by design.
 - `bun install --frozen-lockfile`: passed; 713 installs across 666 packages,
   no changes.
 - `bun run verify`: passed.
