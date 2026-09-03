@@ -42,11 +42,11 @@ import { Input } from '../ui/input'
 import { Switch } from '../ui/switch'
 import {
   deleteAgency,
-  initUser,
   saveActivityLogsNotification,
   updateAgencyDetails,
   upsertAgency,
 } from '@/lib/queries'
+import { provisionAgencyOwner } from '@/features/accounts/actions'
 import { Button } from '../ui/button'
 import Loading from '../global/loading'
 
@@ -135,7 +135,7 @@ const AgencyDetails = ({ data }: Props) => {
         custId = customerData.customerId
       }
 
-      newUserData = await initUser({ role: 'AGENCY_OWNER' })
+      newUserData = await provisionAgencyOwner()
       if (!data?.customerId && !custId) return
 
       const response = await upsertAgency({

@@ -1,27 +1,14 @@
 'use client'
 
+import type { ColumnDef } from '@tanstack/react-table'
 import clsx from 'clsx'
-import { ColumnDef } from '@tanstack/react-table'
-import {
-  Agency,
-  AgencySidebarOption,
-  Permissions,
-  Prisma,
-  Role,
-  SubAccount,
-  User,
-} from '@prisma/client'
+import { Role } from '@prisma/client'
 import Image from 'next/image'
-
-import { Badge } from '@/components/ui/badge'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+import { Copy, Edit, MoreHorizontal, Trash } from 'lucide-react'
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import UserDetails from '@/components/forms/user-details'
+import CustomModal from '@/components/global/custom-modal'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,135 +20,136 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Copy, Edit, MoreHorizontal, Trash } from 'lucide-react'
-import { useModal } from '@/providers/modal-provider'
-import UserDetails from '@/components/forms/user-details'
-
-import { deleteUser, getUser } from '@/lib/queries'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { useToast } from '@/components/ui/use-toast'
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { UsersWithAgencySubAccountPermissionsSidebarOptions } from '@/lib/types'
-import CustomModal from '@/components/global/custom-modal'
+import { removeMember } from '@/features/team/actions'
+import type {
+  TeamMemberRecord,
+  TeamSubaccountRecord,
+} from '@/features/team/team-service'
+import { useModal } from '@/providers/modal-provider'
 
-export const columns: ColumnDef<UsersWithAgencySubAccountPermissionsSidebarOptions>[] =
-  [
-    {
-      accessorKey: 'id',
-      header: '',
-      cell: () => {
-        return null
-      },
-    },
-    {
-      accessorKey: 'name',
-      header: 'Name',
-      cell: ({ row }) => {
-        const avatarUrl = row.getValue('avatarUrl') as string
-        return (
-          <div className="flex items-center gap-4">
-            <div className="h-11 w-11 relative flex-none">
-              <Image
-                src={avatarUrl}
-                fill
-                className="rounded-full object-cover"
-                alt="avatar image"
-              />
-            </div>
-            <span>{row.getValue('name')}</span>
-          </div>
-        )
-      },
-    },
-    {
-      accessorKey: 'avatarUrl',
-      header: '',
-      cell: () => {
-        return null
-      },
-    },
-    { accessorKey: 'email', header: 'Email' },
+export const createColumns = (
+  subaccounts: readonly TeamSubaccountRecord[]
+): ColumnDef<TeamMemberRecord>[] => [
+  {
+    accessorKey: 'id',
+    header: '',
+    cell: () => null,
+  },
+  {
+    accessorKey: 'name',
+    header: 'Name',
+    cell: ({ row }) => (
+      <div className="flex items-center gap-4">
+        <div className="h-11 w-11 relative flex-none">
+          <Image
+            src={row.original.avatarUrl}
+            fill
+            className="rounded-full object-cover"
+            alt="avatar image"
+          />
+        </div>
+        <span>{row.original.name}</span>
+      </div>
+    ),
+  },
+  { accessorKey: 'email', header: 'Email' },
+  {
+    id: 'subaccounts',
+    header: 'Subaccount Access',
+    cell: ({ row }) => {
+      if (row.original.role === Role.AGENCY_OWNER) {
+        return <Badge className="bg-slate-600">Agency owner</Badge>
+      }
+      if (row.original.role === Role.AGENCY_ADMIN) {
+        return <Badge className="bg-slate-600">All agency subaccounts</Badge>
+      }
 
-    {
-      accessorKey: 'SubAccount',
-      header: 'Owned Accounts',
-      cell: ({ row }) => {
-        const isAgencyOwner = row.getValue('role') === 'AGENCY_OWNER'
-        const ownedAccounts = row.original?.Permissions.filter(
-          (per) => per.access
-        )
-
-        if (isAgencyOwner)
-          return (
-            <div className="flex flex-col items-start">
-              <div className="flex flex-col gap-2">
-                <Badge className="bg-slate-600 whitespace-nowrap">
-                  Agency - {row?.original?.Agency?.name}
-                </Badge>
-              </div>
-            </div>
-          )
-        return (
-          <div className="flex flex-col items-start">
-            <div className="flex flex-col gap-2">
-              {ownedAccounts?.length ? (
-                ownedAccounts.map((account) => (
-                  <Badge
-                    key={account.id}
-                    className="bg-slate-600 w-fit whitespace-nowrap"
-                  >
-                    Sub Account - {account.SubAccount.name}
-                  </Badge>
-                ))
-              ) : (
-                <div className="text-muted-foreground">No Access Yet</div>
-              )}
-            </div>
-          </div>
-        )
-      },
+      const allowed = row.original.permissions.filter((item) => item.access)
+      return allowed.length ? (
+        <div className="flex flex-col items-start gap-2">
+          {allowed.map((item) => (
+            <Badge
+              key={item.id}
+              className="bg-slate-600 w-fit whitespace-nowrap"
+            >
+              {item.subaccount.name}
+            </Badge>
+          ))}
+        </div>
+      ) : (
+        <span className="text-muted-foreground">No access yet</span>
+      )
     },
-    {
-      accessorKey: 'role',
-      header: 'Role',
-      cell: ({ row }) => {
-        const role: Role = row.getValue('role')
-        return (
-          <Badge
-            className={clsx({
-              'bg-emerald-500': role === 'AGENCY_OWNER',
-              'bg-orange-400': role === 'AGENCY_ADMIN',
-              'bg-primary': role === 'SUBACCOUNT_USER',
-              'bg-muted': role === 'SUBACCOUNT_GUEST',
-            })}
-          >
-            {role}
-          </Badge>
-        )
-      },
-    },
-    {
-      id: 'actions',
-      cell: ({ row }) => {
-        const rowData = row.original
+  },
+  {
+    accessorKey: 'role',
+    header: 'Role',
+    cell: ({ row }) => (
+      <Badge
+        className={clsx({
+          'bg-emerald-500': row.original.role === Role.AGENCY_OWNER,
+          'bg-orange-400': row.original.role === Role.AGENCY_ADMIN,
+          'bg-primary': row.original.role === Role.SUBACCOUNT_USER,
+          'bg-muted': row.original.role === Role.SUBACCOUNT_GUEST,
+        })}
+      >
+        {row.original.role}
+      </Badge>
+    ),
+  },
+  {
+    id: 'actions',
+    cell: ({ row }) => (
+      <CellActions
+        rowData={row.original}
+        subaccounts={subaccounts}
+      />
+    ),
+  },
+]
 
-        return <CellActions rowData={rowData} />
-      },
-    },
-  ]
-
-interface CellActionsProps {
-  rowData: UsersWithAgencySubAccountPermissionsSidebarOptions
-}
-
-const CellActions: React.FC<CellActionsProps> = ({ rowData }) => {
-  const { data, setOpen } = useModal()
+const CellActions = ({
+  rowData,
+  subaccounts,
+}: {
+  rowData: TeamMemberRecord
+  subaccounts: readonly TeamSubaccountRecord[]
+}) => {
+  const { setOpen } = useModal()
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
   const router = useRouter()
-  if (!rowData) return
-  if (!rowData.Agency) return
+
+  const onRemove = async () => {
+    setLoading(true)
+    try {
+      await removeMember({ targetUserId: rowData.id })
+      toast({
+        description: 'The member no longer has access to this agency.',
+        title: 'Team member removed',
+      })
+      router.refresh()
+    } catch {
+      toast({
+        description: 'The member was not removed.',
+        title: 'Removal failed',
+        variant: 'destructive',
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <AlertDialog>
@@ -179,40 +167,32 @@ const CellActions: React.FC<CellActionsProps> = ({ rowData }) => {
           <DropdownMenuLabel>Actions</DropdownMenuLabel>
           <DropdownMenuItem
             className="flex gap-2"
-            onClick={() => navigator.clipboard.writeText(rowData?.email)}
+            onClick={() => navigator.clipboard.writeText(rowData.email)}
           >
             <Copy size={15} /> Copy Email
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
             className="flex gap-2"
-            onClick={() => {
+            onClick={() =>
               setOpen(
                 <CustomModal
-                  subheading="You can change permissions only when the user has an owned subaccount"
-                  title="Edit User Details"
+                  subheading="Change role and explicit subaccount access."
+                  title="Manage Team Member"
                 >
                   <UserDetails
-                    type="agency"
-                    id={rowData?.Agency?.id || null}
-                    subAccounts={rowData?.Agency?.SubAccount}
+                    targetUser={rowData}
+                    subAccounts={subaccounts}
                   />
-                </CustomModal>,
-                async () => {
-                  return { user: await getUser(rowData?.id) }
-                }
+                </CustomModal>
               )
-            }}
+            }
           >
-            <Edit size={15} />
-            Edit Details
+            <Edit size={15} /> Manage Access
           </DropdownMenuItem>
-          {rowData.role !== 'AGENCY_OWNER' && (
+          {rowData.role !== Role.AGENCY_OWNER && (
             <AlertDialogTrigger asChild>
-              <DropdownMenuItem
-                className="flex gap-2"
-                onClick={() => {}}
-              >
+              <DropdownMenuItem className="flex gap-2">
                 <Trash size={15} /> Remove User
               </DropdownMenuItem>
             </AlertDialogTrigger>
@@ -222,31 +202,21 @@ const CellActions: React.FC<CellActionsProps> = ({ rowData }) => {
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle className="text-left">
-            Are you absolutely sure?
+            Remove this team member?
           </AlertDialogTitle>
           <AlertDialogDescription className="text-left">
-            This action cannot be undone. This will permanently delete the user
-            and related data.
+            Their local Crewframe access and related permissions will be
+            removed. Their external identity remains intact.
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter className="flex items-center">
-          <AlertDialogCancel className="mb-2">Cancel</AlertDialogCancel>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
           <AlertDialogAction
             disabled={loading}
             className="bg-destructive hover:bg-destructive"
-            onClick={async () => {
-              setLoading(true)
-              await deleteUser(rowData.id)
-              toast({
-                title: 'Deleted User',
-                description:
-                  'The user has been deleted from this agency they no longer have access to the agency',
-              })
-              setLoading(false)
-              router.refresh()
-            }}
+            onClick={onRemove}
           >
-            Delete
+            {loading ? 'Removing…' : 'Remove'}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

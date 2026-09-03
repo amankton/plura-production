@@ -28,14 +28,10 @@ import {
 } from '../ui/select'
 import { Button } from '../ui/button'
 import Loading from '../global/loading'
-import { saveActivityLogsNotification, sendInvitation } from '@/lib/queries'
+import { inviteMember } from '@/features/team/actions'
 import { useToast } from '../ui/use-toast'
 
-interface SendInvitationProps {
-  agencyId: string
-}
-
-const SendInvitation: React.FC<SendInvitationProps> = ({ agencyId }) => {
+const SendInvitation = () => {
   const { toast } = useToast()
   const userDataSchema = z.object({
     email: z.string().email(),
@@ -53,12 +49,7 @@ const SendInvitation: React.FC<SendInvitationProps> = ({ agencyId }) => {
 
   const onSubmit = async (values: z.infer<typeof userDataSchema>) => {
     try {
-      const res = await sendInvitation(values.role, values.email, agencyId)
-      await saveActivityLogsNotification({
-        agencyId: agencyId,
-        description: `Invited ${res.email}`,
-        subaccountId: undefined,
-      })
+      await inviteMember(values)
       toast({
         title: 'Success',
         description: 'Created and sent invitation',

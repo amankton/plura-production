@@ -2,11 +2,10 @@ import InfoBar from '@/components/global/infobar'
 import Sidebar from '@/components/sidebar'
 import Unauthorized from '@/components/unauthorized'
 import {
-  getAuthUserDetails,
   getNotificationAndUser,
-  verifyAndAcceptInvitation,
 } from '@/lib/queries'
-import { currentUser } from '@clerk/nextjs'
+import { verifyAndAcceptInvitation } from '@/features/accounts/actions'
+import { getTenantContext } from '@/lib/auth/server-tenant-context'
 import { Role } from '@prisma/client'
 import { redirect } from 'next/navigation'
 import React from 'react'
@@ -19,38 +18,20 @@ type Props = {
 const SubaccountLayout = async ({ children, params }: Props) => {
   const agencyId = await verifyAndAcceptInvitation()
   if (!agencyId) return <Unauthorized />
-  const user = await currentUser()
-  if (!user) {
-    return redirect('/')
-  }
-
   let notifications: any = []
+  const context = await getTenantContext(params.subaccountId)
+  const allNotifications = await getNotificationAndUser(context.agencyId)
 
-  if (!user.privateMetadata.role) {
-    return <Unauthorized />
+  if (
+    context.actor.role === Role.AGENCY_ADMIN ||
+    context.actor.role === Role.AGENCY_OWNER
+  ) {
+    notifications = allNotifications
   } else {
-    const allPermissions = await getAuthUserDetails()
-    const hasPermission = allPermissions?.Permissions.find(
-      (permissions) =>
-        permissions.access && permissions.subAccountId === params.subaccountId
+    const filteredNoti = allNotifications?.filter(
+      (item) => item.subAccountId === params.subaccountId
     )
-    if (!hasPermission) {
-      return <Unauthorized />
-    }
-
-    const allNotifications = await getNotificationAndUser(agencyId)
-
-    if (
-      user.privateMetadata.role === 'AGENCY_ADMIN' ||
-      user.privateMetadata.role === 'AGENCY_OWNER'
-    ) {
-      notifications = allNotifications
-    } else {
-      const filteredNoti = allNotifications?.filter(
-        (item) => item.subAccountId === params.subaccountId
-      )
-      if (filteredNoti) notifications = filteredNoti
-    }
+    if (filteredNoti) notifications = filteredNoti
   }
 
   return (
@@ -63,7 +44,7 @@ const SubaccountLayout = async ({ children, params }: Props) => {
       <div className="md:pl-[300px]">
         <InfoBar
           notifications={notifications}
-          role={user.privateMetadata.role as Role}
+          role={context.actor.role}
           subAccountId={params.subaccountId as string}
         />
         <div className="relative">{children}</div>

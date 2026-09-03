@@ -1,40 +1,24 @@
-import { db } from '@/lib/db'
 import React from 'react'
 import DataTable from './data-table'
 import { Plus } from 'lucide-react'
-import { currentUser } from '@clerk/nextjs'
-import { columns } from './columns'
+import { createColumns } from './columns'
 import SendInvitation from '@/components/forms/send-invitation'
+import { listAgencyTeam } from '@/features/team/actions'
+import Unauthorized from '@/components/unauthorized'
+import { isAccessError } from '@/lib/auth/access-error'
 
 type Props = {
   params: { agencyId: string }
 }
 
 const TeamPage = async ({ params }: Props) => {
-  const authUser = await currentUser()
-  const teamMembers = await db.user.findMany({
-    where: {
-      Agency: {
-        id: params.agencyId,
-      },
-    },
-    include: {
-      Agency: { include: { SubAccount: true } },
-      Permissions: { include: { SubAccount: true } },
-    },
-  })
-
-  if (!authUser) return null
-  const agencyDetails = await db.agency.findUnique({
-    where: {
-      id: params.agencyId,
-    },
-    include: {
-      SubAccount: true,
-    },
-  })
-
-  if (!agencyDetails) return
+  let team
+  try {
+    team = await listAgencyTeam(params.agencyId)
+  } catch (error) {
+    if (isAccessError(error)) return <Unauthorized />
+    throw error
+  }
 
   return (
     <DataTable
@@ -44,10 +28,10 @@ const TeamPage = async ({ params }: Props) => {
           Add
         </>
       }
-      modalChildren={<SendInvitation agencyId={agencyDetails.id} />}
+      modalChildren={<SendInvitation />}
       filterValue="name"
-      columns={columns}
-      data={teamMembers}
+      columns={createColumns(team.subaccounts)}
+      data={[...team.members]}
     ></DataTable>
   )
 }

@@ -4,9 +4,12 @@ import Sidebar from '@/components/sidebar'
 import Unauthorized from '@/components/unauthorized'
 import {
   getNotificationAndUser,
-  verifyAndAcceptInvitation,
 } from '@/lib/queries'
-import { currentUser } from '@clerk/nextjs'
+import { verifyAndAcceptInvitation } from '@/features/accounts/actions'
+import {
+  assertAgencyOperator,
+} from '@/lib/auth/agency-context'
+import { getAgencyContext } from '@/lib/auth/server-agency-context'
 import { redirect } from 'next/navigation'
 import React from 'react'
 
@@ -17,24 +20,18 @@ type Props = {
 
 const layout = async ({ children, params }: Props) => {
   const agencyId = await verifyAndAcceptInvitation()
-  const user = await currentUser()
-
-  if (!user) {
-    return redirect('/')
-  }
-
   if (!agencyId) {
     return redirect('/agency')
   }
-
-  if (
-    user.privateMetadata.role !== 'AGENCY_OWNER' &&
-    user.privateMetadata.role !== 'AGENCY_ADMIN'
-  )
+  const context = await getAgencyContext(params.agencyId)
+  try {
+    assertAgencyOperator(context)
+  } catch {
     return <Unauthorized />
+  }
 
   let allNoti: any = []
-  const notifications = await getNotificationAndUser(agencyId)
+  const notifications = await getNotificationAndUser(context.agencyId)
   if (notifications) allNoti = notifications
 
  

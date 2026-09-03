@@ -2,7 +2,7 @@ import SubAccountDetails from '@/components/forms/subaccount-details'
 import UserDetails from '@/components/forms/user-details'
 import BlurPage from '@/components/global/blur-page'
 import { db } from '@/lib/db'
-import { currentUser } from '@clerk/nextjs'
+import { getTenantContext } from '@/lib/auth/server-tenant-context'
 import React from 'react'
 
 type Props = {
@@ -10,22 +10,19 @@ type Props = {
 }
 
 const SubaccountSettingPage = async ({ params }: Props) => {
-  const authUser = await currentUser()
-  if (!authUser) return
+  const context = await getTenantContext(params.subaccountId)
   const userDetails = await db.user.findUnique({
-    where: {
-      email: authUser.emailAddresses[0].emailAddress,
-    },
+    where: { id: context.actor.id },
   })
   if (!userDetails) return
 
-  const subAccount = await db.subAccount.findUnique({
-    where: { id: params.subaccountId },
+  const subAccount = await db.subAccount.findFirst({
+    where: { agencyId: context.agencyId, id: context.subaccountId },
   })
   if (!subAccount) return
 
   const agencyDetails = await db.agency.findUnique({
-    where: { id: subAccount.agencyId },
+    where: { id: context.agencyId },
     include: { SubAccount: true },
   })
 
@@ -41,9 +38,7 @@ const SubaccountSettingPage = async ({ params }: Props) => {
           userId={userDetails.id}
           userName={userDetails.name}
         />
-        <UserDetails
-          type="subaccount"
-          id={params.subaccountId}
+      <UserDetails
           subAccounts={subAccounts}
           userData={userDetails}
         />

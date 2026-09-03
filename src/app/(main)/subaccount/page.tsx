@@ -1,5 +1,6 @@
 import Unauthorized from '@/components/unauthorized'
-import { getAuthUserDetails, verifyAndAcceptInvitation } from '@/lib/queries'
+import { getAuthUserDetails } from '@/lib/queries'
+import { verifyAndAcceptInvitation } from '@/features/accounts/actions'
 import { redirect } from 'next/navigation'
 import React from 'react'
 
