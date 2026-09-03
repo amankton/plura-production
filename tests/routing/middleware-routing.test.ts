@@ -1,5 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import {
+  enforcePathProtection,
+  isPublicPath,
   PUBLIC_ROUTES,
   resolveRoutingDecision,
 } from '../../src/lib/routing/middleware-routing'
@@ -23,6 +25,48 @@ const decide = (
 describe('middleware route characterization', () => {
   test('keeps only the marketing page and UploadThing transport public', () => {
     expect(PUBLIC_ROUTES).toEqual(['/site', '/api/uploadthing'])
+    expect(isPublicPath('/site')).toBeTrue()
+    expect(isPublicPath('/api/uploadthing')).toBeTrue()
+    for (const protectedPath of [
+      '/',
+      '/agency/agency-a',
+      '/api/stripe/webhook',
+      '/api/uploadthing/other',
+      '/offer',
+      '/subaccount/sub-a',
+    ]) {
+      expect(isPublicPath(protectedPath)).toBeFalse()
+    }
+  })
+
+  test('protects every route outside the exact public allowlist', async () => {
+    const protectedPaths: string[] = []
+    const protect = async (pathname: string) => {
+      protectedPaths.push(pathname)
+    }
+
+    for (const pathname of ['/site', '/api/uploadthing']) {
+      await enforcePathProtection(pathname, () => protect(pathname))
+    }
+    for (const pathname of [
+      '/',
+      '/agency/agency-a',
+      '/api/stripe/webhook',
+      '/api/uploadthing/other',
+      '/offer',
+      '/subaccount/sub-a',
+    ]) {
+      await enforcePathProtection(pathname, () => protect(pathname))
+    }
+
+    expect(protectedPaths).toEqual([
+      '/',
+      '/agency/agency-a',
+      '/api/stripe/webhook',
+      '/api/uploadthing/other',
+      '/offer',
+      '/subaccount/sub-a',
+    ])
   })
 
   test.each(['/', '/site'])('rewrites %s to the marketing site', (path) => {
@@ -97,5 +141,10 @@ describe('middleware route characterization', () => {
     expect(middlewareSource).toContain(
       "matcher: ['/((?!.+\\\\.[\\\\w]+$|_next).*)', '/', '/(api|trpc)(.*)']"
     )
+    expect(middlewareSource).toContain(
+      "import { clerkMiddleware } from '@clerk/nextjs/server'"
+    )
+    expect(middlewareSource).toContain('auth.protect()')
+    expect(middlewareSource).not.toContain('authMiddleware')
   })
 })

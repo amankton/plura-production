@@ -1,9 +1,6 @@
 import 'server-only'
 
-import { auth } from '@clerk/nextjs'
-import type { IdentityProvider } from './identity'
+import { auth } from '@clerk/nextjs/server'
+import { createClerkIdentityProvider } from './clerk-adapters'
 
-export const clerkIdentityProvider: IdentityProvider = async () => {
-  const authState = await auth()
-  return authState.userId ? { subject: authState.userId } : null
-}
+export const clerkIdentityProvider = createClerkIdentityProvider(auth)

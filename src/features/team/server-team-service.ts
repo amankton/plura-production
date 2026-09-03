@@ -1,8 +1,9 @@
 import 'server-only'
 
-import { clerkClient } from '@clerk/nextjs'
+import { clerkClient } from '@clerk/nextjs/server'
 import { Prisma } from '@prisma/client'
 import { AccessError } from '@/lib/auth/access-error'
+import { createClerkInvitationProvider } from '@/lib/auth/clerk-adapters'
 import { clerkIdentityProvider } from '@/lib/auth/clerk-identity'
 import { db } from '@/lib/db'
 import {
@@ -228,20 +229,9 @@ const teamStore: TeamStore = {
 
 export const teamService = createTeamService({
   identityProvider: clerkIdentityProvider,
-  provider: {
-    createInvitation: async (email) => {
-      const redirectUrl = process.env.NEXT_PUBLIC_URL
-      if (!redirectUrl) throw new Error('NEXT_PUBLIC_URL is not configured')
-      const invitation = await clerkClient.invitations.createInvitation({
-        emailAddress: email,
-        redirectUrl,
-        publicMetadata: { throughInvitation: true },
-      })
-      return invitation.id
-    },
-    revokeInvitation: async (providerInvitationId) => {
-      await clerkClient.invitations.revokeInvitation(providerInvitationId)
-    },
-  },
+  provider: createClerkInvitationProvider({
+    getClient: clerkClient,
+    getRedirectUrl: () => process.env.NEXT_PUBLIC_URL,
+  }),
   store: teamStore,
 })

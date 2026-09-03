@@ -1,8 +1,9 @@
 import 'server-only'
 
-import { currentUser } from '@clerk/nextjs'
+import { currentUser } from '@clerk/nextjs/server'
 import { InvitationStatus, Role } from '@prisma/client'
 import { AccessError } from '@/lib/auth/access-error'
+import { createClerkProfileProvider } from '@/lib/auth/clerk-adapters'
 import { clerkIdentityProvider } from '@/lib/auth/clerk-identity'
 import { db } from '@/lib/db'
 import {
@@ -77,28 +78,6 @@ const accountStore: AccountStore = {
 
 export const accountService = createAccountService({
   identityProvider: clerkIdentityProvider,
-  profileProvider: async (providerSubject) => {
-    const user = await currentUser()
-    if (!user || user.id !== providerSubject) return null
-    const primaryEmailRecord = user.emailAddresses.find(
-      (email) => email.id === user.primaryEmailAddressId
-    )
-    if (
-      !primaryEmailRecord?.emailAddress ||
-      primaryEmailRecord.verification?.status !== 'verified'
-    ) {
-      return null
-    }
-    const primaryEmail = primaryEmailRecord.emailAddress
-
-    return {
-      avatarUrl: user.imageUrl,
-      email: primaryEmail,
-      name:
-        [user.firstName, user.lastName].filter(Boolean).join(' ').trim() ||
-        primaryEmail,
-      subject: user.id,
-    }
-  },
+  profileProvider: createClerkProfileProvider(currentUser),
   store: accountStore,
 })

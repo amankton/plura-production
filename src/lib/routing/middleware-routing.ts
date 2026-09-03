@@ -1,5 +1,15 @@
 export const PUBLIC_ROUTES = ['/site', '/api/uploadthing'] as const
 
+export const isPublicPath = (pathname: string): boolean =>
+  PUBLIC_ROUTES.some((publicRoute) => pathname === publicRoute)
+
+export const enforcePathProtection = async (
+  pathname: string,
+  protect: () => Promise<unknown>
+) => {
+  if (!isPublicPath(pathname)) await protect()
+}
+
 export type RoutingDecision =
   | { destination: string; type: 'redirect' | 'rewrite' }
   | { type: 'continue' }
