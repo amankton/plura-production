@@ -1,10 +1,10 @@
 # CF-P1-B4B — Upload Runtime Effect Hotfix
 
-Status: implemented; pending independent verification
+Status: verified; accepted as a non-deployable checkpoint
 Branch: `codex/crewframe-foundation`
 Parent checkpoint: `2affdfdd119dcf3c8d3bef6af9d8826079567fc4`
-Implementation commit: pending
-Verified candidate: pending
+Implementation commit: `f701c75a93775690917107778c811dd4a32c9579`
+Verified candidate: `f701c75a93775690917107778c811dd4a32c9579`
 Date: 2026-09-03
 
 ## Objective
@@ -58,7 +58,9 @@ ships a stable dependency graph with Effect 3.20.0 or newer.
 ## Verification
 
 - Agency architect: `GO_B4B`; no remaining checkpoint code blocker.
-- Independent verifier: pending exact-commit review.
+- Independent verifier: PASS against
+  `f701c75a93775690917107778c811dd4a32c9579`; production readiness remains FAIL
+  by design.
 - `bun install --frozen-lockfile`: passed; 909 installs across 708 packages,
   no changes.
 - `bun run verify`: passed.
