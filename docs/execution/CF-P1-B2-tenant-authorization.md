@@ -1,8 +1,9 @@
 # CF-P1-B2 — Tenant Authorization Foundation
 
-Status: implemented; pending independent verification
+Status: independently verified as a non-deployable checkpoint
 Branch: `codex/crewframe-foundation`
 Parent checkpoint: `02e225c`
+Verified implementation: `db02e7324907ce5dc5a225f3ef4253b5bbb5bd88`
 Date: 2026-09-03
 
 ## Objective
