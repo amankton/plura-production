@@ -102,6 +102,18 @@ describe('Stripe authority surface', () => {
     )
   })
 
+  test('never performs an unfiltered agency charge query', async () => {
+    const [billingPage, billingServer] = await Promise.all([
+      Bun.file('src/app/(main)/agency/[agencyId]/billing/page.tsx').text(),
+      Bun.file('src/features/billing/server-billing-service.ts').text(),
+    ])
+
+    expect(billingPage).toContain('listAgencyCharges')
+    expect(billingPage).not.toContain('stripe.charges.list')
+    expect(billingServer).toContain('charges.list({')
+    expect(billingServer).toContain('customer: customerId')
+  })
+
   test('keeps Stripe endpoints protected and provider configuration server-only', async () => {
     const [routing, env, commerceServer, sync] = await Promise.all([
       Bun.file('src/lib/routing/middleware-routing.ts').text(),

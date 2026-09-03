@@ -48,6 +48,9 @@ and platform fee values after resolving the authenticated tenant context.
   repaired only when their stored email exactly matches the authenticated agency.
 - Existing Stripe Subscriptions must belong to the agency's stored Customer
   before plan changes are attempted.
+- Agency charge history makes no Stripe request when no Customer exists and
+  lists charges only after the stored Customer's agency metadata is verified.
+  The provider query always carries the exact authorized Customer filter.
 - Every Stripe POST uses a stable, namespaced idempotency key derived from an
   internal resource and a browser-generated operation UUID.
 - Connected Checkout loads the published funnel and bounded stored cart, then
@@ -62,7 +65,8 @@ and platform fee values after resolving the authenticated tenant context.
   lowercase letters derived from the random operation UUID as
   `integration_identifier`. The suffix remains stable for an idempotent retry.
 - Authenticated mutation routes require JSON and the exact configured application
-  Origin. They reject cross-site fetch metadata, enforce a 16 KiB header limit,
+  Origin. They reject cross-site fetch metadata, enforce a 16 KiB declared
+  Content-Length limit,
   and incrementally read/cancel the body at 16 KiB even when Content-Length is
   missing or false. Provider failures become generic responses with a sanitized
   correlation ID.
@@ -86,7 +90,7 @@ and platform fee values after resolving the authenticated tenant context.
 - `bun run lint`: pass.
 - `bun run typecheck`: pass.
 - Focused account/auth/Stripe tests: pass.
-- Complete `bun test`: 194 passed, 0 failed, 781 expectations.
+- Complete `bun test`: 202 passed, 0 failed, 802 expectations.
 - `bun run build`: pass; all application routes compiled and page generation
   completed.
 - `bunx prisma validate` with a process-local placeholder URL: pass.
@@ -113,13 +117,17 @@ B4E is not deployable. The next checkpoints must address all of the following:
 5. Add durable reconciliation/outbox handling for Stripe Customer creation versus
    the local conditional attach, including orphan-customer recovery beyond
    Stripe's idempotency retention window.
-6. Verify Test Mode credentialed Customer, subscription, plan-change, connected
+6. Add a durable per-agency subscription operation and active-subscription
+   invariant. Stripe idempotency covers a retry with the same UUID, but distinct
+   operation UUIDs can still create competing Subscriptions while local webhook
+   state is absent or stale.
+7. Verify Test Mode credentialed Customer, subscription, plan-change, connected
    Checkout, and failure/retry flows. Live Mode remains untouched and unapproved.
-7. Define and test a Stripe.js-compatible Content Security Policy before public
+8. Define and test a Stripe.js-compatible Content Security Policy before public
    payment collection.
-8. Resolve or explicitly accept the inherited dependency advisories before a
+9. Resolve or explicitly accept the inherited dependency advisories before a
    production release.
-9. Stripe Tax remains disabled. Tax registrations, jurisdictions, product tax
+10. Stripe Tax remains disabled. Tax registrations, jurisdictions, product tax
    codes, prices, customer locations, and filing obligations require business and
    qualified tax review before enabling automatic tax.
 

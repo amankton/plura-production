@@ -20,6 +20,7 @@ import { resolveLegacyCrewframePlan } from '@/lib/stripe/billing-catalog'
 import { getAgencyContext } from '@/lib/auth/server-agency-context'
 import { assertAgencyOwner } from '@/lib/auth/agency-context'
 import Unauthorized from '@/components/unauthorized'
+import { billingService } from '@/features/billing/server-billing-service'
 
 type Props = {
   params: { agencyId: string }
@@ -62,13 +63,12 @@ const page = async ({ params }: Props) => {
     (card) => card.plan === currentPlan
   )
 
-  const charges = await stripe.charges.list({
-    limit: 50,
-    customer: agencySubscription?.customerId,
+  const charges = await billingService.listAgencyCharges({
+    agencyId: context.agencyId,
   })
 
   const allCharges = [
-    ...charges.data.map((charge) => ({
+    ...charges.map((charge) => ({
       description: charge.description,
       id: charge.id,
       date: `${new Date(charge.created * 1000).toLocaleTimeString()} ${new Date(

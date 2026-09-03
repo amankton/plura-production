@@ -29,6 +29,7 @@ const subscriptionSchema = ensureCustomerSchema
     plan: z.enum(['BASIC', 'UNLIMITED']),
   })
   .strict()
+const billingReadSchema = z.object({ agencyId: resourceIdSchema }).strict()
 
 export type AgencyBillingProfile = {
   address: string
@@ -51,6 +52,13 @@ export type BillingCustomer = {
   agencyId: string | null
   deleted: boolean
   email: string | null
+  id: string
+}
+
+export type BillingCharge = {
+  amount: number
+  created: number
+  description: string | null
   id: string
 }
 
@@ -80,6 +88,7 @@ export type BillingProvider = {
     plan: CrewframePlan
   }) => Promise<{ clientSecret: string }>
   getCustomer: (customerId: string) => Promise<BillingCustomer>
+  listCharges: (customerId: string) => Promise<BillingCharge[]>
   updateSubscription: (values: {
     customerId: string
     idempotencyKey: string
@@ -145,6 +154,18 @@ export const createBillingService = ({
   resolveContext,
   store,
 }: BillingServiceDependencies) => ({
+  listAgencyCharges: async (rawInput: unknown) => {
+    const input = billingReadSchema.parse(rawInput)
+    const context = await resolveContext(input.agencyId)
+    assertAgencyOwner(context)
+    const profile = await requireProfile(store, context.agencyId)
+    if (!profile.customerId) return []
+
+    const customer = await provider.getCustomer(profile.customerId)
+    validateCustomerBinding(customer, profile)
+    return provider.listCharges(profile.customerId)
+  },
+
   ensureAgencyCustomer: async (rawInput: unknown) => {
     const input = ensureCustomerSchema.parse(rawInput)
     const context = await resolveContext(input.agencyId)

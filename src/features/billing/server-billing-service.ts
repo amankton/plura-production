@@ -135,6 +135,18 @@ const billingProvider: BillingProvider = {
       id: customer.id,
     }
   },
+  listCharges: async (customerId) => {
+    const charges = await getStripeServerClient().charges.list({
+      customer: customerId,
+      limit: 50,
+    })
+    return charges.data.map(({ amount, created, description, id }) => ({
+      amount,
+      created,
+      description,
+      id,
+    }))
+  },
   updateSubscription: async ({
     customerId,
     idempotencyKey,

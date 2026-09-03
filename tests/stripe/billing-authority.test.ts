@@ -36,6 +36,7 @@ const profile = (
 const harness = (values: {
   billingProfile?: AgencyBillingProfile | null
   customerAgencyId?: string | null
+  customerDeleted?: boolean
   role?: Role
 } = {}) => {
   const calls: Array<{ method: string; values?: unknown }> = []
@@ -76,10 +77,21 @@ const harness = (values: {
           values.customerAgencyId === undefined
             ? 'agency-a'
             : values.customerAgencyId,
-        deleted: false,
+        deleted: values.customerDeleted ?? false,
         email: 'owner@example.com',
         id: customerId,
       }
+    },
+    listCharges: async (customerId) => {
+      calls.push({ method: 'listCharges', values: customerId })
+      return [
+        {
+          amount: 4900,
+          created: 1_700_000_000,
+          description: 'Crewframe Basic',
+          id: 'ch_agencya',
+        },
+      ]
     },
     updateSubscription: async (input) => {
       calls.push({ method: 'updateSubscription', values: input })
@@ -152,6 +164,59 @@ describe('agency billing authority', () => {
       method: 'attachCustomer',
       values: { agencyId: 'agency-a', customerId: 'cus_created' },
     })
+  })
+
+  test('never lists unfiltered charges when the agency has no customer', async () => {
+    const { calls, service } = harness({
+      billingProfile: profile({ customerId: '' }),
+    })
+    await expect(
+      service.listAgencyCharges({ agencyId: 'agency-a' })
+    ).resolves.toEqual([])
+    expect(calls.some(({ method }) => method === 'getCustomer')).toBe(false)
+    expect(calls.some(({ method }) => method === 'listCharges')).toBe(false)
+  })
+
+  test.each([
+    ['missing agency', { billingProfile: null }],
+    ['malformed customer', { billingProfile: profile({ customerId: 'bad' }) }],
+    ['deleted customer', { customerDeleted: true }],
+    ['unbound customer', { customerAgencyId: null }],
+    ['foreign customer', { customerAgencyId: 'agency-b' }],
+  ] as const)('makes zero charge-list calls for %s', async (_, values) => {
+    const testHarness = harness(values)
+    await expect(
+      testHarness.service.listAgencyCharges({ agencyId: 'agency-a' })
+    ).rejects.toBeInstanceOf(Error)
+    expect(
+      testHarness.calls.some(({ method }) => method === 'listCharges')
+    ).toBe(false)
+  })
+
+  test('lists charges only for an agency-bound stored customer', async () => {
+    const valid = harness()
+    await expect(
+      valid.service.listAgencyCharges({ agencyId: 'agency-a' })
+    ).resolves.toEqual([
+      {
+        amount: 4900,
+        created: 1_700_000_000,
+        description: 'Crewframe Basic',
+        id: 'ch_agencya',
+      },
+    ])
+    expect(valid.calls.at(-1)).toEqual({
+      method: 'listCharges',
+      values: 'cus_agencya',
+    })
+
+    const conflict = harness({ customerAgencyId: 'agency-b' })
+    await expect(
+      conflict.service.listAgencyCharges({ agencyId: 'agency-a' })
+    ).rejects.toMatchObject({ code: 'CONFLICT' })
+    expect(
+      conflict.calls.some(({ method }) => method === 'listCharges')
+    ).toBe(false)
   })
 
   test('rejects a mismatched profile or malformed stored provider IDs', async () => {
