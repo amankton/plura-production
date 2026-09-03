@@ -8,8 +8,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "test": "bun test",
     "typecheck": "tsc --noEmit",
-    "verify": "bun run lint && bun run typecheck && bun run build",
+    "verify": "bun run lint && bun run typecheck && bun test && bun run build",
     "postinstall": "prisma generate"
   },
   "dependencies": {
@@ -75,6 +76,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@types/bun": "1.4.0",
     "@types/node": "^20.19.43",
     "@types/react": "^18.3.31",
     "@types/react-dom": "^18.3.7",

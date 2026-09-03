@@ -1,14 +1,16 @@
 import { createUploadthing, type FileRouter } from 'uploadthing/next'
-import { auth } from '@clerk/nextjs'
+import { UploadThingError } from 'uploadthing/server'
+import { clerkIdentityProvider } from '@/lib/auth/clerk-identity'
+import { getAuthenticatedUploadMetadata } from '@/features/uploads/upload-auth'
 
 const f = createUploadthing()
 
-const authenticateUser = () => {
-  const user = auth()
-  // If you throw, the user will not be able to upload
-  if (!user) throw new Error('Unauthorized')
-  // Whatever is returned here is accessible in onUploadComplete as `metadata`
-  return user
+const authenticateUser = async () => {
+  try {
+    return await getAuthenticatedUploadMetadata(clerkIdentityProvider)
+  } catch {
+    throw new UploadThingError('Unauthorized')
+  }
 }
 
 // FileRouter for your app, can contain multiple FileRoutes

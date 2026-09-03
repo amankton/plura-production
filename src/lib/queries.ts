@@ -22,6 +22,12 @@ import {
 } from './types'
 import { z } from 'zod'
 import { revalidatePath } from 'next/cache'
+import { contactService, publicLeadService } from '@/features/contacts/server-contact-service'
+import type {
+  CreateContactInput,
+  UpdateContactInput,
+} from '@/features/contacts/contact-service'
+import type { PublicLeadInput } from '@/features/contacts/public-lead-service'
 
 export const getAuthUserDetails = async () => {
   const user = await currentUser()
@@ -715,16 +721,13 @@ export const getSubAccountTeamMembers = async (subaccountId: string) => {
   return subaccountUsersWithAccess
 }
 
-export const searchContacts = async (searchTerms: string) => {
-  const response = await db.contact.findMany({
-    where: {
-      name: {
-        contains: searchTerms,
-      },
-    },
-  })
-  return response
-}
+export const listContacts = async (subaccountId: string) =>
+  contactService.list(subaccountId)
+
+export const searchContacts = async (
+  subaccountId: string,
+  searchTerms?: string | null
+) => contactService.search(subaccountId, searchTerms)
 
 export const upsertTicket = async (
   ticket: Prisma.TicketUncheckedCreateInput,
@@ -793,16 +796,14 @@ export const deleteTag = async (tagId: string) => {
   return response
 }
 
-export const upsertContact = async (
-  contact: Prisma.ContactUncheckedCreateInput
-) => {
-  const response = await db.contact.upsert({
-    where: { id: contact.id || v4() },
-    update: contact,
-    create: contact,
-  })
-  return response
-}
+export const createContact = async (contact: CreateContactInput) =>
+  contactService.create(contact)
+
+export const updateContact = async (contact: UpdateContactInput) =>
+  contactService.update(contact)
+
+export const submitPublicLead = async (lead: PublicLeadInput) =>
+  publicLeadService.submit(lead)
 
 export const getFunnels = async (subacountId: string) => {
   const funnels = await db.funnel.findMany({

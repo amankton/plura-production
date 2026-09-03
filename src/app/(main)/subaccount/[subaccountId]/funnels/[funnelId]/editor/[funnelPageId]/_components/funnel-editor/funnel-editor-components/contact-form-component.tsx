@@ -5,8 +5,7 @@ import { toast } from '@/components/ui/use-toast'
 import { EditorBtns } from '@/lib/constants'
 import {
   getFunnel,
-  saveActivityLogsNotification,
-  upsertContact,
+  submitPublicLead,
 } from '@/lib/queries'
 
 import { ContactUserFormSchema } from '@/lib/types'
@@ -23,7 +22,7 @@ type Props = {
 }
 
 const ContactFormComponent = (props: Props) => {
-  const { dispatch, state, subaccountId, funnelId, pageDetails } = useEditor()
+  const { dispatch, state, funnelId, pageDetails } = useEditor()
   const router = useRouter()
 
   const handleDragStart = (e: React.DragEvent, type: EditorBtns) => {
@@ -71,15 +70,9 @@ const ContactFormComponent = (props: Props) => {
     if (!state.editor.liveMode) return
 
     try {
-      const response = await upsertContact({
+      await submitPublicLead({
         ...values,
-        subAccountId: subaccountId,
-      })
-      //WIP Call trigger endpoint
-      await saveActivityLogsNotification({
-        agencyId: undefined,
-        description: `A New contact signed up | ${response?.name}`,
-        subaccountId: subaccountId,
+        funnelId,
       })
       toast({
         title: 'Success',

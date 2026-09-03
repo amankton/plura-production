@@ -9,9 +9,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { db } from '@/lib/db'
-import { Contact, SubAccount, Ticket } from '@prisma/client'
+import { contactService } from '@/features/contacts/server-contact-service'
+import { isAccessError } from '@/lib/auth/access-error'
+import { Ticket } from '@prisma/client'
 import { format } from 'date-fns/format'
+import { notFound } from 'next/navigation'
 import React from 'react'
 import CraeteContactButton from './_components/create-contact-btn'
 
@@ -20,34 +22,15 @@ type Props = {
 }
 
 const ContactPage = async ({ params }: Props) => {
-  type SubAccountWithContacts = SubAccount & {
-    Contact: (Contact & { Ticket: Ticket[] })[]
+  let allContacts
+  try {
+    allContacts = await contactService.list(params.subaccountId)
+  } catch (error) {
+    if (isAccessError(error)) notFound()
+    throw error
   }
 
-  const contacts = (await db.subAccount.findUnique({
-    where: {
-      id: params.subaccountId,
-    },
-
-    include: {
-      Contact: {
-        include: {
-          Ticket: {
-            select: {
-              value: true,
-            },
-          },
-        },
-        orderBy: {
-          createdAt: 'asc',
-        },
-      },
-    },
-  })) as SubAccountWithContacts
-
-  const allContacts = contacts.Contact
-
-  const formatTotal = (tickets: Ticket[]) => {
+  const formatTotal = (tickets: Pick<Ticket, 'value'>[]) => {
     if (!tickets || !tickets.length) return '$0.00'
     const amt = new Intl.NumberFormat(undefined, {
       style: 'currency',

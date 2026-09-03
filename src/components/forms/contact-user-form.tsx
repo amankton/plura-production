@@ -23,7 +23,11 @@ import { Input } from '../ui/input'
 import { Button } from '../ui/button'
 import Loading from '../global/loading'
 import { ContactUserFormSchema } from '@/lib/types'
-import { saveActivityLogsNotification, upsertContact } from '@/lib/queries'
+import {
+  createContact,
+  saveActivityLogsNotification,
+  updateContact,
+} from '@/lib/queries'
 import { toast } from '../ui/use-toast'
 import { useRouter } from 'next/navigation'
 import { useModal } from '@/providers/modal-provider'
@@ -57,11 +61,18 @@ const ContactUserForm: React.FC<ContactUserFormProps> = ({ subaccountId }) => {
     values: z.infer<typeof ContactUserFormSchema>
   ) => {
     try {
-      const response = await upsertContact({
-        email: values.email,
-        subAccountId: subaccountId,
-        name: values.name,
-      })
+      const response = data.contact
+        ? await updateContact({
+            contactId: data.contact.id,
+            email: values.email,
+            name: values.name,
+            subaccountId,
+          })
+        : await createContact({
+            email: values.email,
+            name: values.name,
+            subaccountId,
+          })
       await saveActivityLogsNotification({
         agencyId: undefined,
         description: `Updated a contact | ${response?.name}`,

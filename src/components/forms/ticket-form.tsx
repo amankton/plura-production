@@ -102,6 +102,7 @@ const TicketForm = ({ getNewTicket, laneId, subaccountId }: Props) => {
 
       const fetchData = async () => {
         const response = await searchContacts(
+          subaccountId,
           //@ts-ignore
           defaultData.ticket?.Customer?.name
         )
@@ -109,7 +110,7 @@ const TicketForm = ({ getNewTicket, laneId, subaccountId }: Props) => {
       }
       fetchData()
     }
-  }, [defaultData, reset])
+  }, [defaultData, reset, subaccountId])
 
   const onSubmit = async (values: z.infer<typeof TicketFormSchema>) => {
     if (!laneId) return
@@ -293,6 +294,7 @@ const TicketForm = ({ getNewTicket, laneId, subaccountId }: Props) => {
                         clearTimeout(saveTimerRef.current)
                       saveTimerRef.current = setTimeout(async () => {
                         const response = await searchContacts(
+                          subaccountId,
                           //@ts-ignore
                           value.target.value
                         )
