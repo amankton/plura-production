@@ -43,7 +43,7 @@ import { Switch } from '../ui/switch'
 import {
   deleteAgency,
   saveActivityLogsNotification,
-  updateAgencyDetails,
+  updateAgencyGoal,
   upsertAgency,
 } from '@/lib/queries'
 import { provisionAgencyOwner } from '@/features/accounts/actions'
@@ -98,71 +98,42 @@ const AgencyDetails = ({ data }: Props) => {
 
   const handleSubmit = async (values: z.infer<typeof FormSchema>) => {
     try {
-      let newUserData
-      let custId
-      if (!data?.id) {
-        const bodyData = {
-          email: values.companyEmail,
-          name: values.name,
-          shipping: {
-            address: {
-              city: values.city,
-              country: values.country,
-              line1: values.address,
-              postal_code: values.zipCode,
-              state: values.zipCode,
-            },
-            name: values.name,
-          },
-          address: {
-            city: values.city,
-            country: values.country,
-            line1: values.address,
-            postal_code: values.zipCode,
-            state: values.zipCode,
-          },
-        }
-
-        const customerResponse = await fetch('/api/stripe/create-customer', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(bodyData),
-        })
-        const customerData: { customerId: string } =
-          await customerResponse.json()
-        custId = customerData.customerId
-      }
-
-      newUserData = await provisionAgencyOwner()
-      if (!data?.customerId && !custId) return
-
+      await provisionAgencyOwner()
+      const agencyId = data?.id ?? v4()
       const response = await upsertAgency({
-        id: data?.id ? data.id : v4(),
-        customerId: data?.customerId || custId || '',
         address: values.address,
         agencyLogo: values.agencyLogo,
         city: values.city,
         companyPhone: values.companyPhone,
         country: values.country,
+        id: agencyId,
         name: values.name,
         state: values.state,
         whiteLabel: values.whiteLabel,
         zipCode: values.zipCode,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        companyEmail: values.companyEmail,
-        connectAccountId: '',
-        goal: 5,
       })
-      toast({
-        title: 'Created Agency',
+      if (!response) throw new Error('Agency could not be saved')
+
+      const customerResponse = await fetch('/api/stripe/create-customer', {
+        body: JSON.stringify({
+          agencyId: response.id,
+          operationId: crypto.randomUUID(),
+        }),
+        headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
       })
-      if (data?.id) return router.refresh()
-      if (response) {
-        return router.refresh()
+      if (!customerResponse.ok) {
+        toast({
+          description:
+            'Your agency was saved. Billing setup can be retried from settings.',
+          title: 'Billing setup needs attention',
+          variant: 'destructive',
+        })
       }
+      toast({
+        title: data?.id ? 'Updated Agency' : 'Created Agency',
+      })
+      return router.refresh()
     } catch (error) {
       console.log(error)
       toast({
@@ -408,7 +379,7 @@ const AgencyDetails = ({ data }: Props) => {
                     defaultValue={data?.goal}
                     onValueChange={async (val) => {
                       if (!data?.id) return
-                      await updateAgencyDetails(data.id, { goal: val })
+                      await updateAgencyGoal({ agencyId: data.id, goal: val })
                       await saveActivityLogsNotification({
                         agencyId: data.id,
                         description: `Updated the agency goal to | ${val} Sub Account`,

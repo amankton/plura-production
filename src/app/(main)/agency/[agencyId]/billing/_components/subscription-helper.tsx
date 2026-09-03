@@ -11,11 +11,11 @@ import React, { useEffect } from 'react'
 
 type Props = {
   prices: CrewframePriceOption[]
-  customerId: string
+  agencyId: string
   planExists: boolean
 }
 
-const SubscriptionHelper = ({ customerId, planExists, prices }: Props) => {
+const SubscriptionHelper = ({ agencyId, planExists, prices }: Props) => {
   const { setOpen } = useModal()
   const searchParams = useSearchParams()
   const plan = searchParams.get('plan')
@@ -29,7 +29,7 @@ const SubscriptionHelper = ({ customerId, planExists, prices }: Props) => {
         >
           <SubscriptionFormWrapper
             planExists={planExists}
-            customerId={customerId}
+            agencyId={agencyId}
           />
         </CustomModal>,
         async () => ({
@@ -39,7 +39,7 @@ const SubscriptionHelper = ({ customerId, planExists, prices }: Props) => {
           },
         })
       )
-  }, [customerId, plan, planExists, prices, setOpen])
+  }, [agencyId, plan, planExists, prices, setOpen])
 
   return <div>SubscriptionHelper</div>
 }

@@ -17,12 +17,21 @@ import SubscriptionHelper from './_components/subscription-helper'
 import { getExpandedPrice } from '@/lib/stripe/stripe-normalizers'
 import { getCrewframePriceOptions } from '@/lib/stripe/billing-catalog-server'
 import { resolveLegacyCrewframePlan } from '@/lib/stripe/billing-catalog'
+import { getAgencyContext } from '@/lib/auth/server-agency-context'
+import { assertAgencyOwner } from '@/lib/auth/agency-context'
+import Unauthorized from '@/components/unauthorized'
 
 type Props = {
   params: { agencyId: string }
 }
 
 const page = async ({ params }: Props) => {
+  const context = await getAgencyContext(params.agencyId)
+  try {
+    assertAgencyOwner(context)
+  } catch {
+    return <Unauthorized />
+  }
   const stripe = getStripeServerClient()
   //CHALLENGE : Create the add on  products
   const addOns = addOnProducts.length
@@ -36,7 +45,7 @@ const page = async ({ params }: Props) => {
 
   const agencySubscription = await db.agency.findUnique({
     where: {
-      id: params.agencyId,
+      id: context.agencyId,
     },
     select: {
       customerId: true,
@@ -74,7 +83,7 @@ const page = async ({ params }: Props) => {
     <>
       <SubscriptionHelper
         prices={prices}
-        customerId={agencySubscription?.customerId || ''}
+        agencyId={context.agencyId}
         planExists={agencySubscription?.Subscription?.active === true}
       />
       <h1 className="text-4xl p-4">Billing</h1>
@@ -84,7 +93,7 @@ const page = async ({ params }: Props) => {
         <PricingCard
           planExists={agencySubscription?.Subscription?.active === true}
           prices={prices}
-          customerId={agencySubscription?.customerId || ''}
+          agencyId={context.agencyId}
           amt={
             agencySubscription?.Subscription?.active === true
               ? currentPlanDetails?.price || '$0'
@@ -124,7 +133,7 @@ const page = async ({ params }: Props) => {
             <PricingCard
               planExists={agencySubscription?.Subscription?.active === true}
               prices={prices}
-              customerId={agencySubscription?.customerId || ''}
+              agencyId={context.agencyId}
               key={addOn.id}
               amt={
                 defaultPrice?.unit_amount

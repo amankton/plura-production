@@ -27,7 +27,7 @@ type Props = {
   duration: string
   highlightTitle: string
   highlightDescription: string
-  customerId: string
+  agencyId: string
   prices: CrewframePriceOption[]
   planExists: boolean
 }
@@ -35,7 +35,7 @@ type Props = {
 const PricingCard = ({
   amt,
   buttonCta,
-  customerId,
+  agencyId,
   description,
   duration,
   features,
@@ -56,7 +56,7 @@ const PricingCard = ({
         subheading="You can change your plan at any time from the billings settings"
       >
         <SubscriptionFormWrapper
-          customerId={customerId}
+          agencyId={agencyId}
           planExists={planExists}
         />
       </CustomModal>,

@@ -11,7 +11,7 @@ export const getStripeServerClient = () => {
   stripeClient ??= new Stripe(apiKey, {
     apiVersion: '2026-08-26.dahlia',
     appInfo: {
-      name: 'Plura App',
+      name: 'Crewframe',
       version: '0.1.0',
     },
   })

@@ -3,7 +3,7 @@ import Loading from '@/components/global/loading'
 import { Badge } from '@/components/ui/badge'
 import { toast } from '@/components/ui/use-toast'
 import { EditorBtns } from '@/lib/constants'
-import { getFunnel, getSubaccountDetails } from '@/lib/queries'
+import { getFunnel } from '@/lib/queries'
 import { getStripe } from '@/lib/stripe/stripe-client'
 import { EditorElement, useEditor } from '@/providers/editor/editor-provider'
 import {
@@ -13,54 +13,31 @@ import {
 import clsx from 'clsx'
 import { Trash } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 
 type Props = {
   element: EditorElement
 }
 
 const Checkout = (props: Props) => {
-  const { dispatch, state, subaccountId, funnelId, pageDetails } = useEditor()
+  const { dispatch, state, funnelId, pageDetails } = useEditor()
   const router = useRouter()
   const [clientSecret, setClientSecret] = useState('')
-  const [livePrices, setLivePrices] = useState([])
   const [subAccountConnectAccId, setSubAccountConnectAccId] = useState('')
+  const operationId = useRef(crypto.randomUUID())
   const options = useMemo(() => ({ clientSecret }), [clientSecret])
   const styles = props.element.styles
 
   useEffect(() => {
-    if (!subaccountId) return
-    const fetchData = async () => {
-      const subaccountDetails = await getSubaccountDetails(subaccountId)
-      if (subaccountDetails) {
-        if (!subaccountDetails.connectAccountId) return
-        setSubAccountConnectAccId(subaccountDetails.connectAccountId)
-      }
-    }
-    fetchData()
-  }, [subaccountId])
-
-  useEffect(() => {
-    if (funnelId) {
-      const fetchData = async () => {
-        const funnelData = await getFunnel(funnelId)
-        setLivePrices(JSON.parse(funnelData?.liveProducts || '[]'))
-      }
-      fetchData()
-    }
-  }, [funnelId])
-
-  useEffect(() => {
-    if (livePrices.length && subaccountId && subAccountConnectAccId) {
+    if (funnelId && state.editor.liveMode) {
       const getClientSercet = async () => {
         try {
           const body = JSON.stringify({
-            subAccountConnectAccId,
-            prices: livePrices,
-            subaccountId,
+            funnelId,
+            operationId: operationId.current,
           })
           const response = await fetch(
-            `${process.env.NEXT_PUBLIC_URL}api/stripe/create-checkout-session`,
+            '/api/stripe/create-checkout-session',
             {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -68,13 +45,13 @@ const Checkout = (props: Props) => {
             }
           )
           const responseJson = await response.json()
-          console.log(responseJson)
-          if (!responseJson) throw new Error('somethign went wrong')
+          if (!response.ok) throw new Error('Checkout is temporarily unavailable')
           if (responseJson.error) {
-            throw new Error(responseJson.error)
+            throw new Error('Checkout is temporarily unavailable')
           }
-          if (responseJson.clientSecret) {
+          if (responseJson.clientSecret && responseJson.connectedAccountId) {
             setClientSecret(responseJson.clientSecret)
+            setSubAccountConnectAccId(responseJson.connectedAccountId)
           }
         } catch (error) {
           toast({
@@ -82,14 +59,16 @@ const Checkout = (props: Props) => {
             className: 'z-[100000]',
             variant: 'destructive',
             title: 'Oppse!',
-            //@ts-ignore
-            description: error.message,
+            description:
+              error instanceof Error
+                ? error.message
+                : 'Checkout is temporarily unavailable',
           })
         }
       }
       getClientSercet()
     }
-  }, [livePrices, subaccountId, subAccountConnectAccId])
+  }, [funnelId, state.editor.liveMode])
 
   const handleDragStart = (e: React.DragEvent, type: EditorBtns) => {
     if (type === null) return
@@ -166,9 +145,14 @@ const Checkout = (props: Props) => {
             </div>
           )}
 
-          {!options.clientSecret && (
+          {!options.clientSecret && state.editor.liveMode && (
             <div className="flex items-center justify-center w-full h-40">
               <Loading />
+            </div>
+          )}
+          {!state.editor.liveMode && (
+            <div className="flex items-center justify-center w-full h-40 text-muted-foreground">
+              Checkout starts only in live preview.
             </div>
           )}
         </div>

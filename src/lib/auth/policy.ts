@@ -7,6 +7,11 @@ export type TenantAction =
   | 'contact:search'
   | 'contact:create'
   | 'contact:update'
+  | 'commerce:catalog'
+  | 'commerce:checkout'
+  | 'commerce:configure'
+  | 'commerce:metrics'
+  | 'subaccount:manage'
 
 const roleActions: Readonly<Record<Role, readonly TenantAction[]>> = {
   [Role.AGENCY_OWNER]: [
@@ -14,18 +19,32 @@ const roleActions: Readonly<Record<Role, readonly TenantAction[]>> = {
     'contact:search',
     'contact:create',
     'contact:update',
+    'commerce:catalog',
+    'commerce:checkout',
+    'commerce:configure',
+    'commerce:metrics',
+    'subaccount:manage',
   ],
   [Role.AGENCY_ADMIN]: [
     'contact:list',
     'contact:search',
     'contact:create',
     'contact:update',
+    'commerce:catalog',
+    'commerce:checkout',
+    'commerce:configure',
+    'commerce:metrics',
+    'subaccount:manage',
   ],
   [Role.SUBACCOUNT_USER]: [
     'contact:list',
     'contact:search',
     'contact:create',
     'contact:update',
+    'commerce:catalog',
+    'commerce:checkout',
+    'commerce:configure',
+    'commerce:metrics',
   ],
   [Role.SUBACCOUNT_GUEST]: ['contact:list', 'contact:search'],
 }

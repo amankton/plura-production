@@ -18,7 +18,9 @@ describe('Stripe 22 server SDK upgrade surface', () => {
     const clientSource = await Bun.file('src/lib/stripe/index.ts').text()
     const serverSources = await Promise.all(
       [
-        'src/lib/stripe/stripe-actions.ts',
+        'src/lib/stripe/subscription-sync.ts',
+        'src/features/billing/server-billing-service.ts',
+        'src/features/commerce/server-commerce-service.ts',
         'src/app/api/stripe/create-checkout-session/route.ts',
         'src/app/api/stripe/create-subscription/route.ts',
         'src/app/api/stripe/webhook/route.ts',

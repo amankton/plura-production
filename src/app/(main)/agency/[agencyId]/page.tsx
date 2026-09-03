@@ -11,6 +11,8 @@ import { Progress } from '@/components/ui/progress'
 import { Separator } from '@/components/ui/separator'
 import { db } from '@/lib/db'
 import { getStripeServerClient } from '@/lib/stripe'
+import { getAgencyContext } from '@/lib/auth/server-agency-context'
+import { assertAgencyOperator } from '@/lib/auth/agency-context'
 import { AreaChart } from '@tremor/react'
 import {
   ClipboardIcon,
@@ -28,6 +30,8 @@ const Page = async ({
   params: { agencyId: string }
   searchParams: { code: string }
 }) => {
+  const context = await getAgencyContext(params.agencyId)
+  assertAgencyOperator(context)
   let currency = 'USD'
   let sessions
   let totalClosedSessions
@@ -41,7 +45,7 @@ const Page = async ({
 
   const agencyDetails = await db.agency.findUnique({
     where: {
-      id: params.agencyId,
+      id: context.agencyId,
     },
   })
 
@@ -49,7 +53,7 @@ const Page = async ({
 
   const subaccounts = await db.subAccount.findMany({
     where: {
-      agencyId: params.agencyId,
+      agencyId: context.agencyId,
     },
   })
 

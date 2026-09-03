@@ -22,6 +22,9 @@ import {
 } from '@/components/ui/table'
 import { db } from '@/lib/db'
 import { getStripeServerClient } from '@/lib/stripe'
+import { getTenantContext } from '@/lib/auth/server-tenant-context'
+import { assertTenantAction } from '@/lib/auth/policy'
+import Unauthorized from '@/components/unauthorized'
 import { AreaChart, BadgeDelta } from '@tremor/react'
 import { ClipboardIcon, Contact2, DollarSign, ShoppingCart } from 'lucide-react'
 import Link from 'next/link'
@@ -34,7 +37,13 @@ type Props = {
   }
 }
 
-const SubaccountPageId = async ({ params, searchParams }: Props) => {
+const SubaccountPageId = async ({ params }: Props) => {
+  const context = await getTenantContext(params.subaccountId)
+  try {
+    assertTenantAction(context, 'commerce:metrics')
+  } catch {
+    return <Unauthorized />
+  }
   let currency = 'USD'
   let sessions
   let totalClosedSessions
@@ -45,7 +54,7 @@ const SubaccountPageId = async ({ params, searchParams }: Props) => {
 
   const subaccountDetails = await db.subAccount.findUnique({
     where: {
-      id: params.subaccountId,
+      id: context.subaccountId,
     },
   })
 
@@ -107,7 +116,7 @@ const SubaccountPageId = async ({ params, searchParams }: Props) => {
 
   const funnels = await db.funnel.findMany({
     where: {
-      subAccountId: params.subaccountId,
+      subAccountId: context.subaccountId,
     },
     include: {
       FunnelPages: true,

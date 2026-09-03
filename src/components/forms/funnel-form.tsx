@@ -67,11 +67,11 @@ const FunnelForm: React.FC<CreateFunnelProps> = ({
 
   const onSubmit = async (values: z.infer<typeof CreateFunnelFormSchema>) => {
     if (!subAccountId) return
-    const response = await upsertFunnel(
-      subAccountId,
-      { ...values, liveProducts: defaultData?.liveProducts || '[]' },
-      defaultData?.id || v4()
-    )
+    const response = await upsertFunnel({
+      funnel: values,
+      funnelId: defaultData?.id || v4(),
+      subaccountId: subAccountId,
+    })
     await saveActivityLogsNotification({
       agencyId: undefined,
       description: `Update funnel | ${response.name}`,

@@ -8,7 +8,7 @@ import React from 'react'
 const Page = async ({
   searchParams,
 }: {
-  searchParams: { plan: string; state: string; code: string }
+  searchParams: { plan: string }
 }) => {
   const agencyId = await verifyAndAcceptInvitation()
   console.log(agencyId)
@@ -22,14 +22,7 @@ const Page = async ({
       if (searchParams.plan) {
         return redirect(`/agency/${agencyId}/billing?plan=${searchParams.plan}`)
       }
-      if (searchParams.state) {
-        const statePath = searchParams.state.split('___')[0]
-        const stateAgencyId = searchParams.state.split('___')[1]
-        if (!stateAgencyId) return <div>Not authorized</div>
-        return redirect(
-          `/agency/${stateAgencyId}/${statePath}?code=${searchParams.code}`
-        )
-      } else return redirect(`/agency/${agencyId}`)
+      return redirect(`/agency/${agencyId}`)
     } else {
       return <div>Not authorized</div>
     }

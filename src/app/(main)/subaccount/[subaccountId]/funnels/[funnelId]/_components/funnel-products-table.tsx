@@ -12,8 +12,8 @@ import type Stripe from 'stripe'
 import Image from 'next/image'
 import {
   saveActivityLogsNotification,
-  updateFunnelProducts,
 } from '@/lib/queries'
+import { configureFunnelProducts } from '@/features/commerce/actions'
 import { Funnel } from '@prisma/client'
 import { useRouter } from 'next/navigation'
 import { Input } from '@/components/ui/input'
@@ -37,14 +37,14 @@ const FunnelProductsTable: React.FC<FunnelProductsTableProps> = ({
 
   const handleSaveProducts = async () => {
     setIsLoading(true)
-    const response = await updateFunnelProducts(
-      JSON.stringify(liveProducts),
-      defaultData.id
-    )
+    const response = await configureFunnelProducts({
+      funnelId: defaultData.id,
+      selections: liveProducts,
+    })
     await saveActivityLogsNotification({
       agencyId: undefined,
-      description: `Update funnel products | ${response.name}`,
-      subaccountId: defaultData.subAccountId,
+      description: `Update funnel products | ${defaultData.name}`,
+      subaccountId: response.subaccountId,
     })
     setIsLoading(false)
     router.refresh()

@@ -23,14 +23,15 @@ describe('Crewframe Stripe catalog surface', () => {
   })
 
   test('accepts logical plans and resolves the provider price on the server', async () => {
-    const [route, catalogServer] = await Promise.all([
+    const [route, billingServer, catalogServer] = await Promise.all([
       Bun.file('src/app/api/stripe/create-subscription/route.ts').text(),
+      Bun.file('src/features/billing/server-billing-service.ts').text(),
       Bun.file('src/lib/stripe/billing-catalog-server.ts').text(),
     ])
 
-    expect(route).toContain('const { customerId, plan }')
-    expect(route).not.toContain('const { customerId, priceId }')
-    expect(route).toContain('getCrewframePriceForPlan(plan)')
+    expect(route).toContain('createOrChangeSubscription')
+    expect(route).not.toContain('customerId')
+    expect(billingServer).toContain('getCrewframePriceForPlan(plan)')
     expect(catalogServer).toContain('lookup_keys: crewframePriceLookupKeys')
     expect(catalogServer).toContain("expand: ['data.product']")
     expect(catalogServer).toContain('productIds.has(product.id)')
@@ -43,7 +44,7 @@ describe('Crewframe Stripe catalog surface', () => {
       Bun.file(
         'docs/execution/sql/CF-P1-B4D-logical-subscription-plan-expand.sql'
       ).text(),
-      Bun.file('src/lib/stripe/stripe-actions.ts').text(),
+      Bun.file('src/lib/stripe/subscription-sync.ts').text(),
     ])
 
     expect(schema).toContain('enum LegacyPlan')

@@ -1,26 +1,32 @@
-import { getStripeServerClient } from '@/lib/stripe'
-import { StripeCustomerType } from '@/lib/types'
+import { billingService } from '@/features/billing/server-billing-service'
+import {
+  getRequestCorrelationId,
+  readTrustedJsonRequest,
+  safeHttpError,
+} from '@/lib/http/request-integrity'
 import { NextResponse } from 'next/server'
 
 export async function POST(req: Request) {
-  const { address, email, name, shipping }: StripeCustomerType =
-    await req.json()
-
-  if (!email || !address || !name || !shipping)
-    return new NextResponse('Missing data', {
-      status: 400,
-    })
+  const correlationId = getRequestCorrelationId(req)
   try {
-    const stripe = getStripeServerClient()
-    const customer = await stripe.customers.create({
-      email,
-      name,
-      address,
-      shipping,
+    const result = await billingService.ensureAgencyCustomer(
+      await readTrustedJsonRequest(req)
+    )
+    return NextResponse.json(result, {
+      headers: { 'x-correlation-id': correlationId },
     })
-    return Response.json({ customerId: customer.id })
   } catch (error) {
-    console.log('🔴 Error', error)
-    return new NextResponse('Internal Server Error', { status: 500 })
+    const response = safeHttpError(error)
+    console.error('Stripe customer request failed', {
+      correlationId,
+      status: response.status,
+    })
+    return NextResponse.json(
+      { error: response.message },
+      {
+        headers: { 'x-correlation-id': correlationId },
+        status: response.status,
+      }
+    )
   }
 }

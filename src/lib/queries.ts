@@ -3,10 +3,8 @@
 import { currentUser } from '@clerk/nextjs/server'
 import { db } from './db'
 import {
-  Agency,
   Lane,
   Prisma,
-  SubAccount,
   Tag,
   Ticket,
 } from '@prisma/client'
@@ -25,6 +23,21 @@ import type {
 } from '@/features/contacts/contact-service'
 import type { PublicLeadInput } from '@/features/contacts/public-lead-service'
 import { AccessError } from '@/lib/auth/access-error'
+import {
+  agencyProfileInputSchema,
+  type AgencyProfileInput,
+} from '@/features/accounts/agency-profile'
+import {
+  subaccountProfileInputSchema,
+  type SubaccountProfileInput,
+} from '@/features/accounts/subaccount-profile'
+import { getAgencyContext } from '@/lib/auth/server-agency-context'
+import {
+  assertAgencyOperator,
+  assertAgencyOwner,
+} from '@/lib/auth/agency-context'
+import { getTenantContext } from '@/lib/auth/server-tenant-context'
+import { assertTenantAction } from '@/lib/auth/policy'
 
 export const getAuthUserDetails = async () => {
   const user = await currentUser()
@@ -139,55 +152,81 @@ export const saveActivityLogsNotification = async ({
   }
 }
 
-export const updateAgencyDetails = async (
-  agencyId: string,
-  agencyDetails: Partial<Agency>
-) => {
-  const response = await db.agency.update({
-    where: { id: agencyId },
-    data: { ...agencyDetails },
+const agencyGoalInputSchema = z
+  .object({
+    agencyId: z.string().uuid(),
+    goal: z.number().int().min(1).max(1_000_000),
   })
-  return response
+  .strict()
+
+export const updateAgencyGoal = async (rawInput: unknown) => {
+  const input = agencyGoalInputSchema.parse(rawInput)
+  const context = await getAgencyContext(input.agencyId)
+  assertAgencyOwner(context)
+  return db.agency.update({
+    where: { id: context.agencyId },
+    data: { goal: input.goal },
+  })
 }
 
-export const deleteAgency = async (agencyId: string) => {
-  const response = await db.agency.delete({ where: { id: agencyId } })
-  return response
+export const deleteAgency = async (rawAgencyId: unknown) => {
+  const agencyId = z.string().uuid().parse(rawAgencyId)
+  const context = await getAgencyContext(agencyId)
+  assertAgencyOwner(context)
+  return db.agency.delete({ where: { id: context.agencyId } })
 }
 
-export const upsertAgency = async (agency: Agency) => {
-  if (!agency.companyEmail) return null
+export const upsertAgency = async (rawAgency: AgencyProfileInput) => {
+  const agency = agencyProfileInputSchema.parse(rawAgency)
   const providerUser = await currentUser()
   if (!providerUser) throw new AccessError('UNAUTHENTICATED')
-  const actor = await db.user.findUnique({
-    where: { id: providerUser.id },
-    select: { agencyId: true, id: true, role: true },
-  })
-  if (!actor) throw new AccessError('PROVISIONING_REQUIRED')
-  if (actor.role !== 'AGENCY_OWNER') throw new AccessError('FORBIDDEN')
+  return db.$transaction(async (transaction) => {
+    const actor = await transaction.user.findUnique({
+      where: { id: providerUser.id },
+      select: { agencyId: true, email: true, id: true, role: true },
+    })
+    if (!actor) throw new AccessError('PROVISIONING_REQUIRED')
+    if (actor.role !== 'AGENCY_OWNER') throw new AccessError('FORBIDDEN')
 
-  const existingAgency = await db.agency.findUnique({
-    where: { id: agency.id },
-    select: { id: true },
-  })
-  if (
-    (existingAgency && actor.agencyId !== agency.id) ||
-    (!existingAgency && actor.agencyId)
-  ) {
-    throw new AccessError('FORBIDDEN')
-  }
-
-  try {
-    const agencyDetails = await db.agency.upsert({
-      where: {
-        id: agency.id,
-      },
-      update: agency,
-      create: {
-        users: {
-          connect: { id: actor.id },
+    const existingAgency = await transaction.agency.findUnique({
+      where: { id: agency.id },
+      select: { id: true },
+    })
+    if (existingAgency) {
+      if (actor.agencyId !== agency.id) throw new AccessError('FORBIDDEN')
+      return transaction.agency.update({
+        where: { id: agency.id },
+        data: {
+          address: agency.address,
+          agencyLogo: agency.agencyLogo,
+          city: agency.city,
+          companyEmail: actor.email,
+          companyPhone: agency.companyPhone,
+          country: agency.country,
+          name: agency.name,
+          state: agency.state,
+          whiteLabel: agency.whiteLabel,
+          zipCode: agency.zipCode,
         },
-        ...agency,
+      })
+    }
+    if (actor.agencyId) throw new AccessError('FORBIDDEN')
+
+    const created = await transaction.agency.create({
+      data: {
+        address: agency.address,
+        agencyLogo: agency.agencyLogo,
+        city: agency.city,
+        companyEmail: actor.email,
+        companyPhone: agency.companyPhone,
+        connectAccountId: '',
+        country: agency.country,
+        customerId: '',
+        id: agency.id,
+        name: agency.name,
+        state: agency.state,
+        whiteLabel: agency.whiteLabel,
+        zipCode: agency.zipCode,
         SidebarOption: {
           create: [
             {
@@ -224,10 +263,17 @@ export const upsertAgency = async (agency: Agency) => {
         },
       },
     })
-    return agencyDetails
-  } catch (error) {
-    console.log(error)
-  }
+    const claim = await transaction.user.updateMany({
+      where: {
+        agencyId: null,
+        id: actor.id,
+        role: 'AGENCY_OWNER',
+      },
+      data: { agencyId: created.id },
+    })
+    if (claim.count !== 1) throw new AccessError('CONFLICT')
+    return created
+  })
 }
 
 export const getNotificationAndUser = async (agencyId: string) => {
@@ -245,31 +291,55 @@ export const getNotificationAndUser = async (agencyId: string) => {
   }
 }
 
-export const upsertSubAccount = async (subAccount: SubAccount) => {
-  if (!subAccount.companyEmail) return null
+export const upsertSubAccount = async (rawInput: SubaccountProfileInput) => {
+  const subAccount = subaccountProfileInputSchema.parse(rawInput)
+  const context = await getAgencyContext(subAccount.agencyId)
+  assertAgencyOperator(context)
+  const existing = await db.subAccount.findUnique({
+    where: { id: subAccount.id },
+    select: { agencyId: true, id: true },
+  })
+  if (existing && existing.agencyId !== context.agencyId) {
+    throw new AccessError('FORBIDDEN')
+  }
+
+  const profile = {
+    address: subAccount.address,
+    city: subAccount.city,
+    companyEmail: subAccount.companyEmail,
+    companyPhone: subAccount.companyPhone,
+    country: subAccount.country,
+    name: subAccount.name,
+    state: subAccount.state,
+    subAccountLogo: subAccount.subAccountLogo,
+    zipCode: subAccount.zipCode,
+  }
+  if (existing) {
+    return db.subAccount.update({
+      where: { id: existing.id, agencyId: context.agencyId },
+      data: profile,
+    })
+  }
+
   const agencyOwner = await db.user.findFirst({
     where: {
-      Agency: {
-        id: subAccount.agencyId,
-      },
+      agencyId: context.agencyId,
       role: 'AGENCY_OWNER',
     },
   })
-  if (!agencyOwner) return console.log('🔴Erorr could not create subaccount')
+  if (!agencyOwner) throw new AccessError('CONFLICT')
   const permissionId = v4()
-  const response = await db.subAccount.upsert({
-    where: { id: subAccount.id },
-    update: subAccount,
-    create: {
-      ...subAccount,
+  return db.subAccount.create({
+    data: {
+      ...profile,
+      agencyId: context.agencyId,
+      connectAccountId: '',
+      goal: 5000,
+      id: subAccount.id,
       Permissions: {
         create: {
           access: true,
           email: agencyOwner.email,
-          id: permissionId,
-        },
-        connect: {
-          subAccountId: subAccount.id,
           id: permissionId,
         },
       },
@@ -322,25 +392,20 @@ export const upsertSubAccount = async (subAccount: SubAccount) => {
       },
     },
   })
-  return response
 }
 
-export const getSubaccountDetails = async (subaccountId: string) => {
-  const response = await db.subAccount.findUnique({
-    where: {
-      id: subaccountId,
+export const deleteSubAccount = async (rawSubaccountId: unknown) => {
+  const subaccountId = z.string().uuid().parse(rawSubaccountId)
+  const context = await getTenantContext(subaccountId)
+  assertTenantAction(context, 'subaccount:manage')
+  return db.subAccount.delete({
+    where: { id: context.subaccountId },
+    select: {
+      agencyId: true,
+      id: true,
+      name: true,
     },
   })
-  return response
-}
-
-export const deleteSubAccount = async (subaccountId: string) => {
-  const response = await db.subAccount.delete({
-    where: {
-      id: subaccountId,
-    },
-  })
-  return response
 }
 
 export const getMedia = async (subaccountId: string) => {
@@ -409,21 +474,39 @@ export const getLanesWithTicketAndTags = async (pipelineId: string) => {
 }
 
 export const upsertFunnel = async (
-  subaccountId: string,
-  funnel: z.infer<typeof CreateFunnelFormSchema> & { liveProducts: string },
-  funnelId: string
+  rawInput: unknown
 ) => {
-  const response = await db.funnel.upsert({
-    where: { id: funnelId },
-    update: funnel,
-    create: {
-      ...funnel,
-      id: funnelId || v4(),
-      subAccountId: subaccountId,
+  const input = z
+    .object({
+      funnel: CreateFunnelFormSchema.strict(),
+      funnelId: z.string().uuid(),
+      subaccountId: z.string().uuid(),
+    })
+    .strict()
+    .parse(rawInput)
+  const context = await getTenantContext(input.subaccountId)
+  assertTenantAction(context, 'commerce:configure')
+  const existing = await db.funnel.findUnique({
+    where: { id: input.funnelId },
+    select: { id: true, subAccountId: true },
+  })
+  if (existing && existing.subAccountId !== context.subaccountId) {
+    throw new AccessError('FORBIDDEN')
+  }
+  if (existing) {
+    return db.funnel.update({
+      where: { id: existing.id, subAccountId: context.subaccountId },
+      data: input.funnel,
+    })
+  }
+  return db.funnel.create({
+    data: {
+      ...input.funnel,
+      id: input.funnelId,
+      liveProducts: '[]',
+      subAccountId: context.subaccountId,
     },
   })
-
-  return response
 }
 
 export const upsertPipeline = async (
@@ -668,17 +751,6 @@ export const getFunnel = async (funnelId: string) => {
   })
 
   return funnel
-}
-
-export const updateFunnelProducts = async (
-  products: string,
-  funnelId: string
-) => {
-  const data = await db.funnel.update({
-    where: { id: funnelId },
-    data: { liveProducts: products },
-  })
-  return data
 }
 
 export const upsertFunnelPage = async (

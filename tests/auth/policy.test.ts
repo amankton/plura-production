@@ -37,5 +37,46 @@ describe('contact action policy', () => {
     expect(() => assertTenantAction(context, 'contact:update')).toThrow(
       AccessError
     )
+    expect(() => assertTenantAction(context, 'commerce:catalog')).toThrow(
+      AccessError
+    )
+    expect(() => assertTenantAction(context, 'commerce:checkout')).toThrow(
+      AccessError
+    )
+    expect(() => assertTenantAction(context, 'commerce:configure')).toThrow(
+      AccessError
+    )
+    expect(() => assertTenantAction(context, 'commerce:metrics')).toThrow(
+      AccessError
+    )
   })
+
+  test.each([Role.AGENCY_OWNER, Role.AGENCY_ADMIN, Role.SUBACCOUNT_USER])(
+    '%s can use authenticated connected commerce',
+    (role) => {
+      const context = contextFor(role)
+      expect(canPerformTenantAction(context, 'commerce:catalog')).toBe(true)
+      expect(canPerformTenantAction(context, 'commerce:checkout')).toBe(true)
+      expect(canPerformTenantAction(context, 'commerce:configure')).toBe(true)
+      expect(canPerformTenantAction(context, 'commerce:metrics')).toBe(true)
+    }
+  )
+
+  test.each([Role.AGENCY_OWNER, Role.AGENCY_ADMIN])(
+    '%s can manage subaccounts',
+    (role) => {
+      expect(canPerformTenantAction(contextFor(role), 'subaccount:manage')).toBe(
+        true
+      )
+    }
+  )
+
+  test.each([Role.SUBACCOUNT_USER, Role.SUBACCOUNT_GUEST])(
+    '%s cannot manage subaccounts',
+    (role) => {
+      expect(canPerformTenantAction(contextFor(role), 'subaccount:manage')).toBe(
+        false
+      )
+    }
+  )
 })

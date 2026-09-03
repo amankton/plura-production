@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import type Stripe from 'stripe'
 import { getStripeServerClient } from '@/lib/stripe'
-import { subscriptionCreated } from '@/lib/stripe/stripe-actions'
+import { synchronizeSubscription } from '@/lib/stripe/subscription-sync'
 import { selectSubscriptionLifecycleEvent } from '@/lib/stripe/stripe-normalizers'
 
 export async function POST(req: NextRequest) {
@@ -13,17 +13,18 @@ export async function POST(req: NextRequest) {
     process.env.STRIPE_WEBHOOK_SECRET_LIVE ?? process.env.STRIPE_WEBHOOK_SECRET
   try {
     if (!sig || !webhookSecret) {
-      console.log(
-        '🔴 Error Stripe webhook secret or the signature does not exist.'
+      return new NextResponse(
+        'Webhook signature verification is unavailable',
+        { status: 400 }
       )
-      return
     }
     const stripe = getStripeServerClient()
     stripeEvent = stripe.webhooks.constructEvent(body, sig, webhookSecret)
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Invalid webhook'
-    console.log(`🔴 Error ${message}`)
-    return new NextResponse(`Webhook Error: ${message}`, { status: 400 })
+    console.error('Stripe webhook signature verification failed')
+    return new NextResponse('Webhook signature verification failed', {
+      status: 400,
+    })
   }
 
   //
@@ -35,18 +36,15 @@ export async function POST(req: NextRequest) {
         !subscription.metadata.connectAccountPayments &&
         !subscription.metadata.connectAccountSubscriptions
       ) {
-        await subscriptionCreated(subscription)
-        console.log('SYNCHRONIZED FROM WEBHOOK 💳', subscription.id)
+        await synchronizeSubscription(subscription)
+        console.log('Stripe subscription synchronized', subscription.id)
       } else {
-        console.log(
-          'SKIPPED FROM WEBHOOK 💳 because subscription was from a connected account not for the application',
-          subscription
-        )
+        console.log('Connected-account subscription event skipped')
       }
     }
-  } catch (error) {
-    console.log(error)
-    return new NextResponse('🔴 Webhook Error', { status: 400 })
+  } catch {
+    console.error('Stripe webhook processing failed')
+    return new NextResponse('Webhook processing failed', { status: 500 })
   }
   return NextResponse.json(
     {
