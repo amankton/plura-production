@@ -39,7 +39,7 @@ Split B5A3 into two explicit boundaries:
 1. **B5A3A — media-library authority:** define an implementation-ready local
    boundary for the `media` route, its completion persistence, bounded listing,
    library removal, client adoption, legacy action retirement, and synthetic
-   no-network verification.
+   no-provider-network verification.
 2. **B5A3B — asset provenance and physical lifecycle:** retain a hard
    `DESIGN_REQUIRED` block for avatar, agency logo, subaccount logo, funnel
    favicon, durable provider-object cleanup, and physical deletion.
@@ -52,7 +52,8 @@ Completing B5A3A must not mark B5A3, B5A3B, or provider-object lifecycle
 B5A3A is limited to the dedicated media route and callback; an exact media
 service/action boundary; the two current readers; the one current creator; the
 one current deleter; their exact UI/type path; the tenant action matrix; fixed
-synthetic tests and verifier; authority-inventory reconciliation; and bounded
+  no-provider-network tests and verifier; authority-inventory reconciliation;
+  and bounded
 evidence/lifecycle records.
 
 B5A3B is documented but not executable under this gate.
@@ -67,7 +68,7 @@ This gate does not:
   owning mutation;
 - physically delete, enumerate, migrate, or reconcile provider objects;
 - add an upload-intent, tombstone, outbox, quota, or cleanup schema;
-- access UploadThing credentials, call UploadThing or another network service,
+- access UploadThing credentials, call UploadThing or another external network service,
   use representative data/database state, or deploy;
 - change a dependency, package manifest, lockfile, Prisma schema, migration,
   middleware public-route rule, or readiness state; or
@@ -90,8 +91,10 @@ state remain hard holds.
 - Exact parent: `54e47cca41922e303bbd2ced6056e9462562172e`.
 - Parent acceptance token: `ACCEPT_B5A2B_LIFECYCLE_AND_PUSH`.
 - Gate-authoring token: `GO_B5A3_IMPLEMENTATION_GATE_AUTHORING`.
-- Gate-remediation token: `GO_B5A3_GATE_REMEDIATION_1`.
-- Gate remediation used: 1 of 2 rounds.
+- Gate-remediation tokens: `GO_B5A3_GATE_REMEDIATION_1` and
+  `GO_B5A3_GATE_REMEDIATION_2`.
+- Gate remediation used: 2 of 2 rounds; the allowance is exhausted after this
+  correction.
 - Branch: `codex/crewframe-foundation`.
 - Parent authority inventory: exactly 231 records.
 - Parent inventory manifest:
@@ -237,8 +240,9 @@ Input normalization and grammar are exact:
   counted by Unicode code points after normalization and trimming;
 - an empty result, more than 120 code points, any code point in U+0000-U+001F
   or U+007F-U+009F, solidus `/` U+002F, or reverse solidus `\` U+005C is
-  rejected; all other printable code points, including internal spaces, are
-  retained exactly; and
+  rejected; every other well-formed Unicode scalar value is accepted and
+  retained exactly, including separators, format characters, private-use
+  characters, noncharacters, and internal spaces; and
 - validation never performs case folding, locale mapping, compatibility
   normalization, filename extraction, path normalization, or truncation.
 
@@ -443,7 +447,9 @@ No raw provider/database error, subject, actor/tenant ID, filename, display
 name, URL, key, custom ID, metadata, payload, request, credential, environment
 value, or stack trace enters logs, toasts, evidence, or verifier output. Owned
 modules contain no `console.*` path. Every denied case has zero persistence
-write and zero provider/network side effect.
+write and zero provider or non-loopback/external-network side effect. A
+database-backed denial test may perform only the disclosed loopback reads and
+must still prove zero denied write.
 
 ## B5A3B retained design block
 
@@ -624,8 +630,9 @@ tests. Their insecurity remains visible and blocked; it is not waived.
 - injected create failure, transaction rollback, invalid adapter postcondition,
   and zero partial row.
 
-Every denial proves zero database writes and zero provider/network calls. No
-test contacts UploadThing.
+Every denial proves zero database writes and zero provider or external-network
+calls. The disposable integration proof may perform only disclosed loopback
+database reads for authorization/postconditions. No test contacts UploadThing.
 
 ### Disposable synthetic MySQL proof
 
@@ -635,35 +642,85 @@ candidate must therefore execute the real generated Prisma client and exact
 production media adapter against a fresh disposable MySQL 8.4 container using
 the unchanged checked-in schema and synthetic fixtures only.
 
-`scripts/verify-b5a3a-media-mysql.ps1` owns the proof. It:
+`scripts/verify-b5a3a-media-mysql.ps1` owns the proof, declares `param()` and
+rejects every positional or named argument. It reuses the accepted disposable
+MySQL safety envelope with these immutable identities:
 
-- uses a digest-pinned, already-local MySQL 8.4 image with `--pull=never` and
-  performs no registry or other external network access;
-- rejects ambient `DATABASE_URL`, MySQL, container-name, and project credential
-  inputs; generates a process-local random container name, database name,
-  port, and disposable password; and never prints or persists them;
-- resolves and verifies the exact repository root, schema, generated client,
-  production adapter, and script/test hashes before execution;
-- starts one isolated container without a host bind mount, provisions the
-  unchanged schema into the empty disposable database, and inserts only fixed
-  synthetic agency, actor, subaccount, permission, and media-shaped fixtures;
-- exercises real concurrent exact completion, changed-field collision,
-  global-link collision, transaction rollback, exact retry, list order/
-  sentinel, foreign/stale removal, and concurrent `deleteMany` affected-count
-  behavior through the production adapter;
-- verifies zero unexpected rows before and after every fault path and emits
-  only bounded pass/fail identifiers and counts; and
-- in a `finally` path stops/removes only the exact validated disposable
-  container, restores prior process environment, proves the container and
-  database are gone, and fails if cleanup cannot be proven.
+- image reference and image ID exactly
+  `mysql@sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb`;
+- image OS/platform exactly `linux/amd64`, one exact matching RepoDigest, and
+  exactly the declared image volume destination `/var/lib/mysql`;
+- Docker context exactly `desktop-linux`, endpoint exactly
+  `npipe:////./pipe/dockerDesktopLinuxEngine`, server name exactly
+  `docker-desktop`, server OS exactly `linux`, and server architecture exactly
+  `x86_64`;
+- proof label exactly
+  `com.crewframe.proof=CF-P1-B5A3A-MEDIA-MYSQL`; and
+- container names matched only by
+  `^crewframe-b5a3a-media-(success|fault)-[a-f0-9]{12}$`; and
+- if a harness temporary directory is required, it is the single direct child
+  of `[IO.Path]::GetTempPath()` with exactly the same validated container-name
+  leaf and no reparse-point component.
 
-It may use loopback solely to reach its own disposable container. It may not
-read a developer database, use representative records, run a migration, alter
-the checked-in schema, connect to a non-loopback host, reuse a container or
-volume, pull an image, or retain database artifacts. The test fails closed if
-Docker, the pinned local image, a collision-safe free port, Prisma generation,
-or cleanup proof is unavailable. No skip converts missing infrastructure into
-a pass.
+The script rejects any present `DATABASE_URL`, `DIRECT_URL`, `DOCKER_CERT_PATH`,
+`DOCKER_CONTEXT`, `DOCKER_HOST`, `DOCKER_TLS_VERIFY`, MySQL host/password/port/
+database variable, proof container-name override, or project/provider database
+credential. It resolves `docker.exe` to one regular non-reparse local file,
+uses `--pull=never`, and fails unless the exact context, named-pipe endpoint,
+daemon identity, image digest/ID/platform/RepoDigest, and declared volume match.
+No TCP, SSH, WSL, environment-selected, or otherwise remote Docker daemon is
+allowed.
+
+Before either scenario, it proves zero container in any state with the exact
+proof label, zero volume carrying that exact proof label, zero exact generated-
+name collision, zero exact proof-prefixed temporary path, and zero child
+process owned by the harness. It then runs exactly one
+container at a time for a success scenario and an injected-fault scenario. The
+container has the exact label/name, no host bind mount, no reused volume, and
+only one published database port bound as
+`127.0.0.1:<random-free-port>:3306`; inspection must prove there is no other
+published address and exactly the container's default local bridge attachment,
+with no additional network. The harness generates one process-local random
+database name and disposable password for that container, never prints or
+persists either, and constructs `DATABASE_URL` only inside the bounded child
+process environment used by the generated Prisma client.
+
+Immediately after container creation and before readiness polling, schema
+provisioning, Prisma execution, or any injected later fault, the script
+inspects mounts and captures exactly one Docker-created anonymous volume with
+type `volume`, destination `/var/lib/mysql`, and a 64-character lowercase-hex
+source name. Failure to capture that exact identity is a hard failure. The
+unchanged checked-in schema is then provisioned into the empty disposable
+database without running a migration, and only fixed synthetic agency, actor,
+subaccount, permission, and media-shaped fixtures are inserted.
+
+Through the real generated Prisma client and exact production adapter, the
+proof exercises concurrent exact completion, changed-field collision,
+global-link collision, transaction rollback, exact retry, list order/sentinel,
+foreign/stale removal, and concurrent `deleteMany` affected-count behavior. It
+verifies zero unexpected rows before and after every fault path and emits only
+bounded pass/fail identifiers and counts.
+
+Every scenario is inside a `try/finally` envelope. Cleanup re-resolves the exact
+container by both validated name and proof label, recovers the anonymous-volume
+identity from the exact container if the first capture was interrupted, and
+runs only `docker rm --force --volumes <exact-name>`. It then proves the exact
+container is absent, zero container in any state has the proof label, the
+captured volume is absent by exact name, the proof-prefixed temporary path is
+absent, all harness-owned child process IDs have exited, and all process
+environment values are restored. The same absence proof is required after the
+success and injected-fault scenarios; an unavailable inspection or cleanup is
+a failure, never a skip.
+
+The only network and credential exceptions in B5A3A verification are this
+container's loopback-only Prisma connection and its process-local synthetic
+database password. The proof may not read a developer database, use
+representative records, connect to a non-loopback host, use an ambient/project/
+provider/representative/external credential, run a migration, alter the
+checked-in schema, reuse a container or volume, pull an image, contact a
+registry/provider/external service, or retain a container, volume, temporary
+artifact, process handle, database artifact, or secret. Docker, image, port,
+Prisma, identity, or cleanup unavailability fails closed.
 
 ### List and DTO
 
@@ -731,7 +788,8 @@ the complete remainder. It binds:
   package manifest, lockfile, and B5A2B dormant foundation;
 - exact new runtime exports/import graph, action matrix, input/DTO fields,
   query predicates, limits, order, file rules, finite outcomes, no-log rule,
-  and zero provider/network reachability; and
+  production zero-provider/external-network reachability, and the single exact
+  disposable-harness exception; and
 - reconciled authority inventory records/counts and immutable manifest.
 
 Verifier output is bounded to stable counts, hashes, SHAs, and pass/fail
@@ -789,9 +847,11 @@ Evidence records exact parent/gate/candidate/seal SHAs; the 18-record split;
 client/caller/URL-sink counts; before/after inventory records/counts/hash;
 action matrix; input/MIME/size/count/name/URL limits; completion idempotency;
 list DTO/order/overflow; removal predicate/race behavior; residual physical-
-object risks; mutation/remainder coverage; command/test counts; and explicit
-zero-use statements for network, provider API, representative database/data,
-credentials, schema, migration, packages, public-route change, deployment,
+object risks; mutation/remainder coverage; command/test counts; the one bounded
+loopback/synthetic-password verification exception; and explicit zero-use
+statements for non-loopback/external network, provider API, representative
+database/data, ambient/project/provider/representative/external credentials,
+schema changes, migrations, packages, public-route change, deployment,
 non-media assets, re-theme, CRM/Odoo, Composio, and agent runtime.
 
 Evidence contains only stable counts, hashes, SHAs, pass/fail identifiers, and
@@ -813,10 +873,10 @@ values.
 | B5A3A-09 | The client uses the dedicated `media` route and callback DTO; no raw browser-authored provider URL/key is accepted as ownership proof or sent to a create action. |
 | B5A3A-10 | The three legacy actions, two broad types, all importers/calls, aliases, wrappers, re-exports, namespace/computed access, dynamic imports, and URL-compatible fallbacks are absent. |
 | B5A3A-11 | The existing exact public route remains unchanged; three non-media routes/callbacks, generic upload component, non-media consumers/sinks, schema/migrations, packages, middleware, and historical foundations remain protected and visibly blocked. |
-| B5A3A-12 | Every denied grant, completion, list, and removal case has zero database write and zero provider/network side effect; owned modules expose no raw logs/errors or sensitive evidence. |
+| B5A3A-12 | Every denied grant, completion, list, and removal case has zero database write and zero provider/external-network side effect; only disclosed loopback authorization/postcondition reads may occur in the disposable proof, and owned modules expose no raw logs/errors or sensitive evidence. |
 | B5A3A-13 | Required adversarial and mutation tests prove every authority predicate, file/input bound, completion binding, idempotency branch, DTO/order/overflow clause, removal race, legacy retirement, and protected remainder. |
 | B5A3A-14 | Fixed verifiers, focused/full tests, disposable synthetic MySQL adapter proof, lint, typecheck, isolated build, frozen install, Prisma validation, inventory, diff, allowlist, protected-remainder, and bounded scans pass at exact candidate and seals. |
-| B5A3A-15 | No provider call, representative database/data, credential, schema/migration, package, public-route, deployment, non-media asset, physical cleanup, re-theme, CRM/Odoo, Composio, or agent-runtime work occurs. |
+| B5A3A-15 | Other than the disclosed loopback-only disposable MySQL connection and process-local synthetic password, no network or credential is used; no provider call, representative database/data, schema change/migration, package, public-route, deployment, non-media asset, physical cleanup, re-theme, CRM/Odoo, Composio, or agent-runtime work occurs. |
 | B5A3A-16 | Evidence states that B5A3B and provider-object orphan/deletion lifecycle remain blocked; B5A3 umbrella is not marked done. |
 | B5A3A-17 | Architect, Verifier, and Acceptance approve the same gate, candidate, execution seal, and lifecycle seal within the two-round limits before any next boundary begins. |
 
@@ -837,8 +897,9 @@ values.
   funnel, middleware, or other owning-domain mutation.
 - Existing valid behavior requires more than 100 media rows without a separately
   approved pagination contract.
-- A denial cannot prove zero database write and zero provider/network side
-  effect, or a protected-remainder mutation escapes the verifier.
+- A denial cannot prove zero database write and zero provider/external-network
+  side effect outside the disclosed loopback reads, or a protected-remainder
+  mutation escapes the verifier.
 
 Any stop returns the candidate to Architect, Verifier, and Acceptance. It
 grants no compatibility route, raw URL fallback, caller-authored authority,
@@ -854,33 +915,49 @@ schema/provider shortcut, or scope expansion.
   `FAIL`.
 - B5A3B asset provenance, durable intent/cleanup, provider deletion, legacy
   object handling, and storage quotas remain blocked.
-- No credential, provider network call, package, lockfile, Prisma schema/
-  migration, destructive or representative data operation, public-route
-  expansion, deployment, release, re-theme, design/taste validation,
-  CRM/Odoo, Composio, Stripe expansion, or agent-runtime work is authorized.
+- Except for the disclosed process-local synthetic MySQL password and
+  loopback-only disposable-container connection, no credential or network is
+  authorized. No ambient/project/provider/representative/external credential,
+  non-loopback/external network, provider call, package, lockfile, Prisma
+  schema/migration, destructive or representative data operation, public-route
+  expansion, deployment, release, re-theme, design/taste validation, CRM/Odoo,
+  Composio, Stripe expansion, or agent-runtime work is authorized.
 
 This gate cannot weaken or close another hold.
 
 ## Rollback
 
-B5A3A production, test, tooling, and inventory rollback restores those files
-exactly to their state at accepted parent
-`54e47cca41922e303bbd2ced6056e9462562172e`. The accepted remediated gate SHA,
-candidate evidence, execution record, and later lifecycle entries remain
-immutable history rather than being removed:
+B5A3A application behavior and authority inventory roll back exactly to their
+state at accepted parent
+`54e47cca41922e303bbd2ced6056e9462562172e`. Verification and lifecycle lineage
+remain successor-aware so retained history does not make the rollback state
+impossible:
 
-- remove the three new `src/features/media/` modules, three new media tests,
-  the new database harness test, and both new B5A3A verifier scripts;
-- restore every allowlisted existing source, test, historical verifier,
-  inventory, and lock file exactly to the parent;
-- retain this issue, accepted candidate evidence, and execution records
-  unchanged as immutable history, then append only the rollback commit and
-  outcome to this issue's lifecycle metadata; and
-- run all fixed verifiers, focused/full tests, lint, typecheck, isolated build,
+- remove the three new `src/features/media/` production modules, media runtime
+  behavior tests, database harness test, and disposable MySQL script;
+- restore every allowlisted existing production source, UI, existing auth/
+  policy test behavior, inventory JSON/lock, and non-lineage verifier
+  expectation to its exact parent behavior;
+- retain `scripts/verify-b5a3a-media-boundary.ts` and one bounded B5A3A surface
+  test only as rollback verifiers that prove the production modules/actions/
+  client path are absent, the 18 records have their parent blocked
+  dispositions, and no B5A3A runtime remains;
+- do not restore the historical B5A2A/B5A2B verifiers byte-for-byte to the
+  parent. Retain only their narrow successor allowlist and SHA lineage for this
+  issue plus accepted B5A3A evidence, execution, lifecycle, and rollback paths;
+  remove all implementation-source allowances and require both historical
+  verifiers to return full `PASS` in the rollback state;
+- retain the accepted remediated gate, candidate evidence, and execution
+  records unchanged as immutable history, then append only the rollback commit
+  and outcome to this issue's lifecycle metadata; and
+- run the rollback-aware B5A3A verifier, both full historical verifiers,
+  inventory verification, focused/full tests, lint, typecheck, isolated build,
   frozen install, Prisma validation, diff, and bounded scans after restoration.
 
-No schema, data, provider, credential, public-route, package, or deployment
-rollback is permitted or required because none may change.
+No production schema/data, provider, project credential, public-route, package,
+or deployment rollback is permitted or required because none may change; the
+synthetic password, container, database, and volume must already be proven
+absent by the harness before candidate acceptance.
 
 ## Status
 
