@@ -8,9 +8,9 @@ and every UI follow-up call without adding a live replacement event. Remove the
 temporary B5A2A actor-name compatibility chain and add only a dormant, pure
 finite-event service foundation for synthetic verification.
 
-This work item is the documentation-only B5A2B implementation gate. It defines
-the only source, test, tooling, inventory, and evidence changes that may occur
-after exact approval. Production implementation remains blocked until then.
+This work item began as the documentation-only B5A2B implementation gate. It
+defined the only source, test, tooling, inventory, and evidence changes allowed
+after exact approval and now records the completed historical lifecycle.
 
 ## Problem
 
@@ -42,7 +42,8 @@ begin CRM/Odoo, Composio, or agent-runtime work.
 ## Dependencies and blockers
 
 B5A2A lifecycle acceptance at the exact parent is required and satisfied.
-Implementation remains blocked on exact approval of this remediated gate.
+B5A2B implementation and its evidence seals are complete under the lifecycle
+record below.
 Audit freshness, permission migration, representative provider/database,
 public runtime, every readiness state, downstream B5A children, re-theme, and
 CRM/Odoo remain hard holds as recorded below.
@@ -68,8 +69,8 @@ CRM/Odoo remain hard holds as recorded below.
 - Parent B5A: `READY`.
 - B5A1 and B5A2A: `DONE`.
 - B5A2 intake: `ACCEPTED`.
-- B5A2B gate: `READY`.
-- B5A2B implementation: `BLOCKED_PENDING_EXACT_GATE_APPROVAL`.
+- B5A2B gate and implementation: `DONE`.
+- B5A2B implementation gate: `HISTORICAL_EXECUTION_ONLY`.
 - B5A3-B5A8: `BLOCKED`.
 
 No production authority is inherited from the intake or B5A2A.
