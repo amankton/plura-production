@@ -43,8 +43,9 @@ B5A2A owns 14 inventory records: identity entry, agency/subaccount entry and
 settings loaders, both application layouts, all-subaccounts, sidebar-derived
 types, the broad `getAuthUserDetails` action, and the team-member projection.
 It is read-only except for the already accepted invitation/provisioning call
-that an entry page invokes. B5A2A may preserve that accepted call and exact
-behavior; it may not rewrite or expand it.
+currently invoked by both entry pages and both scoped layouts. B5A2A freezes
+all four calls and their exact accepted behavior; it may not rewrite, move,
+remove, or expand them.
 
 ### B5A2B — Notification visibility and activity writes
 
@@ -54,13 +55,19 @@ accepts arbitrary caller text, accepts caller-selected tenant identifiers, and
 falls back to choosing a database user when no provider actor exists. It cannot
 be made safe by changing a return type or adding a layout check.
 
-B5A2B must remove the generic client-callable writer. Its replacement is an
-internal-only service with server-owned event templates and an actor/context
-already resolved by the authoritative mutation. An owning B5A3-B5A7 domain
-child may integrate one of those internal events only while sealing its own
-mutation. Until then, an unsafe legacy call is removed rather than translated
-into a new client-callable event-spoofing action. B5A2B may immediately
-integrate only mutations already proven authoritative at its exact parent.
+B5A2B is limited to notification-reader closure plus writer retirement and a
+dormant, pure foundation. It must remove the generic client-callable writer.
+Its replacement contract is an internal-only service interface and pure finite
+event registry with server-owned templates; B5A2B cannot connect that service
+to any live production mutation. All 16 cross-domain caller deltas are limited
+to removing the import and direct UI follow-up call, without changing the
+owning mutation or another UI behavior.
+
+An owning B5A3-B5A7 domain child may later integrate one internal event only
+while sealing its own authoritative mutation under that child's exact gate.
+Until then, the foundation remains unreachable from production transports and
+an unsafe legacy call is removed rather than translated into a new
+client-callable event-spoofing action.
 
 This sequencing intentionally permits a temporary reduction in activity-feed
 coverage. It does not permit a false, forged, cross-tenant, or anonymous event.
@@ -92,12 +99,23 @@ change closes this intake and requires a new reviewed gate.
 
 ## B5A2A projection contract
 
-Every projection entry resolves the Clerk provider subject on the server and
-then resolves exactly one provisioned local actor. Missing, duplicate,
-unprovisioned, null-agency, or otherwise invalid actors fail with the existing
+Every tenant-bearing projection entry resolves the Clerk provider subject on
+the server and then resolves exactly one provisioned local actor. Missing,
+duplicate, null-agency, or otherwise invalid actors fail with the existing
 finite non-enumerating access errors. Caller email, provider role/metadata,
 layout reachability, UI state, and caller-provided user or agency records grant
 no authority.
+
+The sole non-tenant exception is `/agency` onboarding after the already
+accepted invitation/provisioning call. An authenticated provider subject may
+receive a discriminated `ONBOARDING` outcome when no local actor exists or
+when the exact local actor is an `AGENCY_OWNER` with `agencyId = null`. That
+outcome contains no Agency, SubAccount, Permission, Invitation, provider
+metadata, role grant, or tenant selector and grants no tenant authority. It may
+carry only the provider email required to prefill the existing create-agency
+form. An anonymous subject or a local actor in any other invalid state is
+denied. The alternate `ROUTE` outcome contains only the provisioned actor
+fields needed for the existing role-based redirect.
 
 The implementation must replace the broad `getAuthUserDetails` graph with
 purpose-specific server projections. It must not introduce another catch-all
@@ -105,13 +123,24 @@ actor/agency graph under a different name.
 
 | Projection | Required context and persistence predicate | Maximum serialized fields |
 | --- | --- | --- |
-| Entry route | provider subject → exact local actor | actor `id`, `role`, `agencyId`; no Agency, Permission, or SubAccount graph |
+| Entry route | provider subject → `ROUTE` for one exact provisioned actor, or the bounded tenant-free `ONBOARDING` outcome above | discriminator plus actor `id`, `role`, `agencyId` for `ROUTE`; discriminator plus provider email for `ONBOARDING`; no Agency, Permission, Invitation, or SubAccount graph |
+| Default subaccount redirect | provider subject → exact local actor → active same-agency permission → exact subaccount | only the selected `subaccountId`; no User, Agency, Permission, or SubAccount record |
 | Agency shell/sidebar | `getAgencyContext(requestedAgencyId)` plus agency-operator policy | actor `id`, `role`; agency `id`, `name`, `address`, `agencyLogo`, `whiteLabel`; agency sidebar option `id`, `name`, `icon`, `link`; permitted subaccount summaries `id`, `name`, `address`, `subAccountLogo` |
 | Subaccount shell/sidebar | `getTenantContext(requestedSubaccountId)` | the same actor fields; agency shell summary; exact subaccount summary and sidebar options; only subaccounts visible through the actor's privileged agency role or an active same-agency permission |
 | All-subaccounts | agency operator context | agency `id`; subaccount `id`, `name`, `address`, `subAccountLogo`; no connected-account, customer, contact, notification, permission, or nested resource fields |
 | Agency settings | agency operator context | editable agency profile `id`, `name`, `agencyLogo`, `companyEmail`, `companyPhone`, `whiteLabel`, `address`, `city`, `zipCode`, `state`, `country`, `goal`; actor profile `id`, `name`, `avatarUrl`, `email`, `role`; subaccount selectors `id`, `name` |
 | Subaccount settings | exact tenant context | the same bounded actor profile; editable exact-subaccount profile `id`, `agencyId`, `name`, `subAccountLogo`, `companyEmail`, `companyPhone`, `address`, `city`, `zipCode`, `state`, `country`, `goal`; agency form context only as fields demonstrably required by the existing form; visible subaccount selectors `id`, `name` |
-| Ticket assignees | exact tenant context | same-agency active permitted members only; user `id`, `name`, `avatarUrl`; include another field only if a focused test proves the existing ticket selector needs it and the child gate names it |
+| Ticket assignees | exact tenant context | same-agency members with `role = SUBACCOUNT_USER` and exactly one active permission for the requested subaccount; user `id`, `name`, `avatarUrl`; include another field only if a focused test proves the existing ticket selector needs it and the child gate names it |
+
+The default-subaccount redirect resolver obtains the provider subject
+server-side, resolves one local actor with a non-null agency, and queries only
+active permissions whose subaccount belongs to that same agency. It rejects a
+duplicate active permission for the same subaccount, a revoked/false-access
+row, a missing or deleted subaccount, and any cross-agency relation. With more
+than one valid distinct subaccount it orders by `subAccountId ASC` and returns
+only the first ID; with none it preserves the current unauthorized outcome.
+This deterministic ordering replaces the current database-dependent
+`Permissions.find(...)` result without expanding access.
 
 Every ORM query must contain the actor-derived agency key and, for tenant
 reads, the exact requested subaccount key in its persistence predicate. A
@@ -127,10 +156,24 @@ it cannot execute a database query or import `db`. Prisma model types must not
 be used to widen serialized props where a projection type is sufficient.
 
 The `/agency` entry page may retain the accepted invitation/provisioning call
-and a server-side provider profile read only for the existing create-agency
-email display. That email remains display/input data, never identity or
-authority. Existing redirect semantics for provisioned roles must remain
-stable. The implementation must remove the current console output.
+and a server-side provider profile read only for the bounded `ONBOARDING`
+outcome and existing create-agency email display. That email remains
+display/input data, never identity or authority. The no-local-actor and exact
+owner-with-null-agency cases render the existing create-agency path without
+querying or serializing tenant data. Existing redirect semantics for
+provisioned actors with an agency remain stable. The implementation must remove
+the current console output.
+
+The four current `verifyAndAcceptInvitation` call sites are frozen explicitly:
+
+- `src/app/(main)/agency/page.tsx`;
+- `src/app/(main)/subaccount/page.tsx`;
+- `src/app/(main)/agency/[agencyId]/layout.tsx`; and
+- `src/app/(main)/subaccount/[subaccountId]/layout.tsx`.
+
+B5A2A may adapt only the surrounding bounded projections. Moving, deleting,
+deduplicating, or changing an invitation/provisioning invocation requires a
+separate account-authority gate.
 
 ## B5A2B notification read contract
 
@@ -177,10 +220,10 @@ Its replacement has these properties:
    the context and the mutation's transaction result. A caller-supplied label,
    when an approved template needs one, is replaced with a bounded value read
    from the affected record and escaped for plain-text display.
-4. The notification write is in the same transaction as the authoritative
-   mutation, or consumes a transaction-bound immutable result that proves one
-   affected row. A UI follow-up call is never evidence that a mutation
-   happened.
+4. In a later owning domain child, the notification write is in the same
+   transaction as the authoritative mutation, or consumes a transaction-bound
+   immutable result that proves one affected row. A UI follow-up call is never
+   evidence that a mutation happened.
 5. Each supported event declares exact cardinality and duplicate behavior.
    Creation requires exactly one valid actor, one valid agency, zero or one
    context-valid subaccount as declared, and exactly one notification row.
@@ -190,12 +233,14 @@ Its replacement has these properties:
 7. No raw caller description, provider/database error, payload, email,
    credential, stack trace, or tenant identifier is written to logs.
 
-The initial finite registry may contain only events required by authoritative
-mutations wired in the exact B5A2B candidate. Expected future domains are
-agency goal/profile, subaccount profile/lifecycle, contact, upload/media,
+The B5A2B foundation contains no live production event and no production
+caller. Its pure registry schema and service interface prove that any future
+event must have a finite type, server-owned template, declared tenant scope,
+and transaction-bound context. Expected future domains are agency
+goal/profile, subaccount profile/lifecycle, contact, upload/media,
 funnel/page/products, pipeline/lane, ticket, and tag. Naming these domains does
-not authorize their mutations or their events. Each later owning child must
-add and test its event atomically with the mutation it seals.
+not authorize their mutations or events. Each later owning child must add and
+test its event atomically with the mutation it seals.
 
 ## Transitive callers and compatibility/removal rules
 
@@ -203,8 +248,9 @@ The exact implementation gate must re-run deterministic caller discovery and
 bind source hashes for every caller. At this intake parent, the known callers
 are:
 
-- `getAuthUserDetails`: agency entry, subaccount entry, all-subaccounts, and
-  `src/components/sidebar/index.tsx`;
+- `getAuthUserDetails`: agency entry, subaccount entry, all-subaccounts,
+  `src/components/sidebar/index.tsx`, and the value import/type-signature
+  consumer in `src/lib/types.ts`;
 - `getSubAccountTeamMembers`: `src/components/forms/ticket-form.tsx`;
 - `getNotificationAndUser`: agency and subaccount layouts; and
 - `saveActivityLogsNotification`: agency goal, subaccount update/delete,
@@ -218,14 +264,20 @@ one disposition per export:
   export;
 - make a projection internal-only and prove no client import path reaches it;
   or
-- for activity writes, remove unsafe UI follow-up calls and add the event only
-  inside an already authoritative mutation.
+- for activity writes, B5A2B removes every unsafe import and UI follow-up call;
+  it adds no live event integration. A later owning child may add an event only
+  inside the mutation it independently seals.
 
 An adapter that preserves the broad return type, optional tenant ID, arbitrary
 description, email-based actor selection, unauthenticated fallback, or
 agency-wide read for restricted actors is forbidden. Type-only compatibility
 aliases are allowed only when they reference the new bounded DTO and cannot
 widen it.
+
+The `src/lib/types.ts` value import of `getAuthUserDetails`, its
+`Prisma.PromiseReturnType` alias, its internal database-backed sidebar helper,
+and its `db` import must be removed. Any replacement is a static type import or
+bounded DTO declaration with no persistence access and no broad graph shape.
 
 ## Required adversarial tests
 
@@ -235,7 +287,12 @@ writes, notifications, revalidations, provider calls, and logs.
 ### B5A2A
 
 - anonymous, unprovisioned, missing actor, duplicate actor, null-agency,
-  owner, admin, subaccount user, and guest cases;
+  owner, admin, subaccount user, and guest cases, with `ONBOARDING` allowed
+  only for an authenticated no-local-actor subject or the exact
+  `AGENCY_OWNER` whose `agencyId` is null;
+- onboarding fixtures prove zero tenant queries and zero Agency, SubAccount,
+  Permission, Invitation, provider-metadata, or role-grant fields while
+  preserving the existing create-agency form and provisioned-role redirects;
 - same agency/same subaccount, same agency/other subaccount, cross-agency,
   missing, deleted, orphaned, and wrong-parent route substitutions;
 - zero, one, duplicate, revoked, false-access, foreign-agency, and stale
@@ -246,6 +303,14 @@ writes, notifications, revalidations, provider calls, and logs.
   appear in any serialized projection;
 - sidebar, settings, all-subaccounts, and entry redirects preserve the
   accepted behavior for authorized fixtures; and
+- default-subaccount routing proves deterministic `subAccountId ASC`
+  selection across multiple valid permissions, rejects duplicate active rows
+  for one subaccount, excludes false/revoked, missing, deleted, and
+  cross-agency rows, and returns only the selected ID;
+- ticket-assignee fixtures include only `SUBACCOUNT_USER` actors with exactly
+  one active same-agency permission and explicitly exclude guests; and
+- all four accepted invitation/provisioning call sites and their behavior are
+  frozen by source discovery and focused regression tests; and
 - a source-discovery test fails if a known caller still imports a retired broad
   export, if `src/lib/types.ts` imports `db`, or if the two settings loaders
   retain a direct database import.
@@ -262,8 +327,10 @@ writes, notifications, revalidations, provider calls, and logs.
   error, or forged deletion/update event;
 - zero-row, multi-row, duplicate invocation, stale result, deletion during the
   operation, and transaction rollback cases with exact notification counts;
-- successful events have exactly one server-owned template, one context actor,
-  one context agency, the declared subaccount cardinality, and one write;
+- pure foundation tests require exactly one server-owned template, one context
+  actor, one context agency, the declared subaccount cardinality, and one
+  write from the synthetic adapter, while production source-discovery proves
+  the foundation has no live transport or mutation caller;
 - no unauthenticated fallback query and no raw `console.log`/`console.error`
   path remains in the owned notification surfaces; and
 - caller discovery fails if the removed generic writer or broad reader is
@@ -307,6 +374,11 @@ representative data.
 | B5A2-10 | All transitive callers are inventoried; superseded exports are removed or provably unreachable from client imports; source discovery rejects regression. |
 | B5A2-11 | Accepted invitation, account, team, contact, billing, commerce, webhook, worker, routing, and dependency behavior remains hash- or test-protected. |
 | B5A2-12 | Focused/full tests, lint, typecheck, build, frozen install, inventory reconciliation, diff-check, and bounded secret/PII/log scans pass at each exact candidate and seal. |
+
+For B5A2-08, the B5A2B candidate implements no live event. It passes by
+retiring the generic writer, proving a dormant pure foundation, and proving
+zero production callers. Live event acceptance belongs exclusively to the
+later child that seals the owning mutation.
 
 ## Allowed artifacts for later exact child gates
 
