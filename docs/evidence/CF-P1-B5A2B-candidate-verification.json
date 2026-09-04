@@ -189,12 +189,12 @@
   "sourceHashes": {
     "notificationViewService": "sha256:b228266eda04d13f343c2f39c3ac9d6200216afaed8877b340739454e2c5e9ad",
     "serverNotificationViewService": "sha256:c38c0e856f58b8ee452b02009e354022035fd26a03dcb0c7897ec684bd3bdbda",
-    "activityFoundationService": "sha256:4c18bad32a2c316050c94b31cf6a97619b90cd00f62c570b47144cd394c76ea7",
-    "notificationVerifier": "sha256:2a81f5a8dd5871897ff51dec6e53aab800d58764177573591402336dadc23693",
+    "activityFoundationService": "sha256:2192860b8f357ec09bccefb5a1aa0393afef7f852a6331ea3da659799f84f4f5",
+    "notificationVerifier": "sha256:34a9056adadaedaa0b8a939f5f9fed677593ba585e3dabf8d529994976533234",
     "notificationViewTests": "sha256:5aabe8e919166f3e510519cff8c5822f1a65c289ab9104dfd1149b8ff3b35a9a",
     "activityFoundationTests": "sha256:6127a9eead258cbbc839bef8a8a607aab99ae214543873574758b0e41632b160",
-    "notificationSurfaceTests": "sha256:7457d67cb30ffb6c003e7de4080264cea5f7cfa9aba6068b9ecf74da2c16c243",
-    "inventory": "sha256:762110ec4030dfd42b2cc8ddfcff52513dad940aeb846f986af96b2f1e8d6a1d",
+    "notificationSurfaceTests": "sha256:f0821a2c2c405d8bcc676bd24fa9994893fb54377e867c85eac7c70e82cb7eee",
+    "inventory": "sha256:073ec09f33f304352df5f6f262a4e197c2139c11788dff113745593b414c7258",
     "inventoryLock": "sha256:2b7cf8b564640f4e7e54bc16e4845f601d97b035715e738a351db3c76c2fbdb9"
   },
   "inventorySourceHashes": {
