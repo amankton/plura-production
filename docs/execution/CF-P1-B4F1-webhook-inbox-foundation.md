@@ -6,10 +6,11 @@
 - Versioned issue gate: `e8813fd577ae98274fa6d3fa13c21d1af425e5c9`
 - Branch: `codex/crewframe-foundation`
 - Acceptance clearance: `GO_B4F1_FOUNDATION`
-- Architect decision: `GO_B4F1_FOUNDATION`
+- Architect decisions: `GO_B4F1_FOUNDATION`, `APPROVE_B4F1_CANDIDATE`
 - Verifier contract/gate: `PASS_CONTRACT`, `PASS_GATE`
-- Implementation SHA: pending immutable candidate
-- Independent implementation verification: pending immutable candidate
+- Implementation SHA: `67f02349399f00ac4deb7c3a2f36608a9e7e30ff`
+- Independent implementation verification: `PASS_B4F1_CANDIDATE`
+- Remediation rounds used: 1 of 2
 - Production readiness: **FAIL** (intentional)
 
 ## Outcome
@@ -44,7 +45,9 @@ exactly `['/site', '/api/uploadthing']`.
   five-attempt ceiling.
 - A separately keyed subscription object lease prevents simultaneous receipts
   from racing projections. Projection and receipt completion revalidate both
-  tokens as one injected atomic operation.
+  tokens and both unexpired leases as one injected atomic operation. Every
+  completion, ignored, or failure transition reads the clock again immediately
+  before its durable write.
 - Duplicate terminal receipts are safe to acknowledge. Pending, processing, or
   retryable work remains non-2xx while no proven internal retry runner exists.
 - Only subscription created, updated, and deleted lifecycle events enter
@@ -59,7 +62,8 @@ exactly `['/site', '/api/uploadthing']`.
   delivery converges to the currently retrieved inactive state.
 - Replay is an injected internal command over one stored receipt UUID, rejects
   unknown fields/arbitrary payloads, requires authorization, always audits the
-  decision, and defaults to dry-run.
+  decision, and defaults to dry-run. Execution-mode eligibility, requeue, and
+  exactly one outcome audit are one conditional store transaction.
 - Observability is an optional bounded structured callback containing only
   checkpoint codes, receipt UUID, state, stage, and response status. The pure
   foundation performs no direct logging.
@@ -79,21 +83,32 @@ short names declared in Prisma before the passing empty and legacy runs.
 
 ## Verification
 
-- `bun install --frozen-lockfile`: required for immutable-candidate verification.
+- `bun install --frozen-lockfile`: pass; 895 installs across 705 packages with
+  no changes.
 - `bunx prisma generate`: pass.
 - `bunx prisma validate` with a process-local placeholder URL: pass.
 - `bun run lint`: pass; no warnings or errors.
 - `bun run typecheck`: pass.
-- Focused B4F1 tests: 35 passed, 0 failed.
-- Complete `bun test`: 237 passed, 0 failed, 1,018 expectations across 32 files.
+- Focused B4F1 tests: 41 passed, 0 failed, 262 expectations.
+- Complete `bun test`: 243 passed, 0 failed, 1,064 expectations across 32 files.
 - `bun run build`: pass; compilation and 13/13 static-page generation completed.
 - Disposable MySQL 8.4 empty schema: pass.
 - Disposable MySQL 8.4 synthetic legacy schema: pass; the existing agency and
   subscription row remained readable after the additive DDL.
 - Package manifest, lockfile, runtime webhook route, middleware public allowlist,
   and `prisma/migrations`: unchanged from the issue-gate parent.
-- `git diff --check`: required for immutable-candidate verification.
-- Secret-pattern scan: required for immutable-candidate verification.
+- `git diff --check`: pass.
+- Secret-pattern and credential-like filename scans: pass; no matches.
+- Cleanup check: pass; zero `crewframe-b4f1-*` containers remained.
+
+The first immutable candidate, `0da47545c1a8d2ec833f89c36030b9e182349fc8`,
+was held for stale post-provider lease time, non-atomic executed replay auditing,
+and missing negative-matrix evidence. Remediation round 1 produced
+`37b188c9597464b3f87d598809813945e6ea89c5`; the final requested stored-receipt
+denial proof was added in implementation child
+`67f02349399f00ac4deb7c3a2f36608a9e7e30ff`. The Agency Architect returned
+`APPROVE_B4F1_CANDIDATE`, and the independent Verifier returned
+`PASS_B4F1_CANDIDATE` for that exact implementation SHA.
 
 ## Dependency evidence
 
