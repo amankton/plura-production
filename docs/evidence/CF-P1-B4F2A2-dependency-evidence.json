@@ -1,0 +1,47 @@
+{
+  "audit": {
+    "currentQuery": "INCONCLUSIVE_REGISTRY_UNAVAILABLE",
+    "disposition": "Release and public-runtime HOLD until a fresh authoritative advisory query succeeds or a separately reviewed change-control amendment is accepted.",
+    "fresh": false,
+    "provenance": "SEALED_B4F1_SAME_LOCK_STALE_UNREVALIDATED",
+    "sealedBaseline": {
+      "artifact": {
+        "path": "docs/evidence/CF-P1-B4F1-audit.json",
+        "sha256": "e1b3bcbc076cebf4580201ed833f95366a6ead6e05496f72a215d0b7c548df6b"
+      },
+      "severity": {
+        "critical": 0,
+        "high": 34,
+        "low": 4,
+        "moderate": 25
+      },
+      "sourceCommit": "0da47545c1a8d2ec833f89c36030b9e182349fc8",
+      "sourceCommitTimestamp": "2026-09-03T17:46:44-07:00",
+      "total": 63
+    }
+  },
+  "artifacts": {
+    "auditOutage": {
+      "path": "docs/evidence/CF-P1-B4F2A2-audit-outage.json",
+      "sha256": "8c73a94aee484585f36010b2f3609eee0c56b89aa337f703b5fd80526b747582"
+    },
+    "installedDependencyInventory": {
+      "path": "docs/evidence/CF-P1-B4F2A2-sbom.txt",
+      "sha256": "6eea2a58cf6d0d63e47a45d83ae303c4d9cfa3a322106be754f232b155f7903b"
+    },
+    "lockfile": {
+      "path": "bun.lockb",
+      "sha256": "87503b664f64f829f664971fb17ff90407d00ab3cd4f2d4107324cad8616db43"
+    },
+    "packageManifest": {
+      "path": "package.json",
+      "sha256": "e2d1623e31300b0a053e0f72d6dd755bc57c9f77acf2b4eb6ee760a6a7b52f52"
+    }
+  },
+  "command": {
+    "audit": "No fresh result: bounded native Bun, official Bun container, and direct npm bulk POST attempts returned no advisory JSON.",
+    "installedDependencyInventory": "bun pm ls --all"
+  },
+  "format": "Crewframe installed-component inventory and audit evidence v1",
+  "hashNormalization": "UTF-8, LF line endings, one trailing newline"
+}

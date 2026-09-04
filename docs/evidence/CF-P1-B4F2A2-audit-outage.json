@@ -1,0 +1,49 @@
+{
+  "attempts": [
+    {
+      "advisoryJsonBytes": 0,
+      "advisoryJsonReceived": false,
+      "command": "bun audit --json",
+      "durationMilliseconds": 15064,
+      "exitCode": null,
+      "finishedAt": "2026-09-04T02:31:10.406Z",
+      "label": "native_bun",
+      "outputBytes": 49,
+      "sanitizedOutput": "bun audit v1.3.11 (af24e281)",
+      "startedAt": "2026-09-04T02:30:55.342Z",
+      "timedOut": true,
+      "timeoutMilliseconds": 15000
+    },
+    {
+      "advisoryJsonBytes": 0,
+      "advisoryJsonReceived": false,
+      "command": "docker run --rm --name crewframe-b4f2a2-audit-244940cd8f --volume <repository>:/workspace --workdir /workspace oven/bun:1.3.11 bun audit --json",
+      "durationMilliseconds": 15029,
+      "exitCode": null,
+      "finishedAt": "2026-09-04T02:31:25.439Z",
+      "label": "official_bun_container",
+      "outputBytes": 49,
+      "sanitizedOutput": "bun audit v1.3.11 (af24e281)",
+      "startedAt": "2026-09-04T02:31:10.410Z",
+      "timedOut": true,
+      "timeoutMilliseconds": 15000
+    },
+    {
+      "advisoryJsonBytes": 0,
+      "advisoryJsonReceived": false,
+      "command": "curl.exe --silent --show-error --max-time 15 --request POST --header Content-Type: application/json --data-binary {} https://registry.npmjs.org/-/npm/v1/security/advisories/bulk",
+      "durationMilliseconds": 15032,
+      "exitCode": null,
+      "finishedAt": "2026-09-04T02:31:40.911Z",
+      "label": "direct_npm_bulk_post",
+      "outputBytes": 0,
+      "sanitizedOutput": "",
+      "startedAt": "2026-09-04T02:31:25.879Z",
+      "timedOut": true,
+      "timeoutMilliseconds": 15000
+    }
+  ],
+  "conclusion": "STALE_UNREVALIDATED: no attempt returned advisory JSON; current vulnerability data is unavailable.",
+  "format": "Crewframe dependency-audit service outage evidence v1",
+  "image": "oven/bun:1.3.11@sha256:0733e50325078969732ebe3b15ce4c4be5082f18c4ac1a0f0ca4839c2e4e42a7"
+}
