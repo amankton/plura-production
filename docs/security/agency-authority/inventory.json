@@ -534,7 +534,7 @@
       "concurrency": "read snapshot; no write authority",
       "publicBoundary": "PRIVATE",
       "disposition": "ACCEPTED_RETAIN",
-      "sourceHash": "sha256:04f9c07b3cfcbbfc214e88e335deed5a2eed09fd35de2e31b8101f9361a2f783"
+      "sourceHash": "sha256:df15a0a9cf9a216119182571b1f494308aa11dbf1ad28bf5fa6fb72eb34a2541"
     },
     {
       "surfaceId": "internal-only:src/features/agency-projections/server-projection-service.ts#$db",
@@ -556,7 +556,7 @@
       "concurrency": "read snapshot; no write authority",
       "publicBoundary": "PRIVATE",
       "disposition": "ACCEPTED_RETAIN",
-      "sourceHash": "sha256:b5a67d4626368c964efc931220eee1b8034332fa5e5523091f41e31380958e78"
+      "sourceHash": "sha256:3bef7ee8c4519bf30256b82e717a4c2ab40e98c55e2f2a4f26f70edf5f9f7c08"
     },
     {
       "surfaceId": "internal-only:src/features/agency-projections/server-projection-service.ts#agencyProjectionService",
@@ -565,7 +565,7 @@
       "symbol": "agencyProjectionService",
       "invocation": "internal-only",
       "effects": [
-        "create"
+        "read"
       ],
       "actorSource": "internal-derived actor",
       "requestedIds": [],
@@ -575,10 +575,10 @@
       ],
       "persistencePredicate": "server-derived actor context selects only purpose-specific DTO fields",
       "denial": "unauthorized",
-      "concurrency": "unique or idempotent create with collision handling",
+      "concurrency": "read snapshot; no write authority",
       "publicBoundary": "PRIVATE",
       "disposition": "ACCEPTED_RETAIN",
-      "sourceHash": "sha256:b5a67d4626368c964efc931220eee1b8034332fa5e5523091f41e31380958e78"
+      "sourceHash": "sha256:3bef7ee8c4519bf30256b82e717a4c2ab40e98c55e2f2a4f26f70edf5f9f7c08"
     },
     {
       "surfaceId": "internal-only:src/features/billing/billing-service.ts#createBillingService",

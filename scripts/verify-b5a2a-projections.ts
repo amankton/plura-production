@@ -131,7 +131,7 @@ const removeNamedVariables = (
     )
   )
 
-const normalizeQueries = (text: string) => {
+export const normalizeB5A2AQueries = (text: string) => {
   const sourceFile = parse('src/lib/queries.ts', text)
   return normalize(
     printer.printFile(
@@ -143,7 +143,7 @@ const normalizeQueries = (text: string) => {
   )
 }
 
-const normalizeTypes = (text: string) => {
+export const normalizeB5A2ATypes = (text: string) => {
   const sourceFile = parse('src/lib/types.ts', text)
   const statements: ts.Statement[] = []
   for (const statement of sourceFile.statements) {
@@ -204,7 +204,7 @@ const normalizeTypes = (text: string) => {
   )
 }
 
-const normalizeAgencyDetails = (text: string) => {
+export const normalizeB5A2AAgencyDetails = (text: string) => {
   const sourceFile = parse('src/components/forms/agency-details.tsx', text)
   const transformer: ts.TransformerFactory<ts.SourceFile> = (context) => {
     const visit: ts.Visitor = (node) => {
@@ -297,6 +297,171 @@ const exactAgencyPurposeFields = [
   'zipCode',
 ]
 
+export type B5A2ASourceSnapshot = Readonly<{
+  action: string
+  agencySettingsPage: string
+  allSubaccountsPage: string
+  createSubaccountButton: string
+  detailsConsumerPaths: readonly string[]
+  entrySources: readonly string[]
+  menuOptions: string
+  projectionService: string
+  serverAdapter: string
+  sidebarIndex: string
+  sourceText: string
+  subaccountSettingsPage: string
+  types: string
+}>
+
+const count = (text: string, pattern: RegExp) => text.match(pattern)?.length ?? 0
+
+export const verifyB5A2ASourceSnapshot = (
+  snapshot: B5A2ASourceSnapshot
+): string[] => {
+  const errors: string[] = []
+  const boundedSources = [
+    snapshot.action,
+    snapshot.agencySettingsPage,
+    snapshot.allSubaccountsPage,
+    snapshot.createSubaccountButton,
+    snapshot.menuOptions,
+    snapshot.projectionService,
+    snapshot.serverAdapter,
+    snapshot.sidebarIndex,
+    snapshot.subaccountSettingsPage,
+  ].join('\n')
+  const nonAdapterSources = [
+    snapshot.action,
+    snapshot.agencySettingsPage,
+    snapshot.allSubaccountsPage,
+    snapshot.createSubaccountButton,
+    snapshot.menuOptions,
+    snapshot.projectionService,
+    snapshot.sidebarIndex,
+    snapshot.subaccountSettingsPage,
+  ].join('\n')
+
+  if (/from ['"]@\/lib\/db['"]/.test(snapshot.agencySettingsPage)) {
+    errors.push('page-db:agency-settings')
+  }
+  if (/from ['"]@\/lib\/db['"]/.test(snapshot.subaccountSettingsPage)) {
+    errors.push('page-db:subaccount-settings')
+  }
+  if (/from ['"]\.\/db['"]/.test(snapshot.types)) errors.push('types:db')
+  if (/\bgetAuthUserDetails\b/.test(snapshot.sourceText)) {
+    errors.push('retired:getAuth')
+  }
+  if (/\bgetSubAccountTeamMembers\b/.test(snapshot.sourceText)) {
+    errors.push('retired:getTeamMembers')
+  }
+  if (
+    /import\s*\{[^}]*\b(?:Agency|SubAccount|User|Permissions)\b[^}]*\}\s*from\s*['"]@prisma\/client['"]/.test(
+      nonAdapterSources
+    )
+  ) {
+    errors.push('projection:broad-prisma-import')
+  }
+  if (/\bany\b/.test(boundedSources)) errors.push('projection:any')
+  if (
+    /\bas\s+(?:Agency|SubAccount|User|Permissions|string|unknown)\b/.test(
+      boundedSources
+    )
+  ) {
+    errors.push('projection:cast')
+  }
+  if (/agencyDetails=\{\{\s*\.\.\./.test(boundedSources)) {
+    errors.push('projection:agency-spread')
+  }
+  if (
+    /\bRecord\s*<\s*string\s*,|\[\s*key\s*:\s*string\s*\]|JSON\.(?:parse|stringify)/.test(
+      boundedSources
+    )
+  ) {
+    errors.push('projection:wrapper')
+  }
+
+  const expectedConsumers = [
+    'src/app/(main)/agency/[agencyId]/all-subaccounts/_components/create-subaccount-btn.tsx',
+    'src/app/(main)/subaccount/[subaccountId]/settings/page.tsx',
+    'src/components/sidebar/menu-options.tsx',
+  ]
+  if (
+    snapshot.detailsConsumerPaths.slice().sort().join('|') !==
+    expectedConsumers.slice().sort().join('|')
+  ) {
+    errors.push('details:consumers')
+  }
+
+  if (
+    count(
+      snapshot.allSubaccountsPage,
+      /userName=\{projection\.legacyActivityActorName\}/g
+    ) !== 1
+  ) {
+    errors.push('compatibility:all-subaccounts-source')
+  }
+  if (
+    count(
+      snapshot.sidebarIndex,
+      /legacyActivityActorName=\{projection\.legacyActivityActorName\}/g
+    ) !== 2
+  ) {
+    errors.push('compatibility:sidebar-responsive-source')
+  }
+  if (
+    count(snapshot.createSubaccountButton, /userName=\{userName \?\? ''\}/g) !==
+      1 ||
+    /if\s*\(\s*!userName\s*\)\s*return/.test(snapshot.createSubaccountButton)
+  ) {
+    errors.push('compatibility:create-button-sink')
+  }
+  if (
+    count(
+      snapshot.menuOptions,
+      /userName=\{legacyActivityActorName \?\? ''\}/g
+    ) !== 1 ||
+    /legacyActivityActorName\s*&&/.test(snapshot.menuOptions)
+  ) {
+    errors.push('compatibility:menu-sink')
+  }
+
+  const projectionSourceMappings = count(
+    [snapshot.allSubaccountsPage, snapshot.sidebarIndex].join('\n'),
+    /(?:userName|legacyActivityActorName)=\{projection\.legacyActivityActorName\}/g
+  )
+  if (projectionSourceMappings !== 3) {
+    errors.push('compatibility:physical-source-count')
+  }
+
+  const entryCalls = snapshot.entrySources.reduce(
+    (total, source) => total + count(source, /verifyAndAcceptInvitation\s*\(/g),
+    0
+  )
+  if (entryCalls !== 4) errors.push('entry-call:count')
+  if (count(snapshot.action, /^export const /gm) !== 1) {
+    errors.push('client-action:count')
+  }
+
+  if (/\btake:\s*250\b/.test(snapshot.serverAdapter)) {
+    errors.push('adapter:silent-list-cap')
+  }
+  if (count(snapshot.serverAdapter, /\btake:\s*251\b/g) !== 8) {
+    errors.push('adapter:overflow-sentinels')
+  }
+  if (
+    !/db\.subAccount\.findMany\([\s\S]*\n\s+Permissions:\s*\{/.test(
+      snapshot.serverAdapter
+    )
+  ) {
+    errors.push('adapter:assignee-root')
+  }
+  if (!/listAgencySubaccountSelectors/.test(snapshot.serverAdapter)) {
+    errors.push('adapter:settings-selectors')
+  }
+
+  return errors.sort()
+}
+
 const verifyAgencyPurposeType = () => {
   const sourceFile = parse('src/components/forms/agency-details.tsx')
   const props = sourceFile.statements.find(
@@ -321,7 +486,7 @@ const verifyAgencyPurposeType = () => {
   return fields.join('|') === exactAgencyPurposeFields.join('|')
 }
 
-const verify = () => {
+export const verifyB5A2ARepository = () => {
   const errors: string[] = []
 
   const diff = Bun.spawnSync(
@@ -361,15 +526,6 @@ const verify = () => {
   if (/\bgetSubAccountTeamMembers\b/.test(sourceText)) {
     errors.push('retired:getTeamMembers')
   }
-  if (/from ['"]\.\/db['"]/.test(types)) errors.push('types:db')
-
-  for (const path of [
-    'src/app/(main)/agency/[agencyId]/settings/page.tsx',
-    'src/app/(main)/subaccount/[subaccountId]/settings/page.tsx',
-  ]) {
-    if (/from ['"]@\/lib\/db['"]/.test(read(path))) errors.push(`page-db:${path}`)
-  }
-
   const detailsConsumers = sourceRootFiles.filter((path) =>
     /<SubAccountDetails\b/.test(read(path))
   )
@@ -388,35 +544,62 @@ const verify = () => {
     errors.push('details:userId:component')
   }
 
-  const compatibilityPaths = [
-    'src/app/(main)/agency/[agencyId]/all-subaccounts/page.tsx',
-    'src/components/sidebar/index.tsx',
+  const entryPaths = [
+    'src/app/(main)/agency/page.tsx',
+    'src/app/(main)/subaccount/page.tsx',
+    'src/app/(main)/agency/[agencyId]/layout.tsx',
+    'src/app/(main)/subaccount/[subaccountId]/layout.tsx',
   ]
-  const compatibilityMappings = compatibilityPaths.reduce(
-    (count, path) =>
-      count +
-      (read(path).match(/legacyActivityActorName=\{projection\.legacyActivityActorName\}/g)
-        ?.length ?? 0),
-    0
+  errors.push(
+    ...verifyB5A2ASourceSnapshot({
+      action: read('src/features/agency-projections/actions.ts'),
+      agencySettingsPage: read(
+        'src/app/(main)/agency/[agencyId]/settings/page.tsx'
+      ),
+      allSubaccountsPage: read(
+        'src/app/(main)/agency/[agencyId]/all-subaccounts/page.tsx'
+      ),
+      createSubaccountButton: read(
+        'src/app/(main)/agency/[agencyId]/all-subaccounts/_components/create-subaccount-btn.tsx'
+      ),
+      detailsConsumerPaths: detailsConsumers,
+      entrySources: entryPaths.map(read),
+      menuOptions: read('src/components/sidebar/menu-options.tsx'),
+      projectionService: read(
+        'src/features/agency-projections/projection-service.ts'
+      ),
+      serverAdapter: read(
+        'src/features/agency-projections/server-projection-service.ts'
+      ),
+      sidebarIndex: read('src/components/sidebar/index.tsx'),
+      sourceText,
+      subaccountSettingsPage: read(
+        'src/app/(main)/subaccount/[subaccountId]/settings/page.tsx'
+      ),
+      types,
+    })
   )
-  if (compatibilityMappings !== 2) errors.push('compatibility:mappings')
 
   assertDigest(
     errors,
     'remainder:queries',
-    digest(normalizeQueries(queries)),
+    digest(normalizeB5A2AQueries(queries)),
     'a8abbbcbb72826980143b1da92bb7562f3e0033af7b9333719f0cc9aed73fab7'
   )
   assertDigest(
     errors,
     'remainder:types',
-    digest(normalizeTypes(types)),
+    digest(normalizeB5A2ATypes(types)),
     'cf5eaa285a4d8486056828203dc822e9a0d41eec017eed1dc73c1d3549449252'
   )
   assertDigest(
     errors,
     'remainder:agency-details',
-    digest(normalizeAgencyDetails(read('src/components/forms/agency-details.tsx'))),
+    digest(
+      normalizeB5A2AAgencyDetails(
+        read('src/components/forms/agency-details.tsx')
+      )
+    ),
     '1679d010911a9fb351bbd27dc7df85776b77f0e2fb56ee3787f0350210363d0e'
   )
   if (!verifyAgencyPurposeType()) errors.push('agency-details:type')
@@ -550,12 +733,6 @@ const verify = () => {
     assertDigest(errors, `file:${path}`, digest(read(path)), expected)
   }
 
-  const entryPaths = [
-    'src/app/(main)/agency/page.tsx',
-    'src/app/(main)/subaccount/page.tsx',
-    'src/app/(main)/agency/[agencyId]/layout.tsx',
-    'src/app/(main)/subaccount/[subaccountId]/layout.tsx',
-  ]
   const entryCalls = entryPaths.flatMap((path) => {
     const sourceFile = parse(path)
     return callExpressions(sourceFile, 'verifyAndAcceptInvitation').map((node) => ({
@@ -589,21 +766,23 @@ const verify = () => {
   return errors.sort()
 }
 
-if (process.argv.length !== 2) {
-  console.error('B5A2A_FAIL argument-count')
-  process.exit(1)
-}
-
-try {
-  const errors = verify()
-  if (errors.length > 0) {
-    console.error(`B5A2A_FAIL errors=${errors.length} first=${errors[0]}`)
+if (import.meta.main) {
+  if (process.argv.length !== 2) {
+    console.error('B5A2A_FAIL argument-count')
     process.exit(1)
   }
-  console.log(
-    'B5A2A_PASS records=14 projections=7 client_actions=1 consumers=3 compatibility_sinks=2 entry_calls=4'
-  )
-} catch {
-  console.error('B5A2A_FAIL verifier-error')
-  process.exit(1)
+
+  try {
+    const errors = verifyB5A2ARepository()
+    if (errors.length > 0) {
+      console.error(`B5A2A_FAIL errors=${errors.length} first=${errors[0]}`)
+      process.exit(1)
+    }
+    console.log(
+      'B5A2A_PASS records=14 projections=7 client_actions=1 consumers=3 compatibility_sinks=2 entry_calls=4'
+    )
+  } catch {
+    console.error('B5A2A_FAIL verifier-error')
+    process.exit(1)
+  }
 }

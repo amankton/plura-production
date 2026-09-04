@@ -2,6 +2,13 @@ import { describe, expect, test } from 'bun:test'
 import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import {
+  normalizeB5A2AAgencyDetails,
+  normalizeB5A2AQueries,
+  normalizeB5A2ATypes,
+  verifyB5A2ASourceSnapshot,
+  type B5A2ASourceSnapshot,
+} from '../../scripts/verify-b5a2a-projections'
 
 const read = (path: string) => readFileSync(join(process.cwd(), path), 'utf8')
 const normalizedHash = (text: string) =>
@@ -14,6 +21,52 @@ const productionPaths = [
   'src/features/agency-projections/server-projection-service.ts',
   'src/features/agency-projections/actions.ts',
 ]
+
+const entryPaths = [
+  'src/app/(main)/agency/page.tsx',
+  'src/app/(main)/subaccount/page.tsx',
+  'src/app/(main)/agency/[agencyId]/layout.tsx',
+  'src/app/(main)/subaccount/[subaccountId]/layout.tsx',
+]
+
+const sourcePaths = () =>
+  Bun.spawnSync(['git', 'ls-files', 'src']).stdout
+    .toString()
+    .split(/\r?\n/)
+    .filter(Boolean)
+
+const sourceSnapshot = (): B5A2ASourceSnapshot => {
+  const paths = sourcePaths()
+  return {
+    action: read('src/features/agency-projections/actions.ts'),
+    agencySettingsPage: read(
+      'src/app/(main)/agency/[agencyId]/settings/page.tsx'
+    ),
+    allSubaccountsPage: read(
+      'src/app/(main)/agency/[agencyId]/all-subaccounts/page.tsx'
+    ),
+    createSubaccountButton: read(
+      'src/app/(main)/agency/[agencyId]/all-subaccounts/_components/create-subaccount-btn.tsx'
+    ),
+    detailsConsumerPaths: paths.filter((path) =>
+      /<SubAccountDetails\b/.test(read(path))
+    ),
+    entrySources: entryPaths.map(read),
+    menuOptions: read('src/components/sidebar/menu-options.tsx'),
+    projectionService: read(
+      'src/features/agency-projections/projection-service.ts'
+    ),
+    serverAdapter: read(
+      'src/features/agency-projections/server-projection-service.ts'
+    ),
+    sidebarIndex: read('src/components/sidebar/index.tsx'),
+    sourceText: paths.map(read).join('\n'),
+    subaccountSettingsPage: read(
+      'src/app/(main)/subaccount/[subaccountId]/settings/page.tsx'
+    ),
+    types: read('src/lib/types.ts'),
+  }
+}
 
 describe('B5A2A closed projection surface', () => {
   test('passes the fixed-input verifier and rejects caller-controlled arguments', () => {
@@ -128,5 +181,185 @@ describe('B5A2A closed projection surface', () => {
     expect(verifier).toContain('remainder:types')
     expect(verifier).toContain('remainder:agency-details')
     for (const path of productionPaths) expect(verifier).toContain(path)
+  })
+
+  test('rejects every fixed injected source-boundary mutation', () => {
+    const baseline = sourceSnapshot()
+    expect(verifyB5A2ASourceSnapshot(baseline)).toEqual([])
+    const mutations: Array<Readonly<{
+      label: string
+      snapshot: B5A2ASourceSnapshot
+    }>> = [
+      {
+        label: 'broad Prisma import',
+        snapshot: {
+          ...baseline,
+          projectionService:
+            "import { Agency } from '@prisma/client'\n" +
+            baseline.projectionService,
+        },
+      },
+      {
+        label: 'any',
+        snapshot: {
+          ...baseline,
+          projectionService: baseline.projectionService + '\ntype Drift = any\n',
+        },
+      },
+      {
+        label: 'cast',
+        snapshot: {
+          ...baseline,
+          menuOptions: baseline.menuOptions + '\nconst drift = value as Agency\n',
+        },
+      },
+      {
+        label: 'agency object spread',
+        snapshot: {
+          ...baseline,
+          menuOptions:
+            baseline.menuOptions + '\nconst drift = <X agencyDetails={{ ...agency }} />\n',
+        },
+      },
+      {
+        label: 'broad wrapper',
+        snapshot: {
+          ...baseline,
+          projectionService:
+            baseline.projectionService +
+            '\ntype Drift = Record<string, unknown>\n',
+        },
+      },
+      {
+        label: 'agency settings direct DB',
+        snapshot: {
+          ...baseline,
+          agencySettingsPage:
+            "import { db } from '@/lib/db'\n" + baseline.agencySettingsPage,
+        },
+      },
+      {
+        label: 'type module direct DB',
+        snapshot: {
+          ...baseline,
+          types: "import { db } from './db'\n" + baseline.types,
+        },
+      },
+      {
+        label: 'retired export or caller',
+        snapshot: {
+          ...baseline,
+          sourceText: baseline.sourceText + '\ngetAuthUserDetails()\n',
+        },
+      },
+      {
+        label: 'fourth details consumer',
+        snapshot: {
+          ...baseline,
+          detailsConsumerPaths: [
+            ...baseline.detailsConsumerPaths,
+            'src/fixed-mutation/fourth-consumer.tsx',
+          ],
+        },
+      },
+      {
+        label: 'third logical name sink',
+        snapshot: {
+          ...baseline,
+          allSubaccountsPage:
+            baseline.allSubaccountsPage +
+            '\n<X userName={projection.legacyActivityActorName} />\n',
+        },
+      },
+      {
+        label: 'fifth entry call',
+        snapshot: {
+          ...baseline,
+          entrySources: [
+            ...baseline.entrySources,
+            'verifyAndAcceptInvitation()',
+          ],
+        },
+      },
+      {
+        label: 'second client action',
+        snapshot: {
+          ...baseline,
+          action: baseline.action + '\nexport const driftAction = () => null\n',
+        },
+      },
+      {
+        label: 'silent adapter truncation',
+        snapshot: {
+          ...baseline,
+          serverAdapter: baseline.serverAdapter.replace('take: 251', 'take: 250'),
+        },
+      },
+      {
+        label: 'unbound assignee relation',
+        snapshot: {
+          ...baseline,
+          serverAdapter: baseline.serverAdapter.replace(
+            'Permissions: {',
+            'UnboundPermissions: {'
+          ),
+        },
+      },
+    ]
+
+    for (const mutation of mutations) {
+      expect(
+        verifyB5A2ASourceSnapshot(mutation.snapshot).length,
+        mutation.label
+      ).toBeGreaterThan(0)
+    }
+  })
+
+  test('rejects non-allowlisted drift in every whole-remainder normalizer', () => {
+    const queries = read('src/lib/queries.ts')
+    const types = read('src/lib/types.ts')
+    const agencyDetails = read('src/components/forms/agency-details.tsx')
+    const expected = {
+      agencyDetails:
+        '1679d010911a9fb351bbd27dc7df85776b77f0e2fb56ee3787f0350210363d0e',
+      queries:
+        'a8abbbcbb72826980143b1da92bb7562f3e0033af7b9333719f0cc9aed73fab7',
+      types:
+        'cf5eaa285a4d8486056828203dc822e9a0d41eec017eed1dc73c1d3549449252',
+    }
+
+    expect(normalizedHash(normalizeB5A2AQueries(queries))).toBe(expected.queries)
+    expect(normalizedHash(normalizeB5A2ATypes(types))).toBe(expected.types)
+    expect(normalizedHash(normalizeB5A2AAgencyDetails(agencyDetails))).toBe(
+      expected.agencyDetails
+    )
+
+    expect(
+      normalizedHash(
+        normalizeB5A2AQueries(
+          queries + '\nexport const fixedMutationQuery = () => null\n'
+        )
+      )
+    ).not.toBe(expected.queries)
+    expect(
+      normalizedHash(
+        normalizeB5A2ATypes(types + '\nexport type FixedMutation = string\n')
+      )
+    ).not.toBe(expected.types)
+
+    for (const marker of [
+      'provisionAgencyOwner',
+      'upsertAgency',
+      '/api/stripe/create-customer',
+      'deleteAgency',
+      'updateAgencyGoal',
+    ]) {
+      const mutation = agencyDetails.replace(marker, `${marker}FixedMutation`)
+      expect(mutation, marker).not.toBe(agencyDetails)
+      expect(
+        normalizedHash(normalizeB5A2AAgencyDetails(mutation)),
+        marker
+      ).not.toBe(expected.agencyDetails)
+    }
   })
 })

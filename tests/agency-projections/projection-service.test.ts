@@ -92,12 +92,22 @@ const makeStore = (overrides: Partial<ProjectionStore> = {}) => {
       },
     ],
     listAgencySubaccounts: async () => [subaccount],
+    listAgencySubaccountSelectors: async () => [
+      { agencyId, id: subaccountId, name: subaccount.name },
+    ],
     listDefaultRedirectPermissions: async () => [
       { access: true, subaccountAgencyId: agencyId, subaccountId },
     ],
     listLegacyActorNames: async () => [{ name: 'Actor' }],
     listPermittedSubaccounts: async () => [
       { access: true, permissionId: 'permission-a', subaccount },
+    ],
+    listPermittedSubaccountSelectors: async () => [
+      {
+        access: true,
+        permissionId: 'permission-a',
+        subaccount: { agencyId, id: subaccountId, name: subaccount.name },
+      },
     ],
     listSubaccountDetails: async () => [subaccountDetails],
     listSubaccountNavigations: async () => [subaccount],
@@ -110,15 +120,21 @@ const makeStore = (overrides: Partial<ProjectionStore> = {}) => {
         name: 'Home',
       },
     ],
-    listTicketAssignees: async () => [
+    listTicketAssigneeSets: async () => [
       {
-        avatarUrl: '/member.svg',
-        id: 'member-a',
-        name: 'Member',
-        permissionId: 'permission-a',
-        role: Role.SUBACCOUNT_USER,
-        subaccountAgencyId: agencyId,
-        userAgencyId: agencyId,
+        agencyId,
+        assignees: [
+          {
+            avatarUrl: '/member.svg',
+            id: 'member-a',
+            name: 'Member',
+            permissionId: 'permission-a',
+            role: Role.SUBACCOUNT_USER,
+            subaccountAgencyId: agencyId,
+            userAgencyId: agencyId,
+          },
+        ],
+        id: subaccountId,
       },
     ],
     ...overrides,
@@ -416,24 +432,30 @@ describe('B5A2A actor-safe projection service', () => {
 
   test('returns only exact ordered SUBACCOUNT_USER assignee options', async () => {
     const store = makeStore({
-      listTicketAssignees: async () => [
+      listTicketAssigneeSets: async () => [
         {
-          avatarUrl: '/z.svg',
-          id: 'member-z',
-          name: 'Zed',
-          permissionId: 'permission-z',
-          role: Role.SUBACCOUNT_USER,
-          subaccountAgencyId: agencyId,
-          userAgencyId: agencyId,
-        },
-        {
-          avatarUrl: '/a.svg',
-          id: 'member-a',
-          name: 'Ada',
-          permissionId: 'permission-a',
-          role: Role.SUBACCOUNT_USER,
-          subaccountAgencyId: agencyId,
-          userAgencyId: agencyId,
+          agencyId,
+          assignees: [
+            {
+              avatarUrl: '/z.svg',
+              id: 'member-z',
+              name: 'Zed',
+              permissionId: 'permission-z',
+              role: Role.SUBACCOUNT_USER,
+              subaccountAgencyId: agencyId,
+              userAgencyId: agencyId,
+            },
+            {
+              avatarUrl: '/a.svg',
+              id: 'member-a',
+              name: 'Ada',
+              permissionId: 'permission-a',
+              role: Role.SUBACCOUNT_USER,
+              subaccountAgencyId: agencyId,
+              userAgencyId: agencyId,
+            },
+          ],
+          id: subaccountId,
         },
       ],
     })
@@ -458,14 +480,24 @@ describe('B5A2A actor-safe projection service', () => {
     }
     await expectAccessCode(
       makeService({
-        store: makeStore({ listTicketAssignees: async () => [invalidAssignee] }),
+        store: makeStore({
+          listTicketAssigneeSets: async () => [
+            { agencyId, assignees: [invalidAssignee], id: subaccountId },
+          ],
+        }),
       }).listTicketAssigneeOptions(subaccountId),
       'FORBIDDEN'
     )
     await expectAccessCode(
       makeService({
         store: makeStore({
-          listTicketAssignees: async () => [invalidAssignee, invalidAssignee],
+          listTicketAssigneeSets: async () => [
+            {
+              agencyId,
+              assignees: [invalidAssignee, invalidAssignee],
+              id: subaccountId,
+            },
+          ],
         }),
       }).listTicketAssigneeOptions(subaccountId),
       'CONFLICT'
@@ -478,5 +510,355 @@ describe('B5A2A actor-safe projection service', () => {
       makeService().listTicketAssigneeOptions('x'.repeat(129)),
       'FORBIDDEN'
     )
+  })
+
+  test('fails closed when agency records disappear or change parent after context resolution', async () => {
+    const cases: Array<Partial<ProjectionStore>> = [
+      { listAgencyNavigations: async () => [] },
+      {
+        listAgencyNavigations: async () => [
+          { ...agencyNavigation, id: 'agency-deleted-and-replaced' },
+        ],
+      },
+      { listAgencyReferences: async () => [] },
+      { listAgencyProfiles: async () => [] },
+      { listActorProfiles: async () => [] },
+    ]
+
+    await expectAccessCode(
+      makeService({ store: makeStore(cases[0]) }).getAgencySidebarProjection(
+        agencyId
+      ),
+      'FORBIDDEN'
+    )
+    await expectAccessCode(
+      makeService({ store: makeStore(cases[1]) }).getAgencySidebarProjection(
+        agencyId
+      ),
+      'FORBIDDEN'
+    )
+    await expectAccessCode(
+      makeService({ store: makeStore(cases[2]) }).getAgencySubaccountsProjection(
+        agencyId
+      ),
+      'FORBIDDEN'
+    )
+    await expectAccessCode(
+      makeService({ store: makeStore(cases[3]) }).getAgencySettingsProjection(
+        agencyId
+      ),
+      'FORBIDDEN'
+    )
+    await expectAccessCode(
+      makeService({ store: makeStore(cases[4]) }).getAgencySettingsProjection(
+        agencyId
+      ),
+      'FORBIDDEN'
+    )
+  })
+
+  test('fails closed for missing, deleted, wrong-parent, and orphaned subaccounts after context resolution', async () => {
+    await expectAccessCode(
+      makeService({
+        store: makeStore({ listSubaccountNavigations: async () => [] }),
+      }).getSubaccountSidebarProjection(subaccountId),
+      'FORBIDDEN'
+    )
+    await expectAccessCode(
+      makeService({
+        store: makeStore({
+          listSubaccountNavigations: async () => [
+            { ...subaccount, agencyId: 'agency-b' },
+          ],
+        }),
+      }).getSubaccountSidebarProjection(subaccountId),
+      'FORBIDDEN'
+    )
+    await expectAccessCode(
+      makeService({
+        store: makeStore({
+          listSubaccountDetails: async () => [
+            { ...subaccountDetails, id: 'sub-replaced' },
+          ],
+        }),
+      }).getSubaccountSettingsProjection(subaccountId),
+      'FORBIDDEN'
+    )
+    await expectAccessCode(
+      makeService({
+        store: makeStore({ listSubaccountDetails: async () => [] }),
+      }).getSubaccountSettingsProjection(subaccountId),
+      'FORBIDDEN'
+    )
+  })
+
+  test('binds a valid empty assignee list to an existing exact tenant', async () => {
+    const store = makeStore({
+      listTicketAssigneeSets: async () => [
+        { agencyId, assignees: [], id: subaccountId },
+      ],
+    })
+    expect(
+      await makeService({ store }).listTicketAssigneeOptions(subaccountId)
+    ).toEqual([])
+  })
+
+  test('denies deleted, replaced, orphaned, and ambiguous assignee targets', async () => {
+    const targets = [
+      [],
+      [{ agencyId, assignees: [], id: 'sub-replaced' }],
+      [{ agencyId: 'agency-b', assignees: [], id: subaccountId }],
+      [
+        { agencyId, assignees: [], id: subaccountId },
+        { agencyId, assignees: [], id: subaccountId },
+      ],
+    ]
+    for (const target of targets) {
+      await expectAccessCode(
+        makeService({
+          store: makeStore({ listTicketAssigneeSets: async () => target }),
+        }).listTicketAssigneeOptions(subaccountId),
+        target.length > 1 ? 'CONFLICT' : 'FORBIDDEN'
+      )
+    }
+  })
+
+  test('rejects stale, foreign, and duplicate assignee rows without returning partial data', async () => {
+    const valid = {
+      avatarUrl: '/member.svg',
+      id: 'member-a',
+      name: 'Member',
+      permissionId: 'permission-a',
+      role: Role.SUBACCOUNT_USER,
+      subaccountAgencyId: agencyId,
+      userAgencyId: agencyId,
+    }
+    const invalidRows = [
+      [{ ...valid, role: Role.SUBACCOUNT_GUEST }],
+      [{ ...valid, userAgencyId: 'agency-b' }],
+      [{ ...valid, subaccountAgencyId: 'agency-b' }],
+      [valid, { ...valid, permissionId: 'permission-b' }],
+    ]
+    for (const assignees of invalidRows) {
+      await expectAccessCode(
+        makeService({
+          store: makeStore({
+            listTicketAssigneeSets: async () => [
+              { agencyId, assignees, id: subaccountId },
+            ],
+          }),
+        }).listTicketAssigneeOptions(subaccountId),
+        assignees.length > 1 ? 'CONFLICT' : 'FORBIDDEN'
+      )
+    }
+  })
+
+  test('fails closed instead of truncating every bounded collection', async () => {
+    const options = Array.from({ length: 251 }, (_, index) => ({
+      createdAt,
+      icon: Icon.home,
+      id: `option-${index}`,
+      link: `/option-${index}`,
+      name: `Option ${index}`,
+    }))
+    const subaccounts = Array.from({ length: 251 }, (_, index) => ({
+      ...subaccount,
+      id: `sub-${index}`,
+      name: `Subaccount ${index}`,
+    }))
+    const selectors = subaccounts.map(({ agencyId: owner, id, name }) => ({
+      agencyId: owner,
+      id,
+      name,
+    }))
+    const permissions = subaccounts.map((item, index) => ({
+      access: true,
+      permissionId: `permission-${index}`,
+      subaccount: item,
+    }))
+    const selectorPermissions = selectors.map((item, index) => ({
+      access: true,
+      permissionId: `selector-permission-${index}`,
+      subaccount: item,
+    }))
+    const redirects = subaccounts.map((item) => ({
+      access: true,
+      subaccountAgencyId: agencyId,
+      subaccountId: item.id,
+    }))
+    const assignees = Array.from({ length: 251 }, (_, index) => ({
+      avatarUrl: `/member-${index}.svg`,
+      id: `member-${index}`,
+      name: `Member ${index}`,
+      permissionId: `permission-${index}`,
+      role: Role.SUBACCOUNT_USER,
+      subaccountAgencyId: agencyId,
+      userAgencyId: agencyId,
+    }))
+
+    const operations: Array<Promise<unknown>> = [
+      makeService({
+        store: makeStore({ listAgencySidebarOptions: async () => options }),
+      }).getAgencySidebarProjection(agencyId),
+      makeService({
+        store: makeStore({ listAgencySubaccounts: async () => subaccounts }),
+      }).getAgencySubaccountsProjection(agencyId),
+      makeService({
+        store: makeStore({
+          listAgencySubaccountSelectors: async () => selectors,
+        }),
+      }).getAgencySettingsProjection(agencyId),
+      makeService({
+        store: makeStore({
+          listDefaultRedirectPermissions: async () => redirects,
+        }),
+      }).getDefaultSubaccountRedirectProjection(),
+      makeService({
+        store: makeStore({ listPermittedSubaccounts: async () => permissions }),
+        tenantRole: Role.SUBACCOUNT_USER,
+      }).getSubaccountSidebarProjection(subaccountId),
+      makeService({
+        store: makeStore({
+          listPermittedSubaccountSelectors: async () => selectorPermissions,
+        }),
+        tenantRole: Role.SUBACCOUNT_USER,
+      }).getSubaccountSettingsProjection(subaccountId),
+      makeService({
+        store: makeStore({ listSubaccountSidebarOptions: async () => options }),
+      }).getSubaccountSidebarProjection(subaccountId),
+      makeService({
+        store: makeStore({
+          listTicketAssigneeSets: async () => [
+            { agencyId, assignees, id: subaccountId },
+          ],
+        }),
+      }).listTicketAssigneeOptions(subaccountId),
+    ]
+    for (const operation of operations) {
+      await expectAccessCode(operation, 'CONFLICT')
+    }
+  })
+
+  test('detects duplicate permission or assignee corruption beyond row 250', async () => {
+    const redirect = {
+      access: true,
+      subaccountAgencyId: agencyId,
+      subaccountId,
+    }
+    const redirects = Array.from({ length: 250 }, (_, index) => ({
+      ...redirect,
+      subaccountId: `sub-${index}`,
+    })).concat(redirect)
+    await expectAccessCode(
+      makeService({
+        store: makeStore({
+          listDefaultRedirectPermissions: async () => redirects,
+        }),
+      }).getDefaultSubaccountRedirectProjection(),
+      'CONFLICT'
+    )
+
+    const assignee = {
+      avatarUrl: '/member.svg',
+      id: 'member-a',
+      name: 'Member',
+      permissionId: 'permission-a',
+      role: Role.SUBACCOUNT_USER,
+      subaccountAgencyId: agencyId,
+      userAgencyId: agencyId,
+    }
+    const assignees = Array.from({ length: 250 }, (_, index) => ({
+      ...assignee,
+      id: `member-${index}`,
+      permissionId: `permission-${index}`,
+    })).concat(assignee)
+    await expectAccessCode(
+      makeService({
+        store: makeStore({
+          listTicketAssigneeSets: async () => [
+            { agencyId, assignees, id: subaccountId },
+          ],
+        }),
+      }).listTicketAssigneeOptions(subaccountId),
+      'CONFLICT'
+    )
+  })
+
+  test('uses selector-only settings reads and does not consult navigation records', async () => {
+    let navigationReads = 0
+    const store = makeStore({
+      listAgencySubaccounts: async () => {
+        navigationReads += 1
+        return [subaccount]
+      },
+    })
+    await makeService({ store }).getAgencySettingsProjection(agencyId)
+    await makeService({ store }).getSubaccountSettingsProjection(subaccountId)
+    expect(navigationReads).toBe(0)
+  })
+
+  test('allowlist mapping excludes sensitive and nested fields from every projection class', async () => {
+    const forbiddenFields = [
+      'connectAccountId',
+      'customerId',
+      'notification',
+      'contact',
+      'funnel',
+      'pipeline',
+      'ticket',
+      'permissionGraph',
+      'nestedAgency',
+      'createdAt',
+      'updatedAt',
+    ]
+    const store = makeStore({
+      listAgencyNavigations: async () => [
+        Object.assign({}, agencyNavigation, {
+          connectAccountId: 'excluded',
+          customerId: 'excluded',
+          nestedAgency: { id: agencyId },
+        }),
+      ],
+      listAgencySubaccounts: async () => [
+        Object.assign({}, subaccount, {
+          contact: [],
+          funnel: [],
+          notification: [],
+          permissionGraph: [],
+          pipeline: [],
+          ticket: [],
+        }),
+      ],
+      listTicketAssigneeSets: async () => [
+        {
+          agencyId,
+          assignees: [
+            Object.assign(
+              {
+                avatarUrl: '/member.svg',
+                id: 'member-a',
+                name: 'Member',
+                permissionId: 'permission-a',
+                role: Role.SUBACCOUNT_USER,
+                subaccountAgencyId: agencyId,
+                userAgencyId: agencyId,
+              },
+              { email: 'excluded@example.invalid', nestedAgency: {} }
+            ),
+          ],
+          id: subaccountId,
+        },
+      ],
+    })
+    const sidebar = await makeService({ store }).getAgencySidebarProjection(
+      agencyId
+    )
+    const assignees = await makeService({ store }).listTicketAssigneeOptions(
+      subaccountId
+    )
+    const serialized = JSON.stringify({ assignees, sidebar })
+    for (const field of [...forbiddenFields, 'email']) {
+      expect(serialized).not.toContain(`\"${field}\"`)
+    }
   })
 })

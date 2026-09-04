@@ -8,7 +8,7 @@ import { db } from '@/lib/db'
 import {
   createProjectionService,
   type ProjectionStore,
-  type TicketAssigneeRecord,
+  type TicketAssigneeSetRecord,
 } from './projection-service'
 
 const agencyNavigationSelect = {
@@ -87,7 +87,7 @@ const projectionStore: ProjectionStore = {
         link: true,
         name: true,
       },
-      take: 250,
+      take: 251,
     }),
   listAgencySubaccounts: (agencyId) =>
     db.subAccount.findMany({
@@ -100,7 +100,14 @@ const projectionStore: ProjectionStore = {
         name: true,
         subAccountLogo: true,
       },
-      take: 250,
+      take: 251,
+    }),
+  listAgencySubaccountSelectors: (agencyId) =>
+    db.subAccount.findMany({
+      where: { agencyId },
+      orderBy: [{ name: 'asc' }, { id: 'asc' }],
+      select: { agencyId: true, id: true, name: true },
+      take: 251,
     }),
   listDefaultRedirectPermissions: async (values) =>
     (
@@ -116,7 +123,7 @@ const projectionStore: ProjectionStore = {
           subAccountId: true,
           SubAccount: { select: { agencyId: true } },
         },
-        take: 250,
+        take: 251,
       })
     ).map((permission) => ({
       access: permission.access,
@@ -151,7 +158,30 @@ const projectionStore: ProjectionStore = {
             },
           },
         },
-        take: 250,
+        take: 251,
+      })
+    ).map((permission) => ({
+      access: permission.access,
+      permissionId: permission.id,
+      subaccount: permission.SubAccount,
+    })),
+  listPermittedSubaccountSelectors: async (values) =>
+    (
+      await db.permissions.findMany({
+        where: {
+          access: true,
+          SubAccount: { agencyId: values.agencyId },
+          User: { agencyId: values.agencyId, id: values.actorId },
+        },
+        orderBy: [{ subAccountId: 'asc' }, { id: 'asc' }],
+        select: {
+          access: true,
+          id: true,
+          SubAccount: {
+            select: { agencyId: true, id: true, name: true },
+          },
+        },
+        take: 251,
       })
     ).map((permission) => ({
       access: permission.access,
@@ -202,45 +232,54 @@ const projectionStore: ProjectionStore = {
         link: true,
         name: true,
       },
-      take: 250,
+      take: 251,
     }),
-  listTicketAssignees: async (values) =>
+  listTicketAssigneeSets: async (values) =>
     (
-      await db.permissions.findMany({
-        where: {
-          access: true,
-          subAccountId: values.subaccountId,
-          SubAccount: { agencyId: values.agencyId },
-          User: {
-            agencyId: values.agencyId,
-            role: Role.SUBACCOUNT_USER,
-          },
-        },
-        orderBy: [{ User: { name: 'asc' } }, { id: 'asc' }],
+      await db.subAccount.findMany({
+        where: { agencyId: values.agencyId, id: values.subaccountId },
         select: {
+          agencyId: true,
           id: true,
-          SubAccount: { select: { agencyId: true } },
-          User: {
-            select: {
-              agencyId: true,
-              avatarUrl: true,
-              id: true,
-              name: true,
-              role: true,
+          Permissions: {
+            where: {
+              access: true,
+              User: {
+                agencyId: values.agencyId,
+                role: Role.SUBACCOUNT_USER,
+              },
             },
+            orderBy: [{ User: { name: 'asc' } }, { id: 'asc' }],
+            select: {
+              id: true,
+              User: {
+                select: {
+                  agencyId: true,
+                  avatarUrl: true,
+                  id: true,
+                  name: true,
+                  role: true,
+                },
+              },
+            },
+            take: 251,
           },
         },
-        take: 250,
+        take: 2,
       })
     ).map(
-      (permission): TicketAssigneeRecord => ({
-        avatarUrl: permission.User.avatarUrl,
-        id: permission.User.id,
-        name: permission.User.name,
-        permissionId: permission.id,
-        role: permission.User.role,
-        subaccountAgencyId: permission.SubAccount.agencyId,
-        userAgencyId: permission.User.agencyId,
+      (subaccount): TicketAssigneeSetRecord => ({
+        agencyId: subaccount.agencyId,
+        assignees: subaccount.Permissions.map((permission) => ({
+          avatarUrl: permission.User.avatarUrl,
+          id: permission.User.id,
+          name: permission.User.name,
+          permissionId: permission.id,
+          role: permission.User.role,
+          subaccountAgencyId: subaccount.agencyId,
+          userAgencyId: permission.User.agencyId,
+        })),
+        id: subaccount.id,
       })
     ),
 }

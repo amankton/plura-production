@@ -144,6 +144,15 @@ export type PermittedSubaccountRecord = Readonly<{
 export type AgencySubaccountRecord = SubaccountNavigation &
   Readonly<{ agencyId: string }>
 
+export type AgencySubaccountSelectorRecord = SubaccountSelector &
+  Readonly<{ agencyId: string }>
+
+export type PermittedSubaccountSelectorRecord = Readonly<{
+  access: boolean
+  permissionId: string
+  subaccount: AgencySubaccountSelectorRecord
+}>
+
 export type SubaccountDetailsRecord = SubaccountDetails &
   Readonly<{ agencyId: string }>
 
@@ -154,6 +163,12 @@ export type TicketAssigneeRecord = TicketAssigneeOption &
     subaccountAgencyId: string
     userAgencyId: string | null
   }>
+
+export type TicketAssigneeSetRecord = Readonly<{
+  agencyId: string
+  assignees: readonly TicketAssigneeRecord[]
+  id: string
+}>
 
 export type ProjectionStore = {
   listActorProfiles: (values: {
@@ -176,6 +191,9 @@ export type ProjectionStore = {
   listAgencySubaccounts: (
     agencyId: string
   ) => Promise<readonly AgencySubaccountRecord[]>
+  listAgencySubaccountSelectors: (
+    agencyId: string
+  ) => Promise<readonly AgencySubaccountSelectorRecord[]>
   listDefaultRedirectPermissions: (values: {
     actorId: string
     agencyId: string
@@ -188,6 +206,10 @@ export type ProjectionStore = {
     actorId: string
     agencyId: string
   }) => Promise<readonly PermittedSubaccountRecord[]>
+  listPermittedSubaccountSelectors: (values: {
+    actorId: string
+    agencyId: string
+  }) => Promise<readonly PermittedSubaccountSelectorRecord[]>
   listSubaccountDetails: (values: {
     agencyId: string
     subaccountId: string
@@ -200,10 +222,10 @@ export type ProjectionStore = {
     agencyId: string
     subaccountId: string
   }) => Promise<readonly SidebarOptionRecord[]>
-  listTicketAssignees: (values: {
+  listTicketAssigneeSets: (values: {
     agencyId: string
     subaccountId: string
-  }) => Promise<readonly TicketAssigneeRecord[]>
+  }) => Promise<readonly TicketAssigneeSetRecord[]>
 }
 
 type ProjectionServiceDependencies = {
@@ -218,6 +240,7 @@ const privilegedRoles = new Set<Role>([
   Role.AGENCY_ADMIN,
 ])
 const roles = new Set<Role>(Object.values(Role))
+const maximumProjectionListSize = 250
 
 const parseSelector = (value: unknown) => {
   if (typeof value !== 'string' || value.length > 128) {
@@ -233,6 +256,13 @@ const exactlyOne = <T>(records: readonly T[]): T => {
     throw new AccessError(records.length > 1 ? 'CONFLICT' : 'FORBIDDEN')
   }
   return records[0]
+}
+
+const withinProjectionLimit = <T>(records: readonly T[]): readonly T[] => {
+  if (records.length > maximumProjectionListSize) {
+    throw new AccessError('CONFLICT')
+  }
+  return records
 }
 
 const compareByNameAndId = (
@@ -326,7 +356,9 @@ export const createProjectionService = ({
 
   const getVisibleSubaccounts = async (context: TenantContext) => {
     if (privilegedRoles.has(context.actor.role)) {
-      const subaccounts = await store.listAgencySubaccounts(context.agencyId)
+      const subaccounts = withinProjectionLimit(
+        await store.listAgencySubaccounts(context.agencyId)
+      )
       if (
         subaccounts.some(
           (subaccount) => subaccount.agencyId !== context.agencyId
@@ -340,10 +372,12 @@ export const createProjectionService = ({
         .map(mapSubaccountNavigation)
     }
 
-    const permissions = await store.listPermittedSubaccounts({
-      actorId: context.actor.id,
-      agencyId: context.agencyId,
-    })
+    const permissions = withinProjectionLimit(
+      await store.listPermittedSubaccounts({
+        actorId: context.actor.id,
+        agencyId: context.agencyId,
+      })
+    )
     assertDistinct(permissions, (permission) => permission.subaccount.id)
     for (const permission of permissions) {
       if (
@@ -360,6 +394,43 @@ export const createProjectionService = ({
         name: permission.subaccount.name,
         subAccountLogo: permission.subaccount.subAccountLogo,
       }))
+      .sort(compareByNameAndId)
+  }
+
+  const getVisibleSubaccountSelectors = async (context: TenantContext) => {
+    if (privilegedRoles.has(context.actor.role)) {
+      const subaccounts = withinProjectionLimit(
+        await store.listAgencySubaccountSelectors(context.agencyId)
+      )
+      if (
+        subaccounts.some(
+          (subaccount) => subaccount.agencyId !== context.agencyId
+        )
+      ) {
+        throw new AccessError('FORBIDDEN')
+      }
+      return subaccounts
+        .map(({ id, name }) => ({ id, name }))
+        .sort(compareByNameAndId)
+    }
+
+    const permissions = withinProjectionLimit(
+      await store.listPermittedSubaccountSelectors({
+        actorId: context.actor.id,
+        agencyId: context.agencyId,
+      })
+    )
+    assertDistinct(permissions, (permission) => permission.subaccount.id)
+    for (const permission of permissions) {
+      if (
+        !permission.access ||
+        permission.subaccount.agencyId !== context.agencyId
+      ) {
+        throw new AccessError('FORBIDDEN')
+      }
+    }
+    return permissions
+      .map(({ subaccount: { id, name } }) => ({ id, name }))
       .sort(compareByNameAndId)
   }
 
@@ -402,6 +473,7 @@ export const createProjectionService = ({
         actorId: actor.id,
         agencyId: actor.agencyId,
       })
+      withinProjectionLimit(permissions)
       if (permissions.length === 0) throw new AccessError('FORBIDDEN')
       assertDistinct(permissions, (permission) => permission.subaccountId)
       for (const permission of permissions) {
@@ -437,6 +509,8 @@ export const createProjectionService = ({
       if (agencyProjection.id !== context.agencyId) {
         throw new AccessError('FORBIDDEN')
       }
+      withinProjectionLimit(sidebarOptions)
+      withinProjectionLimit(subaccounts)
       return {
         actor: { role: context.actor.role },
         agency: mapAgencyNavigation(agencyProjection),
@@ -486,6 +560,7 @@ export const createProjectionService = ({
       if (agencyProjection.id !== context.agencyId) {
         throw new AccessError('FORBIDDEN')
       }
+      withinProjectionLimit(sidebarOptions)
       const currentSubaccountProjection = exactlyOne(currentSubaccount)
       if (
         currentSubaccountProjection.id !== context.subaccountId ||
@@ -508,7 +583,7 @@ export const createProjectionService = ({
           .map(mapSidebarOption),
         subaccounts,
       }
-      if (!legacyName) return baseProjection
+      if (legacyName === null) return baseProjection
       return {
         actor: baseProjection.actor,
         agency: baseProjection.agency,
@@ -535,6 +610,7 @@ export const createProjectionService = ({
       if (agencyProjection.id !== context.agencyId) {
         throw new AccessError('FORBIDDEN')
       }
+      withinProjectionLimit(subaccounts)
       return {
         agency: mapAgencyReference(agencyProjection),
         legacyActivityActorName,
@@ -561,7 +637,7 @@ export const createProjectionService = ({
           agencyId: context.agencyId,
         }),
         store.listAgencyProfiles(context.agencyId),
-        store.listAgencySubaccounts(context.agencyId),
+        store.listAgencySubaccountSelectors(context.agencyId),
       ])
       const actorProjection = exactlyOne(actor)
       const agencyProjection = exactlyOne(agency)
@@ -571,6 +647,7 @@ export const createProjectionService = ({
       ) {
         throw new AccessError('FORBIDDEN')
       }
+      withinProjectionLimit(subaccounts)
       return {
         actor: mapActorProfile(actorProjection),
         agency: mapAgencyProfile(agencyProjection),
@@ -579,10 +656,9 @@ export const createProjectionService = ({
             if (subaccount.agencyId !== context.agencyId) {
               throw new AccessError('FORBIDDEN')
             }
-            return mapSubaccountNavigation(subaccount)
+            return { id: subaccount.id, name: subaccount.name }
           })
           .sort(compareByNameAndId)
-          .map(({ id, name }) => ({ id, name })),
       }
     },
 
@@ -601,7 +677,7 @@ export const createProjectionService = ({
           agencyId: context.agencyId,
           subaccountId: context.subaccountId,
         }),
-        getVisibleSubaccounts(context),
+        getVisibleSubaccountSelectors(context),
       ])
       const actorProjection = exactlyOne(actor)
       const agencyProjection = exactlyOne(agency)
@@ -635,7 +711,7 @@ export const createProjectionService = ({
             zipCode: selected.zipCode,
           }
         })(),
-        subaccounts: subaccounts.map(({ id, name }) => ({ id, name })),
+        subaccounts,
       }
     },
 
@@ -644,10 +720,19 @@ export const createProjectionService = ({
     ): Promise<readonly TicketAssigneeOption[]> => {
       const subaccountId = parseSelector(rawSubaccountId)
       const context = await resolveTenantContext(subaccountId)
-      const assignees = await store.listTicketAssignees({
-        agencyId: context.agencyId,
-        subaccountId: context.subaccountId,
-      })
+      const set = exactlyOne(
+        await store.listTicketAssigneeSets({
+          agencyId: context.agencyId,
+          subaccountId: context.subaccountId,
+        })
+      )
+      if (
+        set.id !== context.subaccountId ||
+        set.agencyId !== context.agencyId
+      ) {
+        throw new AccessError('FORBIDDEN')
+      }
+      const assignees = withinProjectionLimit(set.assignees)
       assertDistinct(assignees, (assignee) => assignee.id)
       for (const assignee of assignees) {
         if (

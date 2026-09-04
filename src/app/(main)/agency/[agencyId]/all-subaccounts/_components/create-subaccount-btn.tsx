@@ -15,7 +15,6 @@ type Props = {
 
 const CreateSubaccountButton = ({ agencyDetails, className, userName }: Props) => {
   const { setOpen } = useModal()
-  if (!userName) return
 
   return (
     <Button
@@ -28,7 +27,7 @@ const CreateSubaccountButton = ({ agencyDetails, className, userName }: Props) =
           >
             <SubAccountDetails
               agencyDetails={{ id: agencyDetails.id }}
-              userName={userName}
+              userName={userName ?? ''}
             />
           </CustomModal>
         )

@@ -233,6 +233,15 @@ describe('B5A1 closed agency authority inventory', () => {
       disposition: 'ACCEPTED_RETAIN',
       requestedIds: ['subaccountId'],
     })
+    expect(
+      inventory.records.find(
+        (record) => record.surfaceId ===
+          'internal-only:src/features/agency-projections/server-projection-service.ts#agencyProjectionService'
+      )
+    ).toMatchObject({
+      concurrency: 'read snapshot; no write authority',
+      effects: ['read'],
+    })
   })
 
   test('keeps the JSON schema taxonomies identical to the executable validator', () => {

@@ -750,6 +750,9 @@ const apiEffects: Record<string, Effect[]> = {
 }
 
 const internalEffectOverrides: Record<string, Effect[]> = {
+  'src/features/agency-projections/server-projection-service.ts#agencyProjectionService': [
+    'read',
+  ],
   'src/lib/stripe/billing-catalog-server.ts#getCrewframePriceForPlan': [
     'external call',
     'read',

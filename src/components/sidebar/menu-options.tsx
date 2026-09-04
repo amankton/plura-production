@@ -233,8 +233,7 @@ const MenuOptions = ({
                   </CommandGroup>
                 </CommandList>
                 {(actor.role === 'AGENCY_OWNER' ||
-                  actor.role === 'AGENCY_ADMIN') &&
-                  legacyActivityActorName && (
+                  actor.role === 'AGENCY_ADMIN') && (
                   <SheetClose>
                     <Button
                       className="w-full flex gap-2"
@@ -246,7 +245,7 @@ const MenuOptions = ({
                           >
                             <SubAccountDetails
                               agencyDetails={{ id: agency.id }}
-                              userName={legacyActivityActorName}
+                              userName={legacyActivityActorName ?? ''}
                             />
                           </CustomModal>
                         )
