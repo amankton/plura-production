@@ -6,9 +6,9 @@ Replace broad actor/agency ORM graphs and page-level database reads with
 purpose-specific, actor-derived projections for entry routing, sidebars,
 settings, all-subaccounts, default-subaccount routing, and ticket assignees.
 
-This work item is the final documentation-only B5A2A implementation gate. It
-defines the only source and test changes that may occur after exact approval.
-Until then, production implementation remains blocked.
+This work item began as the final documentation-only B5A2A implementation
+gate. Its completed gate, implementation, remediation, review, and execution
+chain is preserved below as immutable lifecycle history.
 
 ## Immutable authority
 
@@ -37,11 +37,12 @@ Until then, production implementation remains blocked.
 - Parent B5A: `READY`.
 - B5A1: `DONE`.
 - B5A2 intake and three amendments: `ACCEPTED`.
-- B5A2A gate: `READY`.
-- B5A2A implementation: `BLOCKED_PENDING_EXACT_GATE_APPROVAL`.
+- B5A2A gate and implementation: `DONE`.
+- B5A2A implementation gate: `HISTORICAL_EXECUTION_ONLY`.
 - B5A2B and B5A3-B5A8: `BLOCKED`.
 
-No production authority is inherited from the intake or amendments.
+No new or downstream production authority is inherited from this completed
+work item, its intake, or its amendments.
 
 ## Exact 14-record binding
 
@@ -579,10 +580,55 @@ they do not change.
 
 ## Status
 
-`READY`
+`DONE`
+
+## Lifecycle seal
+
+- Original implementation-gate draft:
+  `c0f684026c21f59729b340f495533020c3584cd2`.
+- Accepted final implementation gate:
+  `bbe5ec82a8184c21fc0d09f767891c5dc7f08534`.
+- Gate Architect token: `APPROVE_B5A2A_IMPLEMENTATION_GATE`.
+- Gate Verifier token: `PASS_B5A2A_IMPLEMENTATION_GATE`.
+- Gate Acceptance token: `ACCEPT_B5A2A_IMPLEMENTATION_GATE_AND_PUSH`.
+- Original held implementation candidate:
+  `30917ecfec561ed2beb1fc1929c9c5f809739aaf`.
+- Remediation-round-one production implementation:
+  `8482550f03ddb5cb14d4aba411ec5877a5946248`.
+- Prior held review seal:
+  `4d80995620b52ee3ba2f6783c248fa50d1fc9681`.
+- Remediation-round-two final candidate:
+  `7832c703ddbc2d527d83b2a810d8f6890db9fdca`.
+- Final reviewed implementation/evidence seal:
+  `e49214949fcacdb6b9e3b8cb1e6478bb177986dc`.
+- Implementation Architect token:
+  `APPROVE_B5A2A_IMPLEMENTATION_CANDIDATE`.
+- Implementation Verifier token:
+  `PASS_B5A2A_IMPLEMENTATION_CANDIDATE`.
+- Implementation Acceptance token:
+  `ACCEPT_B5A2A_IMPLEMENTATION_CANDIDATE_AND_PUSH`.
+- Execution-seal authoring token: `GO_B5A2A_EXECUTION_SEAL_AUTHORING`.
+- Superseded execution-seal candidate:
+  `8313f588a29da787914fafecb18f2b8cdba09b01`.
+- Accepted corrected execution seal:
+  `31df2431a6eb0a0473a1f4fb5bba884233888e1e`.
+- Execution-seal Architect token: `APPROVE_B5A2A_EXECUTION_SEAL`.
+- Execution-seal Verifier token: `PASS_B5A2A_EXECUTION_SEAL`.
+- Execution-seal Acceptance token: `ACCEPT_B5A2A_EXECUTION_SEAL_AND_PUSH`.
+- Lifecycle authoring token: `GO_B5A2A_LIFECYCLE_SEAL_AUTHORING`.
+- Implementation remediation rounds used: 2 of 2. The remediation allowance is
+  exhausted; this lifecycle record authorizes no further implementation,
+  evidence, verifier, inventory, or source change.
+- This transition closes only B5A2A's repository-only actor-safe projections.
+  B5A2B and B5A3-B5A8 remain blocked. Dependency audit remains
+  `STALE_UNREVALIDATED`, advisories remain `UNKNOWN`, and
+  `CF-P1-AUDIT-FRESH-01` remains open. Permission migration remains
+  `DESIGN_REQUIRED`. Representative database/provider and public-runtime
+  evidence remain blocked. Local, shared-development, staging, pilot, and
+  production readiness remain `FAIL`. Re-theme/taste validation, CRM/Odoo,
+  Composio, agent-runtime, credentials, deployment, and release remain blocked
+  pending their own exact gates.
 
 ## Execution gate
 
-`BLOCKED`; no B5A2A production implementation is authorized until Architect,
-Verifier, and Acceptance approve this exact documentation candidate and
-Acceptance issues an exact implementation token.
+`HISTORICAL_EXECUTION_ONLY`; any new B5A2A work requires a new exact gate.
