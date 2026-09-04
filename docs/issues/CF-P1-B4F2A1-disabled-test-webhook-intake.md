@@ -25,6 +25,9 @@ to process or project an event.
 - B4F1 implementation: `67f02349399f00ac4deb7c3a2f36608a9e7e30ff`.
 - B4F1 execution seal: `8636ac79681d7245a463c5d056b337226c50f1f4`.
 - Intake contract: `B4F2A1_INTAKE_CONTRACT`.
+- Issue-gate commit: `583570766e0cd0da0be560ba5bd8f672f254bd6b`.
+- Architect entry token: `GO_B4F2A1_DISABLED_TEST_INTAKE`.
+- Verifier contract token: `PASS_B4F2A1_CONTRACT`.
 
 ## Scope
 
@@ -157,7 +160,8 @@ This list is a boundary forecast, not permission to change every named file.
 
 ## Execution Gate
 
-`BLOCKED` — pending exact Architect and Verifier entry tokens.
+`ALLOWED` — exact Architect and Verifier entry tokens recorded. Implementation
+still requires `GO_B4F2A1_IMPLEMENTATION` from the Acceptance Orchestrator.
 
 ## Target environment
 
