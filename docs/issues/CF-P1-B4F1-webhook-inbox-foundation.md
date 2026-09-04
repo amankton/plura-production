@@ -125,7 +125,17 @@ CRM write cutover belongs to this objective.
 
 ## Status
 
-`READY`
+`DONE`
+
+## Completion evidence
+
+- Final implementation: `67f02349399f00ac4deb7c3a2f36608a9e7e30ff`.
+- Sealed execution record: `8636ac79681d7245a463c5d056b337226c50f1f4`.
+- Agency Architect: `APPROVE_B4F1_CANDIDATE`.
+- Independent Verifier: `PASS_B4F1_CANDIDATE`, `PASS_B4F1_SEAL`.
+- The completed checkpoint remains a local, non-deployable foundation. It does
+  not authorize a migration, public webhook, external Stripe operation,
+  deployment, Live Mode, or Stripe Tax.
 
 ## Execution Gate
 
