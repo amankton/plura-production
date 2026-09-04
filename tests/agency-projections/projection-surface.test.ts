@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import ts from 'typescript'
 import {
   normalizeB5A2AAgencyDetails,
   normalizeB5A2AQueries,
@@ -66,6 +67,55 @@ const sourceSnapshot = (): B5A2ASourceSnapshot => {
     ),
     types: read('src/lib/types.ts'),
   }
+}
+
+const parseSource = (path: string, text: string) =>
+  ts.createSourceFile(
+    path,
+    text,
+    ts.ScriptTarget.Latest,
+    true,
+    path.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS
+  )
+
+const declarationNames = (statement: ts.Statement) =>
+  ts.isVariableStatement(statement)
+    ? statement.declarationList.declarations
+        .filter(
+          (declaration): declaration is ts.VariableDeclaration & {
+            name: ts.Identifier
+          } => ts.isIdentifier(declaration.name)
+        )
+        .map((declaration) => declaration.name.text)
+    : []
+
+const replaceStatement = (
+  source: string,
+  sourceFile: ts.SourceFile,
+  statement: ts.Statement,
+  index: number
+) =>
+  source.slice(0, statement.getStart(sourceFile)) +
+  `const fixedStatementMutation${index} = ${index}\n` +
+  source.slice(statement.end)
+
+const replaceOccurrence = (
+  source: string,
+  needle: string,
+  occurrence: number
+) => {
+  let offset = 0
+  let position = -1
+  for (let index = 0; index <= occurrence; index += 1) {
+    position = source.indexOf(needle, offset)
+    if (position < 0) throw new Error('fixed mutation marker missing')
+    offset = position + needle.length
+  }
+  return (
+    source.slice(0, position) +
+    `${needle}FixedMutation` +
+    source.slice(position + needle.length)
+  )
 }
 
 describe('B5A2A closed projection surface', () => {
@@ -361,5 +411,124 @@ describe('B5A2A closed projection surface', () => {
         marker
       ).not.toBe(expected.agencyDetails)
     }
+  })
+
+  test('mutates every protected legacy statement and all 38 retained query exports', () => {
+    const fixtures = [
+      {
+        expected:
+          'a8abbbcbb72826980143b1da92bb7562f3e0033af7b9333719f0cc9aed73fab7',
+        ignored: (statement: ts.Statement, sourceFile: ts.SourceFile) =>
+          ts.isVariableStatement(statement) &&
+          declarationNames(statement).some((name) =>
+            ['getAuthUserDetails', 'getSubAccountTeamMembers'].includes(name)
+          ),
+        normalize: normalizeB5A2AQueries,
+        path: 'src/lib/queries.ts',
+      },
+      {
+        expected:
+          'cf5eaa285a4d8486056828203dc822e9a0d41eec017eed1dc73c1d3549449252',
+        ignored: (statement: ts.Statement, sourceFile: ts.SourceFile) =>
+          (ts.isImportDeclaration(statement) &&
+            ts.isStringLiteral(statement.moduleSpecifier) &&
+            statement.moduleSpecifier.text === './db') ||
+          (ts.isVariableStatement(statement) &&
+            declarationNames(statement).includes(
+              '__getUsersWithAgencySubAccountPermissionsSidebarOptions'
+            )) ||
+          (ts.isTypeAliasDeclaration(statement) &&
+            [
+              'AuthUserWithAgencySigebarOptionsSubAccounts',
+              'UsersWithAgencySubAccountPermissionsSidebarOptions',
+            ].includes(statement.name.text)),
+        normalize: normalizeB5A2ATypes,
+        path: 'src/lib/types.ts',
+      },
+      {
+        expected:
+          '1679d010911a9fb351bbd27dc7df85776b77f0e2fb56ee3787f0350210363d0e',
+        ignored: (statement: ts.Statement, sourceFile: ts.SourceFile) =>
+          ts.isImportDeclaration(statement) &&
+          ts.isStringLiteral(statement.moduleSpecifier) &&
+          statement.moduleSpecifier.text === '@prisma/client' &&
+          statement.importClause?.namedBindings !== undefined &&
+          ts.isNamedImports(statement.importClause.namedBindings) &&
+          statement.importClause.namedBindings.elements.every(
+            (element) => element.name.text === 'Agency'
+          ),
+        normalize: normalizeB5A2AAgencyDetails,
+        path: 'src/components/forms/agency-details.tsx',
+      },
+    ]
+
+    let retainedQueryExports = 0
+    for (const fixture of fixtures) {
+      const source = read(fixture.path)
+      const sourceFile = parseSource(fixture.path, source)
+      const protectedStatements = sourceFile.statements.filter(
+        (statement) => !fixture.ignored(statement, sourceFile)
+      )
+      expect(protectedStatements.length, fixture.path).toBeGreaterThan(0)
+      protectedStatements.forEach((statement, index) => {
+        if (
+          fixture.path === 'src/lib/queries.ts' &&
+          ts.isVariableStatement(statement) &&
+          statement.modifiers?.some(
+            (modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword
+          )
+        ) {
+          retainedQueryExports += 1
+        }
+        const mutation = replaceStatement(source, sourceFile, statement, index)
+        expect(
+          normalizedHash(fixture.normalize(mutation)),
+          `${fixture.path}:${index}`
+        ).not.toBe(fixture.expected)
+      })
+    }
+    expect(retainedQueryExports).toBe(38)
+  })
+
+  test('mutates every protected AgencyDetails effect, toast, refresh, and error branch', () => {
+    const source = read('src/components/forms/agency-details.tsx')
+    const expected =
+      '1679d010911a9fb351bbd27dc7df85776b77f0e2fb56ee3787f0350210363d0e'
+    const uniqueMarkers = [
+      'provisionAgencyOwner',
+      'upsertAgency',
+      '/api/stripe/create-customer',
+      'Billing setup needs attention',
+      "data?.id ? 'Updated Agency' : 'Created Agency'",
+      'could not create your agency',
+      'deleteAgency',
+      'Deleted Agency',
+      'Deleted your agency and all subaccounts',
+      'could not delete your agency ',
+      'setDeletingAgency(false)',
+      'updateAgencyGoal',
+      'Updated the agency goal',
+    ]
+    const mutations = uniqueMarkers.map((marker) =>
+      replaceOccurrence(source, marker, 0)
+    )
+    mutations.push(
+      replaceOccurrence(source, 'catch (error)', 0),
+      replaceOccurrence(source, 'catch (error)', 1),
+      replaceOccurrence(source, 'router.refresh()', 0),
+      replaceOccurrence(source, 'router.refresh()', 1),
+      replaceOccurrence(source, 'router.refresh()', 2),
+      replaceOccurrence(source, "variant: 'destructive'", 0),
+      replaceOccurrence(source, "variant: 'destructive'", 1),
+      replaceOccurrence(source, "variant: 'destructive'", 2)
+    )
+
+    expect(mutations).toHaveLength(21)
+    mutations.forEach((mutation, index) => {
+      expect(
+        normalizedHash(normalizeB5A2AAgencyDetails(mutation)),
+        `agency-effect:${index}`
+      ).not.toBe(expected)
+    })
   })
 })
