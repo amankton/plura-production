@@ -519,6 +519,117 @@ describe('B5A2B notification surface', () => {
     }
   })
 
+  test('independently rejects every named dormant production reachability injection', () => {
+    const baseline = sourceSnapshot()
+    const injectFoundation = (source: string): B5A2BSourceSnapshot => ({
+      ...baseline,
+      activityFoundation: `${source}\n${baseline.activityFoundation}`,
+    })
+    const injectProductionSource = (source: string): B5A2BSourceSnapshot => ({
+      ...baseline,
+      sourceText: `${baseline.sourceText}\n${source}`,
+    })
+    const injections: ReadonlyArray<
+      Readonly<{
+        expectedError: string
+        label: string
+        snapshot: B5A2BSourceSnapshot
+      }>
+    > = [
+      {
+        label: 'production registry event definition',
+        expectedError: 'activity-production-event',
+        snapshot: injectFoundation(
+          "const productionActivityRegistry = { AGENCY_UPDATED: () => 'updated' }"
+        ),
+      },
+      {
+        label: 'domain event literal',
+        expectedError: 'activity-production-event',
+        snapshot: injectFoundation(
+          "const productionDomainEvent = 'SUBACCOUNT_CREATED'"
+        ),
+      },
+      {
+        label: 'production activity adapter',
+        expectedError: 'activity-reachability',
+        snapshot: injectProductionSource(
+          'const productionActivityAdapter = createActivityFoundationService({})'
+        ),
+      },
+      {
+        label: 'server action',
+        expectedError: 'activity-reachability',
+        snapshot: injectProductionSource(
+          "'use server'\nexport async function createProductionActivityAction() { return createActivityFoundationService({}) }"
+        ),
+      },
+      {
+        label: 'route handler',
+        expectedError: 'activity-reachability',
+        snapshot: injectProductionSource(
+          'export async function POST() { return createActivityFoundationService({}) }'
+        ),
+      },
+      {
+        label: 'authoritative mutation side activity caller',
+        expectedError: 'activity-reachability',
+        snapshot: injectProductionSource(
+          'await updateContact(); await createActivityFoundationService({})'
+        ),
+      },
+      {
+        label: 'provider import',
+        expectedError: 'activity-runtime-import',
+        snapshot: injectFoundation("import Stripe from 'stripe'"),
+      },
+      {
+        label: 'worker import or runtime',
+        expectedError: 'activity-runtime-import',
+        snapshot: injectFoundation(
+          "import { Worker } from 'node:worker_threads'"
+        ),
+      },
+      {
+        label: 'scheduler import or runtime',
+        expectedError: 'activity-runtime-import',
+        snapshot: injectFoundation(
+          "import { schedule } from '@/lib/scheduler'"
+        ),
+      },
+      {
+        label: 'Notification create',
+        expectedError: 'activity-reachability',
+        snapshot: injectProductionSource('db.notification.create({ data: {} })'),
+      },
+      {
+        label: 'Notification upsert',
+        expectedError: 'activity-reachability',
+        snapshot: injectProductionSource('db.notification.upsert({ where: {} })'),
+      },
+      {
+        label: 'Notification update',
+        expectedError: 'activity-reachability',
+        snapshot: injectProductionSource('db.notification.update({ where: {} })'),
+      },
+      {
+        label: 'production activity foundation importer',
+        expectedError: 'activity-reachability',
+        snapshot: injectProductionSource(
+          "import { createActivityFoundationService } from '@/features/notifications/activity-foundation-service'"
+        ),
+      },
+    ]
+
+    expect(injections).toHaveLength(13)
+    for (const injection of injections) {
+      expect(
+        verifyB5A2BSourceSnapshot(injection.snapshot),
+        injection.label
+      ).toContain(injection.expectedError)
+    }
+  })
+
   test('independently rejects all 16 legacy imports and all 18 legacy calls', () => {
     const parent = Object.fromEntries(
       b5a2bWriterPaths.map((path) => [path, readParent(path)])

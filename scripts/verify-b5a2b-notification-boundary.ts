@@ -417,6 +417,7 @@ export const verifyB5A2BSourceSnapshot = (
     /from ['"][^'"]*activity-foundation-service['"]/.test(
       snapshot.sourceText
     ) ||
+    /\bcreateActivityFoundationService\s*\(/.test(snapshot.sourceText) ||
     /db\.notification\.(?:create|createMany|update|updateMany|upsert)\s*\(/.test(
       snapshot.sourceText
     )
@@ -536,7 +537,7 @@ export const verifyB5A2BSourceSnapshot = (
     )
   ) errors.push('activity-runtime-import')
   if (
-    /FOUNDATION_VALIDATION_ONLY|db\.notification|Notification\.(?:create|update|upsert)|['"](?:AGENCY|SUBACCOUNT)_[A-Z_]+['"]/.test(
+    /FOUNDATION_VALIDATION_ONLY|db\.notification|Notification\.(?:create|update|upsert)|\b(?:AGENCY|SUBACCOUNT)_[A-Z_]+\b/.test(
       snapshot.activityFoundation
     )
   ) errors.push('activity-production-event')
