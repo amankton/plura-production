@@ -55,9 +55,11 @@ representative-database findings:
 - `src/lib/queries.ts` is a `use server` module with 40 exported callables.
   Some delegate to accepted services, but media, notifications, funnels/pages,
   and pipeline hierarchy operations still contain direct unscoped access.
-- Twenty-two TypeScript/TSX files import the database client directly,
-  including authenticated pages, public funnel pages, service adapters, and
-  the legacy action module.
+- Twenty-three TypeScript/TSX files under `src` import the database client:
+  twenty-two call `db.*` directly, while
+  `src/lib/stripe/prisma-webhook-processing-store.ts` injects `db` into the
+  webhook-processing adapter. The set includes authenticated pages, public
+  funnel pages, service adapters, and the legacy action module.
 - Four server-action files and five API route files form the currently visible
   callable transport surface.
 - Agency and tenant contexts bind the Clerk provider subject to a provisioned
