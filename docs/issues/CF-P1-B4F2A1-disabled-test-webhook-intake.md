@@ -200,7 +200,33 @@ deployment, Live Mode, Stripe Tax, dependency, billing, or source change.
 
 ## Status
 
-`READY`
+`DONE`
+
+## Completion evidence
+
+- Immutable implementation:
+  `73336f38bb9877f2f1210316a721fa958ceb41e9`.
+- Audit-evidence amendment:
+  `c3186d3967995d5259e9b27c9aabceb695f063d4`.
+- Sealed execution record:
+  `ba08406771ad6ed5a666247d84da85b9733bb91a`.
+- Agency Architect: `APPROVE_B4F2A1_CANDIDATE`,
+  `APPROVE_B4F2A1_AUDIT_AMENDMENT`.
+- Independent Verifier: `PASS_B4F2A1_IMPLEMENTATION_AUDIT_HELD`,
+  `PASS_B4F2A1_AUDIT_AMENDMENT`,
+  `PASS_B4F2A1_CANDIDATE_WITH_AUDIT_AMENDMENT`, and
+  `PASS_B4F2A1_SEAL`.
+- Acceptance change control:
+  `AMEND_B4F2A1_AUDIT_EVIDENCE_STALE_UNREVALIDATED`.
+- Remediation rounds used: 0 of 2. One evidence-policy change-control event was
+  recorded separately.
+- Dependency intelligence remains `STALE_UNREVALIDATED`; the current advisory
+  state is unknown and `CF-P1-AUDIT-FRESH-01` remains a hard gate.
+- Development, staging, pilot, production, and public-runtime readiness remain
+  `FAIL`.
+- This completed checkpoint authorizes no processor, public webhook, endpoint
+  registration, representative database or migration, deployment, external
+  Stripe operation, Live Mode, or Stripe Tax.
 
 ## Execution Gate
 
