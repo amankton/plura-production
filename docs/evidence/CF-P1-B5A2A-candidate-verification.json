@@ -8,8 +8,10 @@
   "remediation": {
     "round": 2,
     "maximumRounds": 2,
-    "architectReview": "PENDING_EXACT_SHA_REVIEW",
-    "verifierReview": "PENDING_EXACT_SHA_REVIEW"
+    "architectReview": "APPROVE_B5A2A_IMPLEMENTATION_CANDIDATE",
+    "verifierReview": "PASS_B5A2A_IMPLEMENTATION_CANDIDATE",
+    "acceptanceToken": "ACCEPT_B5A2A_IMPLEMENTATION_CANDIDATE_AND_PUSH",
+    "executionSealAuthoringToken": "GO_B5A2A_EXECUTION_SEAL_AUTHORING"
   },
   "closureLedger": [
     {

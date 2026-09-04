@@ -10,7 +10,10 @@
 - Prior review seal: `4d80995620b52ee3ba2f6783c248fa50d1fc9681`.
 - Final remediation candidate: `7832c703ddbc2d527d83b2a810d8f6890db9fdca`.
 - Remediation round: 2 of 2.
-- Exact Architect and Verifier re-review: pending.
+- Architect review: `APPROVE_B5A2A_IMPLEMENTATION_CANDIDATE`.
+- Independent verification: `PASS_B5A2A_IMPLEMENTATION_CANDIDATE`.
+- Acceptance: `ACCEPT_B5A2A_IMPLEMENTATION_CANDIDATE_AND_PUSH`.
+- Execution-seal authoring clearance: `GO_B5A2A_EXECUTION_SEAL_AUTHORING`.
 - Branch: `codex/crewframe-foundation`.
 
 ## Outcome
@@ -96,6 +99,8 @@ The checkpoint made no database write, schema migration, provider mutation,
 public publication, or deployment, so it requires no data or external-system
 rollback.
 
-This execution record grants no downstream authority. B5A2A advances only
-after the architect and independent verifier approve the exact immutable
-evidence-seal range and the acceptance orchestrator issues the next token.
+This execution record grants no downstream authority. The exact implementation
+and evidence range has passed architect, verifier, and acceptance review.
+B5A2A advances only after this documentation-only child receives
+`PASS_B5A2A_EXECUTION_SEAL` and Acceptance authorizes the separate lifecycle
+transition.
