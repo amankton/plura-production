@@ -5,6 +5,10 @@ import { fileURLToPath } from 'node:url'
 import ts from 'typescript'
 
 const IMPLEMENTATION_PARENT = 'bbe5ec82a8184c21fc0d09f767891c5dc7f08534'
+const REMEDIATION_CANDIDATE = '8482550f03ddb5cb14d4aba411ec5877a5946248'
+const EVIDENCE_PATH =
+  'docs/evidence/CF-P1-B5A2A-candidate-verification.json'
+const EXECUTION_PATH = 'docs/execution/CF-P1-B5A2A-actor-safe-projections.md'
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed })
 
@@ -297,6 +301,182 @@ const exactAgencyPurposeFields = [
   'zipCode',
 ]
 
+const expectedClosureLedger = [
+  ['internal-only:src/app/(main)/agency/[agencyId]/settings/page.tsx#$db', 'sha256:6325f8b04cfc0fa56d8e85bd5707a425480f6e0be4a79343ce1841ebde6e0d48'],
+  ['internal-only:src/app/(main)/subaccount/[subaccountId]/settings/page.tsx#$db', 'sha256:aa7de29c77676c90e1284f8ef07739c20234778a2d6439031018181377822944'],
+  ['internal-only:src/lib/types.ts#__getUsersWithAgencySubAccountPermissionsSidebarOptions', 'sha256:57ee01f9500436294b413fda64c86b45693f4780bdb543897b5d4272cbdfcd74'],
+  ['internal-only:src/lib/types.ts#$db', 'sha256:57ee01f9500436294b413fda64c86b45693f4780bdb543897b5d4272cbdfcd74'],
+  ['layout loader:src/app/(main)/agency/[agencyId]/layout.tsx#default', 'sha256:60e507efcdb0ffc6df440afdd31d81ab48aaea15a36ece960ca5100525d63525'],
+  ['layout loader:src/app/(main)/subaccount/[subaccountId]/layout.tsx#default', 'sha256:d12f84b0abbee14d4fd62013cc765941381287b810b7e2c5e8974b9cdd8db08d'],
+  ['page loader:src/app/(main)/agency/[agencyId]/all-subaccounts/page.tsx#default', 'sha256:96ab560857c70226dab4a32e54b932dbd995ac12b7511aa2ef694842df863c54'],
+  ['page loader:src/app/(main)/agency/[agencyId]/settings/page.tsx#default', 'sha256:6325f8b04cfc0fa56d8e85bd5707a425480f6e0be4a79343ce1841ebde6e0d48'],
+  ['page loader:src/app/(main)/agency/page.tsx#default', 'sha256:e2cdf414c3bf1c82f0a8359b5f9cabd51b3d7a53dc1d7ee9a5f1c4ec8ea7f1e8'],
+  ['page loader:src/app/(main)/subaccount/[subaccountId]/settings/page.tsx#default', 'sha256:aa7de29c77676c90e1284f8ef07739c20234778a2d6439031018181377822944'],
+  ['page loader:src/app/(main)/subaccount/page.tsx#default', 'sha256:03cc81898f7eea3e7da544e19976849825c8d4602ba530f0f06f5e53831aa95b'],
+  ['provider callback:src/app/(main)/agency/page.tsx#$provider:clerk.currentUser', 'sha256:e2cdf414c3bf1c82f0a8359b5f9cabd51b3d7a53dc1d7ee9a5f1c4ec8ea7f1e8'],
+  ['server action:src/lib/queries.ts#getAuthUserDetails', 'sha256:9629a2bc0d55baafc00f6d0b80d7327ac37719fc2f367a0cdab5573456b0c4c2'],
+  ['server action:src/lib/queries.ts#getSubAccountTeamMembers', 'sha256:9629a2bc0d55baafc00f6d0b80d7327ac37719fc2f367a0cdab5573456b0c4c2'],
+] as const
+
+type CandidateEvidence = Readonly<{
+  candidateSha: string
+  closureLedger: ReadonlyArray<
+    Readonly<{
+      disposition: string
+      replacement: string
+      sourceHash: string
+      surfaceId: string
+    }>
+  >
+  format: string
+  inventory: Readonly<{ manifestHash: string; records: number }>
+  parentSha: string
+  projectionSourceHashes: Readonly<Record<string, string>>
+  rollback: Readonly<Record<string, string>>
+  surfaceCounts: Readonly<Record<string, number>>
+  verification: Readonly<{
+    boundedCollectionCases: number
+    commands: ReadonlyArray<
+      Readonly<{ exitStatus: number; name: string; result: string }>
+    >
+  }>
+  zeroUse: Readonly<Record<string, boolean>>
+}>
+
+const readCandidateEvidence = () =>
+  JSON.parse(read(EVIDENCE_PATH)) as CandidateEvidence
+
+const verifyCandidateEvidence = (errors: string[]) => {
+  const evidence = readCandidateEvidence()
+  if (evidence.format !== 'Crewframe B5A2A candidate verification v1') {
+    errors.push('evidence:format')
+  }
+  if (evidence.parentSha !== IMPLEMENTATION_PARENT) errors.push('evidence:parent')
+  if (evidence.candidateSha !== REMEDIATION_CANDIDATE) {
+    errors.push('evidence:candidate')
+  }
+  const candidateExists = Bun.spawnSync(
+    ['git', 'cat-file', '-e', `${REMEDIATION_CANDIDATE}^{commit}`],
+    { cwd: repositoryRoot }
+  )
+  if (candidateExists.exitCode !== 0) errors.push('evidence:candidate-missing')
+
+  const actualLedger = evidence.closureLedger
+    .map((record) => `${record.surfaceId}|${record.sourceHash}`)
+    .sort()
+  const expectedLedger = expectedClosureLedger
+    .map(([surfaceId, sourceHash]) => `${surfaceId}|${sourceHash}`)
+    .sort()
+  if (
+    actualLedger.length !== 14 ||
+    new Set(actualLedger).size !== 14 ||
+    actualLedger.join('\n') !== expectedLedger.join('\n')
+  ) {
+    errors.push('evidence:closure-ledger')
+  }
+  if (
+    evidence.closureLedger.some(
+      (record) => !record.disposition || !record.replacement
+    )
+  ) {
+    errors.push('evidence:closure-description')
+  }
+
+  const expectedCommands = [
+    'projectionVerifier',
+    'inventoryVerifier',
+    'focusedTests',
+    'fullTests',
+    'lint',
+    'typecheck',
+    'build',
+    'frozenOfflineInstall',
+    'diffAndAllowlist',
+    'boundedScopeScans',
+  ]
+  if (
+    evidence.verification.commands.map((command) => command.name).join('|') !==
+      expectedCommands.join('|') ||
+    evidence.verification.commands.some(
+      (command) =>
+        command.exitStatus !== 0 || !command.result.startsWith('PASS')
+    )
+  ) {
+    errors.push('evidence:commands')
+  }
+
+  const expectedCounts: Readonly<Record<string, number>> = {
+    accountEntryCalls: 4,
+    boundedCollectionCases: 8,
+    clientActions: 1,
+    compatibilitySinks: 2,
+    detailsConsumers: 3,
+    inventoryAfter: 228,
+    ownedLedgerRecords: 14,
+    projections: 7,
+  }
+  const combinedCounts: Readonly<Record<string, number>> = {
+    ...evidence.surfaceCounts,
+    boundedCollectionCases: evidence.verification.boundedCollectionCases,
+  }
+  for (const [name, value] of Object.entries(expectedCounts)) {
+    if (combinedCounts[name] !== value) errors.push(`evidence:count:${name}`)
+  }
+
+  const expectedSourceHashes: Readonly<Record<string, string>> = {
+    clientAction:
+      'sha256:' + digest(read('src/features/agency-projections/actions.ts')),
+    projectionService:
+      'sha256:' +
+      digest(read('src/features/agency-projections/projection-service.ts')),
+    serverAdapter:
+      'sha256:' +
+      digest(read('src/features/agency-projections/server-projection-service.ts')),
+  }
+  for (const [name, value] of Object.entries(expectedSourceHashes)) {
+    if (evidence.projectionSourceHashes[name] !== value) {
+      errors.push(`evidence:source-hash:${name}`)
+    }
+  }
+
+  const inventoryLock = JSON.parse(
+    read('docs/security/agency-authority/inventory.lock.json')
+  ) as Readonly<{ manifestHash: string; recordCount: number }>
+  if (
+    evidence.inventory.records !== inventoryLock.recordCount ||
+    evidence.inventory.manifestHash !== inventoryLock.manifestHash
+  ) {
+    errors.push('evidence:inventory')
+  }
+  if (
+    Object.keys(evidence.zeroUse).length !== 11 ||
+    Object.values(evidence.zeroUse).some((value) => value !== false)
+  ) {
+    errors.push('evidence:zero-use')
+  }
+  if (
+    Object.keys(evidence.rollback).sort().join('|') !==
+      ['code', 'database', 'provider'].join('|') ||
+    Object.values(evidence.rollback).some((value) => !value)
+  ) {
+    errors.push('evidence:rollback')
+  }
+
+  const execution = read(EXECUTION_PATH)
+  for (const token of [
+    IMPLEMENTATION_PARENT,
+    REMEDIATION_CANDIDATE,
+    'Remediation round: 1 of 2',
+    'STALE_UNREVALIDATED',
+    'CF-P1-AUDIT-FRESH-01',
+    'DESIGN_REQUIRED',
+    'All readiness states remain `FAIL`',
+    'no data or external-system',
+  ]) {
+    if (!execution.includes(token)) errors.push('execution:token')
+  }
+}
+
 export type B5A2ASourceSnapshot = Readonly<{
   action: string
   agencySettingsPage: string
@@ -502,6 +682,8 @@ export const verifyB5A2ARepository = () => {
   }
 
   const requiredNewPaths = [
+    EVIDENCE_PATH,
+    EXECUTION_PATH,
     'src/features/agency-projections/actions.ts',
     'src/features/agency-projections/projection-service.ts',
     'src/features/agency-projections/server-projection-service.ts',
@@ -513,6 +695,7 @@ export const verifyB5A2ARepository = () => {
       errors.push(`missing:${path}`)
     }
   }
+  verifyCandidateEvidence(errors)
 
   const queries = read('src/lib/queries.ts')
   const types = read('src/lib/types.ts')
@@ -778,8 +961,9 @@ if (import.meta.main) {
       console.error(`B5A2A_FAIL errors=${errors.length} first=${errors[0]}`)
       process.exit(1)
     }
+    const ledgerCount = readCandidateEvidence().closureLedger.length
     console.log(
-      'B5A2A_PASS records=14 projections=7 client_actions=1 consumers=3 compatibility_sinks=2 entry_calls=4'
+      `B5A2A_PASS records=${ledgerCount} projections=7 client_actions=1 consumers=3 compatibility_sinks=2 entry_calls=4`
     )
   } catch {
     console.error('B5A2A_FAIL verifier-error')

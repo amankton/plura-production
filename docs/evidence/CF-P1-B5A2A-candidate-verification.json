@@ -1,0 +1,204 @@
+{
+  "format": "Crewframe B5A2A candidate verification v1",
+  "parentSha": "bbe5ec82a8184c21fc0d09f767891c5dc7f08534",
+  "originalCandidateSha": "30917ecfec561ed2beb1fc1929c9c5f809739aaf",
+  "candidateSha": "8482550f03ddb5cb14d4aba411ec5877a5946248",
+  "remediation": {
+    "round": 1,
+    "maximumRounds": 2,
+    "architectReview": "PENDING_EXACT_SHA_REVIEW",
+    "verifierReview": "PENDING_EXACT_SHA_REVIEW"
+  },
+  "closureLedger": [
+    {
+      "surfaceId": "internal-only:src/app/(main)/agency/[agencyId]/settings/page.tsx#$db",
+      "sourceHash": "sha256:6325f8b04cfc0fa56d8e85bd5707a425480f6e0be4a79343ce1841ebde6e0d48",
+      "disposition": "REMOVED_REPLACED",
+      "replacement": "getAgencySettingsProjection"
+    },
+    {
+      "surfaceId": "internal-only:src/app/(main)/subaccount/[subaccountId]/settings/page.tsx#$db",
+      "sourceHash": "sha256:aa7de29c77676c90e1284f8ef07739c20234778a2d6439031018181377822944",
+      "disposition": "REMOVED_REPLACED",
+      "replacement": "getSubaccountSettingsProjection"
+    },
+    {
+      "surfaceId": "internal-only:src/lib/types.ts#__getUsersWithAgencySubAccountPermissionsSidebarOptions",
+      "sourceHash": "sha256:57ee01f9500436294b413fda64c86b45693f4780bdb543897b5d4272cbdfcd74",
+      "disposition": "REMOVED",
+      "replacement": "purpose-specific projection DTOs"
+    },
+    {
+      "surfaceId": "internal-only:src/lib/types.ts#$db",
+      "sourceHash": "sha256:57ee01f9500436294b413fda64c86b45693f4780bdb543897b5d4272cbdfcd74",
+      "disposition": "REMOVED",
+      "replacement": "server-only projection adapter"
+    },
+    {
+      "surfaceId": "layout loader:src/app/(main)/agency/[agencyId]/layout.tsx#default",
+      "sourceHash": "sha256:60e507efcdb0ffc6df440afdd31d81ab48aaea15a36ece960ca5100525d63525",
+      "disposition": "RETAINED_EXACT",
+      "replacement": "actor-safe Sidebar dependency"
+    },
+    {
+      "surfaceId": "layout loader:src/app/(main)/subaccount/[subaccountId]/layout.tsx#default",
+      "sourceHash": "sha256:d12f84b0abbee14d4fd62013cc765941381287b810b7e2c5e8974b9cdd8db08d",
+      "disposition": "RETAINED_EXACT",
+      "replacement": "actor-safe Sidebar dependency"
+    },
+    {
+      "surfaceId": "page loader:src/app/(main)/agency/[agencyId]/all-subaccounts/page.tsx#default",
+      "sourceHash": "sha256:96ab560857c70226dab4a32e54b932dbd995ac12b7511aa2ef694842df863c54",
+      "disposition": "REPLACED",
+      "replacement": "getAgencySubaccountsProjection"
+    },
+    {
+      "surfaceId": "page loader:src/app/(main)/agency/[agencyId]/settings/page.tsx#default",
+      "sourceHash": "sha256:6325f8b04cfc0fa56d8e85bd5707a425480f6e0be4a79343ce1841ebde6e0d48",
+      "disposition": "REPLACED",
+      "replacement": "getAgencySettingsProjection"
+    },
+    {
+      "surfaceId": "page loader:src/app/(main)/agency/page.tsx#default",
+      "sourceHash": "sha256:e2cdf414c3bf1c82f0a8359b5f9cabd51b3d7a53dc1d7ee9a5f1c4ec8ea7f1e8",
+      "disposition": "REPLACED",
+      "replacement": "getAccountEntryProjection"
+    },
+    {
+      "surfaceId": "page loader:src/app/(main)/subaccount/[subaccountId]/settings/page.tsx#default",
+      "sourceHash": "sha256:aa7de29c77676c90e1284f8ef07739c20234778a2d6439031018181377822944",
+      "disposition": "REPLACED",
+      "replacement": "getSubaccountSettingsProjection"
+    },
+    {
+      "surfaceId": "page loader:src/app/(main)/subaccount/page.tsx#default",
+      "sourceHash": "sha256:03cc81898f7eea3e7da544e19976849825c8d4602ba530f0f06f5e53831aa95b",
+      "disposition": "REPLACED",
+      "replacement": "getDefaultSubaccountRedirectProjection"
+    },
+    {
+      "surfaceId": "provider callback:src/app/(main)/agency/page.tsx#$provider:clerk.currentUser",
+      "sourceHash": "sha256:e2cdf414c3bf1c82f0a8359b5f9cabd51b3d7a53dc1d7ee9a5f1c4ec8ea7f1e8",
+      "disposition": "RETAINED_BOUNDED",
+      "replacement": "onboarding email prefill only"
+    },
+    {
+      "surfaceId": "server action:src/lib/queries.ts#getAuthUserDetails",
+      "sourceHash": "sha256:9629a2bc0d55baafc00f6d0b80d7327ac37719fc2f367a0cdab5573456b0c4c2",
+      "disposition": "REMOVED_REPLACED",
+      "replacement": "seven purpose-specific server projections"
+    },
+    {
+      "surfaceId": "server action:src/lib/queries.ts#getSubAccountTeamMembers",
+      "sourceHash": "sha256:9629a2bc0d55baafc00f6d0b80d7327ac37719fc2f367a0cdab5573456b0c4c2",
+      "disposition": "REMOVED_REPLACED",
+      "replacement": "listTicketAssigneeOptions"
+    }
+  ],
+  "surfaceCounts": {
+    "ownedLedgerRecords": 14,
+    "projections": 7,
+    "clientActions": 1,
+    "detailsConsumers": 3,
+    "compatibilitySinks": 2,
+    "accountEntryCalls": 4,
+    "inventoryBefore": 230,
+    "inventoryAfter": 228,
+    "databaseImportsBefore": 23,
+    "databaseImportsAfter": 21,
+    "directDatabaseCallersBefore": 22,
+    "directDatabaseCallersAfter": 20,
+    "serverActionFilesBefore": 4,
+    "serverActionFilesAfter": 5,
+    "serverActionExportsBefore": 53,
+    "serverActionExportsAfter": 52,
+    "queryExportsBefore": 40,
+    "queryExportsAfter": 38
+  },
+  "projectionSourceHashes": {
+    "projectionService": "sha256:df15a0a9cf9a216119182571b1f494308aa11dbf1ad28bf5fa6fb72eb34a2541",
+    "serverAdapter": "sha256:3bef7ee8c4519bf30256b82e717a4c2ab40e98c55e2f2a4f26f70edf5f9f7c08",
+    "clientAction": "sha256:30a1f48c70f75a7dd0d8312189cfe1e2ba7a50f85af0f17a2794a55d1c2285d8"
+  },
+  "inventory": {
+    "records": 228,
+    "databaseImports": 21,
+    "directDatabaseCallers": 20,
+    "databaseAdapterInjections": 1,
+    "serverActionFiles": 5,
+    "serverActionExports": 52,
+    "queryExports": 38,
+    "providerBoundaries": 33,
+    "manifestHash": "sha256:c1e088fd578e83ff9e83effe72f8dd64c0063be2ceee17a00ac42ed91b80ac48"
+  },
+  "verification": {
+    "commands": [
+      { "name": "projectionVerifier", "result": "PASS", "exitStatus": 0 },
+      { "name": "inventoryVerifier", "result": "PASS", "exitStatus": 0 },
+      { "name": "focusedTests", "result": "PASS", "exitStatus": 0 },
+      { "name": "fullTests", "result": "PASS", "exitStatus": 0 },
+      { "name": "lint", "result": "PASS", "exitStatus": 0 },
+      { "name": "typecheck", "result": "PASS", "exitStatus": 0 },
+      { "name": "build", "result": "PASS", "exitStatus": 0 },
+      { "name": "frozenOfflineInstall", "result": "PASS_NO_CHANGES", "exitStatus": 0 },
+      { "name": "diffAndAllowlist", "result": "PASS", "exitStatus": 0 },
+      { "name": "boundedScopeScans", "result": "PASS", "exitStatus": 0 }
+    ],
+    "focusedTests": 40,
+    "focusedExpectations": 338,
+    "fullTests": 337,
+    "fullExpectations": 1694,
+    "fullTestFiles": 44,
+    "staticPages": 13,
+    "sourceMutationFixtures": 14,
+    "remainderMutationFixtures": 7,
+    "boundedCollectionCases": 8,
+    "installedPackages": 705,
+    "installedComponents": 895
+  },
+  "frozenHashes": {
+    "queriesRemainder": "sha256:a8abbbcbb72826980143b1da92bb7562f3e0033af7b9333719f0cc9aed73fab7",
+    "typesRemainder": "sha256:cf5eaa285a4d8486056828203dc822e9a0d41eec017eed1dc73c1d3549449252",
+    "agencyDetailsRemainder": "sha256:1679d010911a9fb351bbd27dc7df85776b77f0e2fb56ee3787f0350210363d0e",
+    "accountEntryCall": "sha256:da8dffbc20a8b2d7ec3c0d436fb50ab77b03b39d30eeaa528d2920f8d3647f0a",
+    "notificationReader": "sha256:cfe7c297af8f19b6c0f1a72f078acf28f13a90a009b498d8b0464b3b59931a83",
+    "activityWriter": "sha256:5a5a1ccfbaa03dce8f4db75ed5a79a2cce43972be611f972e5bdba1e002c8f1c"
+  },
+  "protectedGitBlobs": {
+    "packageManifest": "c8a1a9d11f484792d9d2ffee9d5c728144841105",
+    "lockfile": "9fd7455e517b55bd2cc77a882cc4468f0eebb526",
+    "prismaSchema": "68cc70de4c0e3d3d18fa29c00869d256c3230700",
+    "middleware": "2d619a87849a6749937b3472702d0ae1455a8e99",
+    "accountActions": "f0a806c084d2207af9abb840e95762974bc37186",
+    "agencyLayout": "b26e3941819468f7dfb870394cc1d1a07fe20099",
+    "subaccountLayout": "3a367ffc9b25b3dcb94def63f4621c98b0f2360c"
+  },
+  "zeroUse": {
+    "networkAccessed": false,
+    "providerAccessed": false,
+    "representativeDatabaseAccessed": false,
+    "representativeDataAccessed": false,
+    "credentialsAccessed": false,
+    "schemaChanged": false,
+    "packagesChanged": false,
+    "publicRoutesChanged": false,
+    "notificationBehaviorChanged": false,
+    "deploymentChanged": false,
+    "productionLogsAdded": false
+  },
+  "rollback": {
+    "code": "Revert the B5A2A candidate range only.",
+    "database": "No persistence or schema rollback is required.",
+    "provider": "No provider or external-system rollback is required."
+  },
+  "holds": {
+    "b5a2bAndB5a3ThroughB5a8": "BLOCKED",
+    "permissionMigration": "DESIGN_REQUIRED",
+    "dependencyAudit": "STALE_UNREVALIDATED",
+    "advisories": "UNKNOWN",
+    "openHardGate": "CF-P1-AUDIT-FRESH-01",
+    "readiness": "FAIL",
+    "rethemeTasteValidation": "BLOCKED",
+    "crmOdooIntroduction": "BLOCKED"
+  }
+}
