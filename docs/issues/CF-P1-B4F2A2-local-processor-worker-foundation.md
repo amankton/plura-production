@@ -270,14 +270,38 @@ readiness remain `FAIL`. Representative schema/migration/backup/restore, real
 worker hosting, credentialed Test Mode, public endpoint security, retention,
 Connect, Live Mode, Stripe Tax, and `CF-P1-AUDIT-FRESH-01` remain later gates.
 
+## Completion evidence
+
+- Implementation SHA: `51d79426b7e452acaa9e139b635ea1d19cf57530`.
+- Execution seal SHA: `8100215c8d5b1bbbc069c0987e8f809f9ec45fe1`.
+- Audit evidence amendment:
+  `AMEND_B4F2A2_AUDIT_EVIDENCE_STALE_UNREVALIDATED`.
+- Architect candidate approval: `APPROVE_B4F2A2_CANDIDATE`.
+- Architect audit-amendment approval:
+  `APPROVE_B4F2A2_AUDIT_AMENDMENT`.
+- Verifier audit-amendment approval: `PASS_B4F2A2_AUDIT_AMENDMENT`.
+- Verifier candidate approval:
+  `PASS_B4F2A2_CANDIDATE_WITH_AUDIT_AMENDMENT`.
+- Acceptance execution-seal clearance: `GO_B4F2A2_CANDIDATE_SEAL`.
+- Independent execution-seal verification: `PASS_B4F2A2_SEAL`.
+- Acceptance lifecycle-seal clearance: `GO_B4F2A2_LIFECYCLE_SEAL`.
+- Implementation remediation usage: `1 of 2`.
+- Separate evidence-policy change-control events: `1`.
+- Dependency audit: `STALE_UNREVALIDATED`; current advisory state:
+  `UNKNOWN`.
+- Local application, shared development, staging, pilot, production, and
+  public-runtime readiness: `FAIL`.
+- Hard gate `CF-P1-AUDIT-FRESH-01`: open.
+
 ## Status
 
-`READY`
+`DONE`
 
 ## Execution Gate
 
-`ALLOWED` — exact Architect, Verifier, and Acceptance implementation tokens are
-recorded. Implementation is limited to this issue's local-only scope.
+`ALLOWED` — historical authority for the completed local-only implementation.
+It grants no further implementation, runtime, migration, provider, deployment,
+or next-checkpoint authority.
 
 ## Target environment
 
