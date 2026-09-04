@@ -90,6 +90,8 @@ state remain hard holds.
 - Exact parent: `54e47cca41922e303bbd2ced6056e9462562172e`.
 - Parent acceptance token: `ACCEPT_B5A2B_LIFECYCLE_AND_PUSH`.
 - Gate-authoring token: `GO_B5A3_IMPLEMENTATION_GATE_AUTHORING`.
+- Gate-remediation token: `GO_B5A3_GATE_REMEDIATION_1`.
+- Gate remediation used: 1 of 2 rounds.
 - Branch: `codex/crewframe-foundation`.
 - Parent authority inventory: exactly 231 records.
 - Parent inventory manifest:
@@ -97,7 +99,8 @@ state remain hard holds.
 - Maximum gate remediation rounds: 2.
 - Maximum B5A3A implementation remediation rounds: 2.
 - Target: fixed local repository input, pure services, injected synthetic
-  stores, and no-network provider-shaped fixtures only.
+  stores, no-network provider-shaped fixtures, and one isolated disposable
+  synthetic MySQL adapter proof.
 - Text hashes use UTF-8 SHA-256 after CRLF/CR normalization to LF. Binary
   hashes use raw bytes.
 
@@ -221,6 +224,33 @@ and verifies the announced size and MIME against this closed set. SVG, GIF,
 PDF, generic `image/*`, extension-only trust, and client-only validation are
 not accepted by the media route.
 
+Input normalization and grammar are exact:
+
+- a UUID is the lowercase, hyphenated RFC 4122 version-4 form matched by
+  `^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$`;
+  uppercase, braced, compact, nil, non-v4, or whitespace-bearing forms are
+  rejected rather than coerced;
+- `subaccountId`, `mediaId`, and server-generated `intentId` use that same
+  grammar, and generation uses the runtime cryptographic UUID-v4 primitive;
+- a display name must be a well-formed Unicode string with no lone surrogate,
+  is normalized with Unicode NFC, then trimmed using ECMAScript `trim`, and is
+  counted by Unicode code points after normalization and trimming;
+- an empty result, more than 120 code points, any code point in U+0000-U+001F
+  or U+007F-U+009F, solidus `/` U+002F, or reverse solidus `\` U+005C is
+  rejected; all other printable code points, including internal spaces, are
+  retained exactly; and
+- validation never performs case folding, locale mapping, compatibility
+  normalization, filename extraction, path normalization, or truncation.
+
+The one caller-announced source filename is separately required to be
+well-formed NFC already, unchanged by ECMAScript `trim`, 1-255 Unicode code
+points, and free of U+0000-U+001F, U+007F-U+009F, `/`, and `\`. It is not used
+as authority or persisted as the media display name. Announced size must be an
+integer from 1 through 4,194,304 bytes, and announced MIME must equal one of
+the three exact lowercase MIME literals. Middleware copies these three
+untrusted announced values into closed metadata solely for equality checks at
+completion; it does not normalize or repair them.
+
 The other three route slugs, configurations, middleware calls, and callbacks
 remain exact. The public routing rule remains exactly `/api/uploadthing`; no
 nested or additional path becomes public.
@@ -260,13 +290,21 @@ returns closed provider-round-tripped metadata with exactly:
 - `agencyId`;
 - `subaccountId`;
 - `purpose: 'MEDIA'`; and
-- normalized `name`.
+- normalized `name`;
+- `announcedFileName`;
+- `announcedMimeType`; and
+- `announcedSize`.
 
 It assigns `intentId` as the UploadThing file `customId` through the supported
-`UTFiles` metadata mechanism. Actor, agency, purpose, intent ID, custom ID,
-provider key, URL, MIME, and size never come from caller input. Metadata and
-file arrays are fresh exact objects; no request, identity, ORM, or provider
-object is spread into them.
+`UTFiles` metadata mechanism. Actor ID, agency ID, purpose, intent ID, and
+custom ID are server-derived and never come from caller input. At grant time,
+file name, MIME, and size are untrusted caller-announced values used only to
+reject a request outside the closed route policy. At completion, the SDK
+supplies provider-signed callback fields for file name, MIME, size, key, URL,
+and custom ID; the boundary revalidates and compares them but does not claim
+that those fields prove magic bytes, decoded content, or actual stored-byte
+length. Metadata and file arrays are fresh exact objects; no request,
+identity, ORM, or provider object is spread into them.
 
 This metadata is an ephemeral, provider-bound completion receipt, not a
 durable general-purpose `UploadIntent`. The distinction is mandatory evidence,
@@ -279,8 +317,28 @@ metadata and the provider-reported file projection into the server media
 service. The callback strictly validates every metadata field, file
 `customId`, MIME, size, name bounds, provider URL, and cardinality. It requires
 `file.customId === metadata.intentId`, purpose `MEDIA`, an allowed MIME, size
-at most 4 MiB, and an exact valid HTTPS provider URL with a fixed 2,048-code-
-point maximum.
+at most 4 MiB, exact equality of callback file name/MIME/size with the three
+announced metadata values, and an exact valid HTTPS provider URL with a fixed
+2,048-code-point maximum.
+
+The stored provider URL uses the callback `file.url` and must pass this exact
+grammar after WHATWG `URL` parsing: source length 1-2,048 Unicode code points;
+protocol exactly `https:`; hostname exactly lowercase `utfs.io`; empty
+username, password, explicit port, query, and fragment; path exactly
+`/f/<key>`; and the raw `<key>` must contain no percent sign, equal the callback
+`file.key`, be 1-512 ASCII characters, and match `^[A-Za-z0-9_-]+$`. The parsed URL must
+serialize back to the identical source string. Alternate hosts, IP literals,
+Unicode/punycode host aliases, dot segments, percent-encoded separators,
+userinfo, nondefault or explicit ports, queries, fragments, and callback
+`appUrl` are rejected. Provider rehearsal must confirm this frozen v6 URL
+shape before deployment; a provider shape change is a stop, not an allowlist
+expansion.
+
+MIME/size validation here proves agreement among the configured SDK policy,
+the untrusted grant announcement, and provider-signed completion fields only.
+Actual-byte length, magic-byte/content sniffing, decompression behavior, image
+decode safety, and malware scanning remain B5A3B/provider-rehearsal work and
+must not be reported as B5A3A guarantees.
 
 Before persistence, completion resolves the current actor by the server-bound
 `actorId`, re-resolves current agency/subaccount membership and permission,
@@ -309,7 +367,7 @@ completion result and does not call a second create action or submit a raw URL.
 
 ### Exact media DTO and list contract
 
-The media DTO contains exactly:
+The public media DTO contains exactly:
 
 - `id`;
 - `name`;
@@ -321,9 +379,16 @@ The media DTO contains exactly:
 It excludes `subAccountId`, agency, actor, provider subject/key/custom ID,
 permissions, raw ORM models, relations, and every unlisted field.
 
+The internal persistence projection contains exactly the six DTO source fields
+plus `subAccountId`: `id`, `name`, `link`, `type`, `createdAt`, `updatedAt`, and
+`subAccountId`. The pure service requires the internal `subAccountId` to equal
+the resolved tenant context before constructing a fresh public DTO, then
+strips it. No broader record or relation may be returned merely to perform the
+postcondition.
+
 `listMedia(requestedSubaccountId)` resolves tenant context and applies
-`media:list` before querying. Persistence selects only the exact fields needed
-for the DTO with predicate `subAccountId = context.subaccountId`, order
+`media:list` before querying. Persistence selects only the exact internal
+projection with predicate `subAccountId = context.subaccountId`, order
 `createdAt DESC, id DESC`, and `take: 101`. Zero rows returns `[]`; at most 100
 rows returns fresh DTOs; the 101st sentinel, duplicate ID, nullable/invalid
 type, invalid URL, malformed timestamp, ownership mismatch, unstable order, or
@@ -346,6 +411,15 @@ Exactly one affected row is success. Zero or more than one is a finite,
 non-enumerating conflict; no fallback lookup or ID-only delete is allowed.
 Foreign, missing, stale, duplicate-click, and concurrent removal therefore
 produce no unauthorized write.
+
+`expectedUpdatedAt`, internal timestamps, and serialized DTO timestamps use
+only canonical UTC ISO-8601 millisecond form
+`YYYY-MM-DDTHH:mm:ss.sssZ`, matched by
+`^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$` and accepted only when
+`new Date(value).toISOString() === value`. Offsets, missing milliseconds,
+expanded years, leap-second text, invalid calendar values, whitespace, and
+noncanonical-but-parseable forms are rejected. The server converts the exact
+validated value to a `Date` only for the conditional Prisma predicate.
 
 The UI action and copy say **Remove from media library**, not delete physical
 file. They explicitly avoid claiming that copied URLs, embedded references, or
@@ -479,11 +553,15 @@ After exact gate approval, B5A3A may add or modify only these files.
 - `tests/media/media-service.test.ts` (new)
 - `tests/media/media-completion.test.ts` (new)
 - `tests/media/media-surface.test.ts` (new)
+- `tests/database/b5a3a-media-mysql.test.ts` (new)
 - `scripts/verify-b5a3a-media-boundary.ts` (new)
-- `tests/uploads/uploadthing-security-surface.test.ts` (only exact B5A3A media
+- `scripts/verify-b5a3a-media-mysql.ps1` (new)
+- `tests/auth/uploadthing-security-surface.test.ts` (only exact B5A3A media
   assertions and superseded media-branch expectations)
-- `tests/uploads/upload-auth.test.ts` (only an exact retained-legacy assertion
+- `tests/auth/upload-auth.test.ts` (only an exact retained-legacy assertion
   if required; no weakening)
+- `tests/auth/policy.test.ts` (only exact media-action matrix assertions and
+  protected remainder checks)
 - `scripts/verify-b5a2b-notification-boundary.ts` (only exact B5A3A allowlist
   succession; every B5A2B invariant remains effective)
 - `scripts/verify-b5a2a-projections.ts` (same limitation)
@@ -548,6 +626,44 @@ tests. Their insecurity remains visible and blocked; it is not waived.
 
 Every denial proves zero database writes and zero provider/network calls. No
 test contacts UploadThing.
+
+### Disposable synthetic MySQL proof
+
+Pure injected-store tests are necessary for exhaustive denial and mutation
+coverage but are insufficient evidence for Prisma/MySQL atomicity. The
+candidate must therefore execute the real generated Prisma client and exact
+production media adapter against a fresh disposable MySQL 8.4 container using
+the unchanged checked-in schema and synthetic fixtures only.
+
+`scripts/verify-b5a3a-media-mysql.ps1` owns the proof. It:
+
+- uses a digest-pinned, already-local MySQL 8.4 image with `--pull=never` and
+  performs no registry or other external network access;
+- rejects ambient `DATABASE_URL`, MySQL, container-name, and project credential
+  inputs; generates a process-local random container name, database name,
+  port, and disposable password; and never prints or persists them;
+- resolves and verifies the exact repository root, schema, generated client,
+  production adapter, and script/test hashes before execution;
+- starts one isolated container without a host bind mount, provisions the
+  unchanged schema into the empty disposable database, and inserts only fixed
+  synthetic agency, actor, subaccount, permission, and media-shaped fixtures;
+- exercises real concurrent exact completion, changed-field collision,
+  global-link collision, transaction rollback, exact retry, list order/
+  sentinel, foreign/stale removal, and concurrent `deleteMany` affected-count
+  behavior through the production adapter;
+- verifies zero unexpected rows before and after every fault path and emits
+  only bounded pass/fail identifiers and counts; and
+- in a `finally` path stops/removes only the exact validated disposable
+  container, restores prior process environment, proves the container and
+  database are gone, and fails if cleanup cannot be proven.
+
+It may use loopback solely to reach its own disposable container. It may not
+read a developer database, use representative records, run a migration, alter
+the checked-in schema, connect to a non-loopback host, reuse a container or
+volume, pull an image, or retain database artifacts. The test fails closed if
+Docker, the pinned local image, a collision-safe free port, Prisma generation,
+or cleanup proof is unavailable. No skip converts missing infrastructure into
+a pass.
 
 ### List and DTO
 
@@ -625,11 +741,17 @@ stack trace, or representative data.
 
 ## Historical-verifier policy amendment
 
-At the documentation-only B5A3 gate SHA, the immutable B5A2B verifier may fail
-only because this exact new issue path is not yet in its successor allowlist.
-The exact diagnostic and error count must be captured during gate verification;
-no other failure, stderr, crash, timeout, skip, wrapper, output filter,
-environment switch, or verifier modification is accepted.
+At the documentation-only B5A3 gate SHA, both immutable historical verifiers
+are expected to exit nonzero with exactly these respective single diagnostics
+and no other output failure:
+
+`B5A2A_FAIL errors=1 first=allowlist:docs/issues/CF-P1-B5A3-upload-media-authority-boundary.md`
+
+`B5A2B_FAIL errors=1 first=allowlist:docs/issues/CF-P1-B5A3-upload-media-authority-boundary.md`
+
+Each error count must be one. No other diagnostic, stderr, crash, timeout,
+skip, wrapper, output filter, ignored exit status, environment switch, or
+verifier modification is accepted.
 
 Before B5A3A implementation candidate review, the implementation must narrowly
 extend historical verifiers for only gate-enumerated B5A3A paths and
@@ -646,20 +768,22 @@ Required commands at the exact immutable candidate and later seals:
 3. `bun scripts/verify-b5a2a-projections.ts`
 4. `bun scripts/verify-agency-authority-inventory.ts`
 5. focused media, upload-security, policy, and inventory tests
-6. full `bun test`
-7. `bun run lint`
-8. `bun run typecheck`
-9. isolated `bun run build`
-10. frozen offline dependency continuity with the accepted lockfile
-11. `npx prisma validate` without schema generation or migration
-12. `git diff --check`, exact allowlist, protected-remainder, and bounded
+6. `powershell -File scripts/verify-b5a3a-media-mysql.ps1`
+7. full `bun test`
+8. `bun run lint`
+9. `bun run typecheck`
+10. isolated `bun run build`
+11. frozen offline dependency continuity with the accepted lockfile
+12. `npx prisma validate` without migration
+13. `git diff --check`, exact allowlist, protected-remainder, and bounded
     secret/PII/log/network/provider/schema/package/public/deployment scans
 
-No command may use a representative database, external provider, network
-service, credential, deployed route, or environment-derived verifier input.
-Pure injected stores must prove all database-shaped behavior at this local
-checkpoint. A later representative MySQL and provider rehearsal requires its
-own exact gate.
+No command may use a representative database/data, external provider/network
+service, project credential, deployed route, or environment-derived verifier
+input. Pure injected stores prove exhaustive service behavior; the separately
+bounded disposable synthetic MySQL proof establishes real adapter atomicity,
+uniqueness, rollback, and race behavior and is required in addition. A later
+representative database and provider rehearsal requires its own exact gate.
 
 Evidence records exact parent/gate/candidate/seal SHAs; the 18-record split;
 client/caller/URL-sink counts; before/after inventory records/counts/hash;
@@ -681,9 +805,9 @@ values.
 | B5A3A-01 | Candidate ancestry, exact parent/gate SHAs, clean worktree, LF-normalized hashes, and concrete allowlist reconcile. |
 | B5A3A-02 | All 18 parent records, every client helper/caller/URL sink, and the exact six B5A3A closures versus twelve shared/blocked dispositions are exhaustively bound. |
 | B5A3A-03 | The media grant resolves one local actor and exact tenant context, applies the fixed action internally, and binds one strict request to one server-generated intent/purpose/custom ID before provider grant. |
-| B5A3A-04 | Only JPEG, PNG, and WebP, one file, 4 MiB, strict UUID, and 1-120-code-point normalized name are accepted server-side; malformed or extra input fails before reads. |
-| B5A3A-05 | Completion strictly revalidates metadata, provider file, current actor/tenant/permission, custom ID, MIME, size, URL, and purpose before persistence. |
-| B5A3A-06 | `Media.id=intentId`; exact retry/concurrency converges atomically, while any ID/link/name/type/tenant mismatch or global-link collision fails closed without enumeration. |
+| B5A3A-04 | Only JPEG, PNG, and WebP, one file, 4 MiB, canonical UUID-v4, exact NFC/trim/name grammar, URL grammar, and timestamp grammar are accepted server-side; malformed or extra input fails before reads. |
+| B5A3A-05 | Completion strictly revalidates metadata, provider-reported file fields, current actor/tenant/permission, custom ID, declared MIME/size, URL, and purpose before persistence without claiming actual-byte/content proof. |
+| B5A3A-06 | `Media.id=intentId`; pure tests and the required disposable synthetic MySQL proof establish real Prisma atomic retry/concurrency/rollback behavior, while any ID/link/name/type/tenant mismatch or global-link collision fails closed without enumeration. |
 | B5A3A-07 | Media list authorizes before persistence, selects only the exact DTO, orders `createdAt DESC,id DESC`, uses 101 sentinel/100 maximum, and returns no broad graph or partial result. |
 | B5A3A-08 | Library removal validates exact tenant and expected `updatedAt`, uses the complete conditional predicate, requires affected count one, and handles foreign/stale/concurrent attempts without an unauthorized write. |
 | B5A3A-09 | The client uses the dedicated `media` route and callback DTO; no raw browser-authored provider URL/key is accepted as ownership proof or sent to a create action. |
@@ -691,7 +815,7 @@ values.
 | B5A3A-11 | The existing exact public route remains unchanged; three non-media routes/callbacks, generic upload component, non-media consumers/sinks, schema/migrations, packages, middleware, and historical foundations remain protected and visibly blocked. |
 | B5A3A-12 | Every denied grant, completion, list, and removal case has zero database write and zero provider/network side effect; owned modules expose no raw logs/errors or sensitive evidence. |
 | B5A3A-13 | Required adversarial and mutation tests prove every authority predicate, file/input bound, completion binding, idempotency branch, DTO/order/overflow clause, removal race, legacy retirement, and protected remainder. |
-| B5A3A-14 | Fixed verifiers, focused/full tests, lint, typecheck, isolated build, frozen install, Prisma validation, inventory, diff, allowlist, protected-remainder, and bounded scans pass at exact candidate and seals. |
+| B5A3A-14 | Fixed verifiers, focused/full tests, disposable synthetic MySQL adapter proof, lint, typecheck, isolated build, frozen install, Prisma validation, inventory, diff, allowlist, protected-remainder, and bounded scans pass at exact candidate and seals. |
 | B5A3A-15 | No provider call, representative database/data, credential, schema/migration, package, public-route, deployment, non-media asset, physical cleanup, re-theme, CRM/Odoo, Composio, or agent-runtime work occurs. |
 | B5A3A-16 | Evidence states that B5A3B and provider-object orphan/deletion lifecycle remain blocked; B5A3 umbrella is not marked done. |
 | B5A3A-17 | Architect, Verifier, and Acceptance approve the same gate, candidate, execution seal, and lifecycle seal within the two-round limits before any next boundary begins. |
@@ -739,16 +863,19 @@ This gate cannot weaken or close another hold.
 
 ## Rollback
 
-B5A3A implementation rollback is file-exact to parent
-`54e47cca41922e303bbd2ced6056e9462562172e`:
+B5A3A production, test, tooling, and inventory rollback restores those files
+exactly to their state at accepted parent
+`54e47cca41922e303bbd2ced6056e9462562172e`. The accepted remediated gate SHA,
+candidate evidence, execution record, and later lifecycle entries remain
+immutable history rather than being removed:
 
 - remove the three new `src/features/media/` modules, three new media tests,
-  and `scripts/verify-b5a3a-media-boundary.ts`;
+  the new database harness test, and both new B5A3A verifier scripts;
 - restore every allowlisted existing source, test, historical verifier,
   inventory, and lock file exactly to the parent;
-- retain accepted candidate evidence and execution records unchanged as
-  immutable history, then append only the rollback commit and outcome to this
-  issue's lifecycle metadata; and
+- retain this issue, accepted candidate evidence, and execution records
+  unchanged as immutable history, then append only the rollback commit and
+  outcome to this issue's lifecycle metadata; and
 - run all fixed verifiers, focused/full tests, lint, typecheck, isolated build,
   frozen install, Prisma validation, diff, and bounded scans after restoration.
 
