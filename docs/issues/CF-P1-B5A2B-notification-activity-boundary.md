@@ -12,6 +12,41 @@ This work item is the documentation-only B5A2B implementation gate. It defines
 the only source, test, tooling, inventory, and evidence changes that may occur
 after exact approval. Production implementation remains blocked until then.
 
+## Problem
+
+The current notification reader accepts a caller-selected agency, returns an
+unbounded broad ORM graph, and relies on in-memory tenant filtering. The current
+activity writer accepts caller-authored identity, ownership, and message data,
+including an unauthenticated actor fallback, from 18 UI follow-up calls.
+
+## Goal
+
+Close both B5A2B authority records with a bounded server-derived read model,
+complete writer retirement, zero live replacement events, and independently
+verifiable preservation of every authoritative owning mutation.
+
+## Scope
+
+Scope is limited to the two legacy exports, their exact reader/type/UI and
+writer callers, the temporary actor-name compatibility chain, three closed
+feature modules, fixed synthetic tests/tooling, inventory reconciliation, and
+bounded evidence/lifecycle records enumerated in this gate.
+
+## Non-goals
+
+This gate does not restore activity coverage, integrate a production event,
+change an owning mutation, remediate historical stored messages, alter schema
+or dependencies, access representative systems/data, deploy, re-theme, or
+begin CRM/Odoo, Composio, or agent-runtime work.
+
+## Dependencies and blockers
+
+B5A2A lifecycle acceptance at the exact parent is required and satisfied.
+Implementation remains blocked on exact approval of this remediated gate.
+Audit freshness, permission migration, representative provider/database,
+public runtime, every readiness state, downstream B5A children, re-theme, and
+CRM/Odoo remain hard holds as recorded below.
+
 ## Immutable authority
 
 - Accepted B5A2 intake: `90b0cdb0855a3ee3971567b76242d59c7b2b26d5`.
@@ -20,6 +55,8 @@ after exact approval. Production implementation remains blocked until then.
   `7f236cbba1281c0bdaccbfa6770fcc0c128a4f80`.
 - B5A2A lifecycle token: `ACCEPT_B5A2A_LIFECYCLE_AND_PUSH`.
 - B5A2B gate-authoring token: `GO_B5A2B_IMPLEMENTATION_GATE_AUTHORING`.
+- Gate-remediation token: `GO_B5A2B_GATE_REMEDIATION_1`.
+- Gate remediation used: 1 of 2 rounds.
 - Branch: `codex/crewframe-foundation`.
 - Maximum gate or implementation remediation rounds: 2 each.
 - Target: fixed local repository input and pure synthetic adapters only.
@@ -84,10 +121,12 @@ record existence, raw database error, or rejected value is exposed.
 
 The implementation may add exactly three production modules:
 
-1. `src/features/notifications/notification-view-service.ts` exports the sole
-   runtime symbol `createNotificationViewService`. It contains only DTOs,
-   finite record/store interfaces, validation, ownership/cardinality checks,
-   ordering verification, and fresh-object mapping.
+1. `src/features/notifications/notification-view-service.ts` exports exactly
+   two runtime symbols: `createNotificationViewService` and
+   `assertNotificationViewAction`. It contains only DTOs, finite record/store
+   interfaces, the exact local action policy, validation,
+   ownership/cardinality checks, ordering verification, and fresh-object
+   mapping.
 2. `src/features/notifications/server-notification-view-service.ts` imports
    `server-only`, the accepted agency/tenant context resolvers, and Prisma. It
    exports the sole runtime symbol `notificationViewService`, with
@@ -100,10 +139,33 @@ The implementation may add exactly three production modules:
    route, action, or client module and has zero production callers.
 
 Type-only exports are allowed only for the exact DTO, store, context receipt,
-event definition, and service types required by those runtime symbols. No
-`any`, broad `unknown` cast, index signature that bypasses strict input keys,
-Prisma model alias, object spread from a database record, or generic authority
-wrapper is allowed.
+event definition, service types, and
+`NotificationViewAction = 'notification:view-agency' |
+'notification:view-subaccount'` required by those runtime symbols. No `any`,
+broad `unknown` cast, index signature that bypasses strict input keys, Prisma
+model alias, object spread from a database record, or generic authority wrapper
+is allowed.
+
+### Exact notification action policy
+
+`assertNotificationViewAction(role, action)` uses a closed local matrix:
+
+- `AGENCY_OWNER` and `AGENCY_ADMIN` may perform both
+  `notification:view-agency` and `notification:view-subaccount`;
+- `SUBACCOUNT_USER` and `SUBACCOUNT_GUEST` may perform only
+  `notification:view-subaccount`; and
+- an unknown role, unknown action, or disallowed pair fails `FORBIDDEN`.
+
+The action is selected inside `server-notification-view-service.ts`; it never
+comes from a request, route, client, provider metadata, or caller-owned object.
+The agency method selects `notification:view-agency`, resolves context, applies
+`assertAgencyOperator`, applies `assertNotificationViewAction`, and only then
+queries. The subaccount method selects `notification:view-subaccount`, resolves
+tenant context, applies `assertNotificationViewAction`, and only then branches.
+Before an owner/admin branch performs an agency-wide query, it additionally
+applies `assertNotificationViewAction` with the internally selected
+`notification:view-agency`; restricted actors can reach only the exact-
+subaccount predicate.
 
 ## Notification view contract
 
@@ -248,6 +310,22 @@ and the form prop/destructuring/description use. The accepted
 `projection.actor.name` remains because `UserDetails` still consumes the exact
 ActorProfile; only its activity-only mapping is removed.
 
+The privileged subaccount control path is additionally bound node by node:
+
+| Exact parent node | Kind | Parent AST hash |
+| --- | --- | --- |
+| `getSubaccountSidebarProjection/includeLegacyName` declaration | `VariableStatement` | `sha256:8880e1739333046513c7b48ad099bf95505c295717cf52f17147248212fbac0b` |
+| `Promise.all` element conditioned by `includeLegacyName` | `ConditionalExpression` | `sha256:a6648029bf425722674a234b71219abc46e5b5b732ff415f56f77c8ab81a4327` |
+| Complete tuple declaration with `legacyName` at binding index 4 | `VariableDeclaration` | `sha256:da18ceba4cbabc973e0c82a52334a466cdaacb45d927cbdedb310d1ecfbb98de` |
+| Supplementary `legacyName` tuple binding element | `BindingElement` | `sha256:d1624507371a52ba6fb5ac63e381ffadce58a6ee01213491523a3b31efac85b0` |
+| `legacyName === null` guard and return | `IfStatement` | `sha256:b2e2cc619ca660bf7d3ff57cd6e6d3a7d3398a3d60f77df08c49c0dc01564654` |
+| Returned `legacyActivityActorName: legacyName` mapping | `PropertyAssignment` | `sha256:d8dd8e46ffb555e874d73ca923a74de3355a3a5170271783ada2bdab5da1c27e` |
+
+Each authoritative node must be removed and mutated independently in fixed
+fixtures. The complete tuple declaration hash is the primary binding; the leaf
+binding-element hash is supplementary and cannot replace whole-declaration
+remainder verification.
+
 No renamed actor-name scalar, display-name helper, UI-provided description, or
 equivalent compatibility path may replace this chain. Create-subaccount role
 gating, modal availability, form data, submission, toast, and refresh behavior
@@ -284,12 +362,13 @@ and Acceptance approval.
 The candidate removes the two bound server-action records and adds exactly:
 
 - `internal-only:src/features/notifications/notification-view-service.ts#createNotificationViewService` — read-only, `INTERNAL_ONLY`, `ACCEPTED_RETAIN`;
+- `internal-only:src/features/notifications/notification-view-service.ts#assertNotificationViewAction` — no-op policy assertion, `INTERNAL_ONLY`, `ACCEPTED_RETAIN`;
 - `internal-only:src/features/notifications/server-notification-view-service.ts#$db` — read-only, `INTERNAL_ONLY`, `ACCEPTED_RETAIN`;
 - `internal-only:src/features/notifications/server-notification-view-service.ts#notificationViewService` — read-only, `INTERNAL_ONLY`, `ACCEPTED_RETAIN`; and
 - `internal-only:src/features/notifications/activity-foundation-service.ts#createActivityFoundationService` — no-op dormant boundary, `INTERNAL_ONLY`, `DORMANT_BLOCKED`.
 
 The inventory schema and finite taxonomies remain unchanged. The exact
-candidate counts are: 230 records, 22 database imports (21 direct and 1
+candidate counts are: 231 records, 22 database imports (21 direct and 1
 injected), 5 server-action files, 50 server-action exports, 36 query exports,
 5 API-route files, 6 API handlers, 24 pages, 7 layouts, 4 upload routes, 4
 upload callbacks, and 33 provider boundaries. A different count is a gate
@@ -414,6 +493,16 @@ Historical B5A2A evidence and execution records remain byte-exact.
   adapter, action, route, mutation-side call, provider/worker/scheduler import,
   Notification create/upsert/update, or production foundation importer.
 
+### Action-policy and compatibility control mutations
+
+- mutate each role/action pair, action literal, internal selection point, and
+  pre-query assertion independently;
+- inject caller-supplied action or role selection and prove rejection;
+- mutate each of the six bound privileged-name control nodes independently;
+  and
+- preserve the accepted actor-profile name while rejecting any activity-only
+  compatibility alias or sink.
+
 ## Fixed-input verifier and protected remainder
 
 `scripts/verify-b5a2b-notification-boundary.ts` takes zero arguments and reads
@@ -443,12 +532,37 @@ It emits no source, descriptions, messages, names, emails, selectors, payloads,
 provider/database errors, environment values, secrets, credentials, stack
 traces, or representative data.
 
+## B5A2A verification-policy amendment
+
+At a documentation-only B5A2B gate SHA, the immutable B5A2A verifier is
+expected to exit nonzero with exactly this one diagnostic and no other output
+failure:
+
+`B5A2A_FAIL errors=1 first=allowlist:docs/issues/CF-P1-B5A2B-notification-activity-boundary.md`.
+
+This is a single-path gate-authoring exception, not a passing B5A2A result and
+not authority to suppress or weaken the verifier. The error count must be one.
+No other diagnostic, stderr, crash, timeout, skipped check, wrapper, output
+filter, ignored exit code, environment switch, or verifier modification is
+allowed. All other B5A2A assertions must execute successfully.
+
+The exact-SHA gate review records the command, nonzero status, exact diagnostic,
+accepted parent, frozen gate SHA, and sole-file diff. Before B5A2B implementation
+candidate review, the implementation must narrowly update the B5A2A verifier
+for only the gate-enumerated B5A2B paths and explicitly superseded nodes and
+restore a full `B5A2A_PASS`. Every unaffected hash, algorithm, baseline,
+mutation test, and invariant remains exact; broad skips and whole-file
+exemptions are forbidden. The new B5A2B verifier independently proves each
+newly allowed change and that unrelated drift still fails.
+
 ## Candidate verification and evidence
 
 Required commands at the exact immutable candidate and seals:
 
 1. `bun scripts/verify-b5a2b-notification-boundary.ts`
-2. `bun scripts/verify-b5a2a-projections.ts`
+2. `bun scripts/verify-b5a2a-projections.ts` — at the documentation-only gate,
+   only the exact single diagnostic above is accepted; at implementation
+   candidate and later seals, full `B5A2A_PASS` is required
 3. `bun scripts/verify-agency-authority-inventory.ts`
 4. focused notification, agency-projection, and inventory tests
 5. full `bun test`
@@ -489,7 +603,7 @@ errors, stack traces, secrets, credentials, or representative data.
 | B5A2B-10 | The dormant foundation has strict pure contracts, one synthetic event/template, injected atomic fake storage, and zero production registry entries, templates, events, adapters, transports, or callers. |
 | B5A2B-11 | Cross-agency/subaccount, foreign actor, corrupt parent, duplicate, overflow, stale, deletion, rollback, forged context, unknown/extra input, and label-bound tests produce zero unauthorized side effects or logs. |
 | B5A2B-12 | B5A2A historical evidence remains byte-exact and its adjusted verifier/tests continue protecting every unrelated B5A2A guarantee. |
-| B5A2B-13 | Authority inventory has exactly 230 records and the other frozen counts, closes both legacy rows, adds exactly four declared internal rows, and preserves schema/taxonomies. |
+| B5A2B-13 | Authority inventory has exactly 231 records and the other frozen counts, closes both legacy rows, adds exactly five declared internal rows, and preserves schema/taxonomies. |
 | B5A2B-14 | Owned modules contain no raw console/error path and no email, selector, stored message, payload, provider/database error, stack, secret, or representative value enters logs or evidence. |
 | B5A2B-15 | Fixed verifiers, focused/full tests, lint, typecheck, build, frozen install, inventory, diff, allowlist, protected-remainder, and bounded scans pass at the exact candidate and seals. |
 | B5A2B-16 | No schema, package, provider, network, representative data/database, public route, deployment, re-theme, CRM/Odoo, Composio, agent runtime, or owning-domain event integration occurs. |
@@ -554,6 +668,9 @@ rollback is required because none may change.
 ## Status
 
 `READY`
+
+Gate remediation: 1 of 2 rounds used under
+`GO_B5A2B_GATE_REMEDIATION_1`.
 
 ## Execution gate
 
