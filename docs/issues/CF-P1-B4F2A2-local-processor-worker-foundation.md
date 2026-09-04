@@ -31,9 +31,12 @@ available or externally connected runtime.
 - B4F2A1 execution seal:
   `ba08406771ad6ed5a666247d84da85b9733bb91a`.
 - Intake clearance: `GO_B4F2A2_INTAKE`.
+- Issue-gate commit: `a441fd3e46dd35d303361845ca4b26a75a363d77`.
+- Approval-record commit: `d44e07d86fc00304957a318e206afbc2d254ffb5`.
 - Architect entry token:
   `GO_B4F2A2_LOCAL_PROCESSOR_WORKER_FOUNDATION`.
 - Verifier contract token: `PASS_B4F2A2_CONTRACT`.
+- Acceptance implementation clearance: `GO_B4F2A2_IMPLEMENTATION`.
 - `CF-P1-AUDIT-FRESH-01` remains open and blocks every shared, public,
   deployed, or release-ready runtime.
 
@@ -273,8 +276,8 @@ Connect, Live Mode, Stripe Tax, and `CF-P1-AUDIT-FRESH-01` remain later gates.
 
 ## Execution Gate
 
-`BLOCKED` — exact Architect and Verifier contract tokens are recorded;
-Acceptance implementation clearance remains pending.
+`ALLOWED` — exact Architect, Verifier, and Acceptance implementation tokens are
+recorded. Implementation is limited to this issue's local-only scope.
 
 ## Target environment
 
