@@ -10,8 +10,16 @@
 - Verifier work-item token: `PASS_B4F2B_P02_WORK_ITEM_GATE`.
 - Acceptance implementation clearance:
   `GO_B4F2B_P02_IMPLEMENTATION_CONFIRMED`.
+- Accepted implementation SHA:
+  `8f8ba7b8343b3bd53f9c852923ac803c5e049a32`.
+- Architect implementation approval:
+  `APPROVE_B4F2B_P02_CANDIDATE`.
+- Independent implementation verification:
+  `PASS_B4F2B_P02_CANDIDATE`.
+- Acceptance seal clearance:
+  `GO_B4F2B_P02_CANDIDATE_SEAL`.
 - Branch: `codex/crewframe-foundation`.
-- Status: `CANDIDATE_AWAITING_EXACT_REVIEW`.
+- Status: `EXECUTION_SEAL_CANDIDATE_AWAITING_VERIFICATION`.
 - Original candidate:
   `1ddcddeeb68f91e530aaf9b6af2c26556028f852`.
 - Original Architect decision: `APPROVAL_WITHHELD` for unbounded Docker
@@ -158,6 +166,16 @@ failure line.
   middleware, worker, provider, runtime-configuration, and SQL surfaces remain
   unchanged.
 
+Independent verification used a detached exact-SHA worktree, passed frozen
+installation, and observed the Docker volume inventory unchanged at 72 across
+both proof runs, with zero labeled containers, evidence temporary files, or
+surviving proof PowerShell processes. On Windows with `core.autocrlf`, a fresh
+checkout may materialize the tracked JSON evidence with CRLF until the mandated
+proof-first sequence rewrites canonical LF. The proof-first sequence and the
+immutable Git blob both produce the accepted SHA-256 above; this observation
+does not change evidence content, acceptance, or any dependency/readiness
+classification.
+
 The immutable exact-candidate review must independently rerun the proof,
 confirm byte-identical evidence, and recheck zero runtime residue before this
 checkpoint can be accepted.
@@ -191,7 +209,9 @@ persistent data state exists to reverse.
 
 ## Next gate
 
-Freeze this candidate and obtain independent Architect and Verifier decisions
-against the same immutable SHA. Only the Acceptance Orchestrator may clear the
-subsequent bounded checkpoint after both decisions pass. Boundary R and the
-dependency-audit/readiness holds remain blocked regardless of the P-02 result.
+Independently verify this documentation-only execution-seal child and require
+`PASS_B4F2B_P02_SEAL` against its exact immutable SHA. Only then may a separate
+one-file lifecycle-seal child change the P-02 issue from `READY` to `DONE` with
+historical execution authority only. The parent B4F2B issue remains `READY`;
+Boundary R and every dependency-audit/readiness hold remain blocked regardless
+of the P-02 seal result.
