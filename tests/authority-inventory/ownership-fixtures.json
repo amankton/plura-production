@@ -1,0 +1,294 @@
+[
+  {
+    "name": "same agency and subaccount success",
+    "input": {
+      "actorAgencyId": "agency-a",
+      "requestedAgencyId": "agency-a",
+      "requestedSubaccountId": "sub-a",
+      "resourceAgencyId": "agency-a",
+      "resourceSubaccountId": "sub-a",
+      "expectedOwnershipPath": ["Agency", "SubAccount", "Contact"],
+      "actualOwnershipPath": ["Agency", "SubAccount", "Contact"],
+      "expectedAffectedCount": 1,
+      "actualAffectedCount": 1,
+      "requestedSideEffects": 1
+    },
+    "allowed": true
+  },
+  {
+    "name": "same agency other subaccount",
+    "input": {
+      "actorAgencyId": "agency-a",
+      "requestedAgencyId": "agency-a",
+      "requestedSubaccountId": "sub-a",
+      "resourceAgencyId": "agency-a",
+      "resourceSubaccountId": "sub-b"
+    },
+    "allowed": false
+  },
+  {
+    "name": "cross agency actor substitution",
+    "input": {
+      "actorAgencyId": "agency-b",
+      "requestedAgencyId": "agency-a",
+      "resourceAgencyId": "agency-a"
+    },
+    "allowed": false
+  },
+  {
+    "name": "cross agency resource substitution",
+    "input": {
+      "actorAgencyId": "agency-a",
+      "requestedAgencyId": "agency-a",
+      "resourceAgencyId": "agency-b"
+    },
+    "allowed": false
+  },
+  {
+    "name": "page belongs to another funnel",
+    "input": {
+      "actorAgencyId": "agency-a",
+      "requestedAgencyId": "agency-a",
+      "resourceAgencyId": "agency-a",
+      "expectedParentId": "funnel-a",
+      "actualParentId": "funnel-b",
+      "expectedOwnershipPath": ["Agency", "SubAccount", "Funnel", "FunnelPage"],
+      "actualOwnershipPath": ["Agency", "SubAccount", "Funnel", "FunnelPage"]
+    },
+    "allowed": false
+  },
+  {
+    "name": "lane belongs to another pipeline",
+    "input": {
+      "actorAgencyId": "agency-a",
+      "requestedAgencyId": "agency-a",
+      "resourceAgencyId": "agency-a",
+      "expectedParentId": "pipeline-a",
+      "actualParentId": "pipeline-b"
+    },
+    "allowed": false
+  },
+  {
+    "name": "ticket lane belongs to another subaccount",
+    "input": {
+      "actorAgencyId": "agency-a",
+      "requestedAgencyId": "agency-a",
+      "requestedSubaccountId": "sub-a",
+      "resourceAgencyId": "agency-a",
+      "resourceSubaccountId": "sub-a",
+      "relatedSubaccountIds": ["sub-a", "sub-b"]
+    },
+    "allowed": false
+  },
+  {
+    "name": "ticket contact belongs to another subaccount",
+    "input": {
+      "actorAgencyId": "agency-a",
+      "requestedAgencyId": "agency-a",
+      "requestedSubaccountId": "sub-a",
+      "resourceAgencyId": "agency-a",
+      "resourceSubaccountId": "sub-a",
+      "relatedSubaccountIds": ["sub-b"]
+    },
+    "allowed": false
+  },
+  {
+    "name": "ticket assignee belongs to another agency",
+    "input": {
+      "actorAgencyId": "agency-a",
+      "requestedAgencyId": "agency-a",
+      "resourceAgencyId": "agency-b"
+    },
+    "allowed": false
+  },
+  {
+    "name": "ticket tag belongs to another subaccount",
+    "input": {
+      "actorAgencyId": "agency-a",
+      "requestedAgencyId": "agency-a",
+      "requestedSubaccountId": "sub-a",
+      "resourceAgencyId": "agency-a",
+      "resourceSubaccountId": "sub-a",
+      "relatedSubaccountIds": ["sub-a", "sub-b"]
+    },
+    "allowed": false
+  },
+  {
+    "name": "media purpose mismatch",
+    "input": {
+      "actorAgencyId": "agency-a",
+      "requestedAgencyId": "agency-a",
+      "resourceAgencyId": "agency-a",
+      "expectedUploadPurpose": "media-library",
+      "actualUploadPurpose": "avatar"
+    },
+    "allowed": false
+  },
+  {
+    "name": "notification actor agency mismatch",
+    "input": {
+      "actorAgencyId": "agency-a",
+      "requestedAgencyId": "agency-a",
+      "resourceAgencyId": "agency-a",
+      "notificationActorAgencyId": "agency-b"
+    },
+    "allowed": false
+  },
+  {
+    "name": "notification subaccount agency mismatch",
+    "input": {
+      "actorAgencyId": "agency-a",
+      "requestedAgencyId": "agency-a",
+      "resourceAgencyId": "agency-a",
+      "notificationSubaccountAgencyId": "agency-b"
+    },
+    "allowed": false
+  },
+  {
+    "name": "orphaned nested resource",
+    "input": {
+      "actorAgencyId": "agency-a",
+      "requestedAgencyId": "agency-a",
+      "resourceAgencyId": "agency-a",
+      "orphaned": true
+    },
+    "allowed": false
+  },
+  {
+    "name": "duplicate ownership state",
+    "input": {
+      "actorAgencyId": "agency-a",
+      "requestedAgencyId": "agency-a",
+      "resourceAgencyId": "agency-a",
+      "duplicateOwnership": true
+    },
+    "allowed": false
+  },
+  {
+    "name": "missing batch member",
+    "input": {
+      "actorAgencyId": "agency-a",
+      "requestedAgencyId": "agency-a",
+      "resourceAgencyId": "agency-a",
+      "batchIds": ["lane-a", "lane-b"],
+      "batchMemberExists": false
+    },
+    "allowed": false
+  },
+  {
+    "name": "duplicate batch member",
+    "input": {
+      "actorAgencyId": "agency-a",
+      "requestedAgencyId": "agency-a",
+      "resourceAgencyId": "agency-a",
+      "batchIds": ["lane-a", "lane-a"]
+    },
+    "allowed": false
+  },
+  {
+    "name": "foreign reorder parent",
+    "input": {
+      "actorAgencyId": "agency-a",
+      "requestedAgencyId": "agency-a",
+      "resourceAgencyId": "agency-a",
+      "expectedParentId": "pipeline-a",
+      "actualParentId": "pipeline-a",
+      "batchIds": ["lane-a", "lane-b"],
+      "batchParentIds": ["pipeline-a", "pipeline-b"]
+    },
+    "allowed": false
+  },
+  {
+    "name": "affected count zero",
+    "input": {
+      "actorAgencyId": "agency-a",
+      "requestedAgencyId": "agency-a",
+      "resourceAgencyId": "agency-a",
+      "expectedAffectedCount": 1,
+      "actualAffectedCount": 0
+    },
+    "allowed": false
+  },
+  {
+    "name": "affected count greater than one",
+    "input": {
+      "actorAgencyId": "agency-a",
+      "requestedAgencyId": "agency-a",
+      "resourceAgencyId": "agency-a",
+      "expectedAffectedCount": 1,
+      "actualAffectedCount": 2
+    },
+    "allowed": false
+  },
+  {
+    "name": "ordered ownership path mismatch",
+    "input": {
+      "actorAgencyId": "agency-a",
+      "requestedAgencyId": "agency-a",
+      "resourceAgencyId": "agency-a",
+      "expectedOwnershipPath": ["Agency", "SubAccount", "Pipeline", "Lane"],
+      "actualOwnershipPath": ["Agency", "Pipeline", "SubAccount", "Lane"]
+    },
+    "allowed": false
+  },
+  {
+    "name": "stale expected version",
+    "input": {
+      "actorAgencyId": "agency-a",
+      "requestedAgencyId": "agency-a",
+      "resourceAgencyId": "agency-a",
+      "expectedVersion": 3,
+      "actualVersion": 4
+    },
+    "allowed": false
+  },
+  {
+    "name": "missing nested resource",
+    "input": { "actorAgencyId": "agency-a", "requestedAgencyId": "agency-a", "resourceAgencyId": "agency-a", "missing": true },
+    "allowed": false
+  },
+  {
+    "name": "deleted resource",
+    "input": { "actorAgencyId": "agency-a", "requestedAgencyId": "agency-a", "resourceAgencyId": "agency-a", "deleted": true },
+    "allowed": false
+  },
+  {
+    "name": "revoked permission",
+    "input": { "actorAgencyId": "agency-a", "requestedAgencyId": "agency-a", "resourceAgencyId": "agency-a", "revoked": true },
+    "allowed": false
+  },
+  {
+    "name": "conflicting mutation",
+    "input": { "actorAgencyId": "agency-a", "requestedAgencyId": "agency-a", "resourceAgencyId": "agency-a", "conflicting": true },
+    "allowed": false
+  },
+  {
+    "name": "malformed batch",
+    "input": { "actorAgencyId": "agency-a", "requestedAgencyId": "agency-a", "resourceAgencyId": "agency-a", "malformed": true },
+    "allowed": false
+  },
+  {
+    "name": "anonymous private surface",
+    "input": { "actorAgencyId": null, "requestedAgencyId": "agency-a", "resourceAgencyId": "agency-a", "anonymous": true, "publicPublished": false },
+    "allowed": false
+  },
+  {
+    "name": "anonymous draft public content",
+    "input": { "actorAgencyId": null, "requestedAgencyId": "public", "resourceAgencyId": "public", "anonymous": true, "publicPublished": false },
+    "allowed": false
+  },
+  {
+    "name": "anonymous published public content",
+    "input": {
+      "actorAgencyId": null,
+      "requestedAgencyId": "public",
+      "resourceAgencyId": "public",
+      "anonymous": true,
+      "publicPublished": true,
+      "expectedOwnershipPath": ["PublishedFunnel", "Agency", "SubAccount"],
+      "actualOwnershipPath": ["PublishedFunnel", "Agency", "SubAccount"],
+      "requestedSideEffects": 0
+    },
+    "allowed": true
+  }
+]

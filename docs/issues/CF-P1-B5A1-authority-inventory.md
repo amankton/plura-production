@@ -113,7 +113,7 @@ The manifest schema must close and validate these taxonomies:
 - invocation: server action, API handler, page loader, layout loader, public
   loader, upload router/callback, provider callback, or internal-only;
 - effect: read, create, update, delete, reorder, external call, upload grant,
-  notification, revalidation, log, or composite;
+  notification, revalidation, log, composite, or no-op boundary;
 - denial: unauthenticated, unauthorized, not found, conflict/stale, invalid
   input, dormant blocked, public unavailable, or internal invariant failure;
   and

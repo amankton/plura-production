@@ -1,0 +1,183 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "crewframe://agency-authority/inventory.schema.json",
+  "title": "Crewframe agency authority inventory",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "immutableParent", "records"],
+  "properties": {
+    "version": { "const": 1 },
+    "immutableParent": {
+      "const": "c6e989f8fb62bd99f28a2c537c57f4d85d069c72"
+    },
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "surfaceId",
+          "domain",
+          "path",
+          "symbol",
+          "invocation",
+          "effects",
+          "actorSource",
+          "requestedIds",
+          "action",
+          "ownershipPath",
+          "persistencePredicate",
+          "denial",
+          "concurrency",
+          "publicBoundary",
+          "disposition",
+          "sourceHash"
+        ],
+        "properties": {
+          "surfaceId": { "type": "string", "minLength": 1 },
+          "domain": {
+            "enum": [
+              "identity/account",
+              "agency",
+              "subaccount",
+              "team/permission/invitation",
+              "billing/commerce/webhook",
+              "contact",
+              "notification/activity",
+              "upload/media",
+              "funnel/page/editor",
+              "pipeline/lane/tag",
+              "ticket/relations",
+              "automation",
+              "routing/public",
+              "internal persistence"
+            ]
+          },
+          "path": { "type": "string", "pattern": "^src/" },
+          "symbol": { "type": "string", "minLength": 1 },
+          "invocation": {
+            "enum": [
+              "server action",
+              "API handler",
+              "page loader",
+              "layout loader",
+              "public loader",
+              "upload router/callback",
+              "provider callback",
+              "internal-only"
+            ]
+          },
+          "effects": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "read",
+                "create",
+                "update",
+                "delete",
+                "reorder",
+                "external call",
+                "upload grant",
+                "notification",
+                "revalidation",
+                "log",
+                "composite",
+                "no-op boundary"
+              ]
+            }
+          },
+          "actorSource": {
+            "enum": [
+              "provider subject",
+              "anonymous-public contract",
+              "internal-derived actor",
+              "blocked"
+            ]
+          },
+          "requestedIds": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": { "type": "string", "minLength": 1 }
+          },
+          "action": {
+            "enum": [
+              "account:entry",
+              "account:provision",
+              "agency:view",
+              "agency:manage",
+              "agency:delete",
+              "subaccount:view",
+              "subaccount:manage",
+              "team:list",
+              "team:read",
+              "team:self-update",
+              "team:manage",
+              "team:invite",
+              "contact:list",
+              "contact:search",
+              "contact:create",
+              "contact:update",
+              "commerce:catalog",
+              "commerce:checkout",
+              "commerce:configure",
+              "commerce:metrics",
+              "billing:manage",
+              "webhook:receive",
+              "webhook:process",
+              "PUBLIC_BOUNDED",
+              "INTERNAL_ONLY",
+              "UNDEFINED_BLOCKED"
+            ]
+          },
+          "ownershipPath": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string", "minLength": 1 }
+          },
+          "persistencePredicate": { "type": "string", "minLength": 1 },
+          "denial": {
+            "enum": [
+              "unauthenticated",
+              "unauthorized",
+              "not found",
+              "conflict/stale",
+              "invalid input",
+              "dormant blocked",
+              "public unavailable",
+              "internal invariant failure"
+            ]
+          },
+          "concurrency": { "type": "string", "minLength": 1 },
+          "publicBoundary": {
+            "enum": [
+              "PRIVATE",
+              "BLOCKED_PUBLIC_REVIEW",
+              "PUBLIC_MARKETING_SITE",
+              "PUBLIC_UPLOADTHING_TRANSPORT"
+            ]
+          },
+          "disposition": {
+            "enum": [
+              "ACCEPTED_RETAIN",
+              "B5A2",
+              "B5A3",
+              "B5A4",
+              "B5A5",
+              "B5A6",
+              "B5A7",
+              "B5A8",
+              "DORMANT_BLOCKED",
+              "PUBLIC_REVIEW_REQUIRED"
+            ]
+          },
+          "sourceHash": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          }
+        }
+      }
+    }
+  }
+}
