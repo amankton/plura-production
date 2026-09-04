@@ -154,6 +154,50 @@ This list is a boundary forecast, not permission to change every named file.
 - Stop if the route can invoke processing, synchronization, replay, or an
   outbound Stripe method.
 
+## Evidence-policy change control
+
+`AMEND_B4F2A1_AUDIT_EVIDENCE_STALE_UNREVALIDATED`
+
+This amendment applies only to immutable candidate
+`73336f38bb9877f2f1210316a721fa958ceb41e9` and only permits this
+non-deployable B4F2A1 checkpoint to substitute dependency-graph continuity and
+explicitly stale audit provenance for the fresh registry result required by
+CF-P1-B4F2A1-12 and V-A1-14. It does not alter the original criterion, accept a
+dependency vulnerability, or represent the historical result as current.
+
+Accepted substitution evidence:
+
+- `package.json` and `bun.lockb` have no parent-range diff.
+- Lockfile SHA-256:
+  `87503b664f64f829f664971fb17ff90407d00ab3cd4f2d4107324cad8616db43`.
+- Candidate SBOM normalized-LF SHA-256:
+  `6eea2a58cf6d0d63e47a45d83ae303c4d9cfa3a322106be754f232b155f7903b`.
+- Sealed B4F1 audit normalized-LF SHA-256:
+  `e1b3bcbc076cebf4580201ed833f95366a6ead6e05496f72a215d0b7c548df6b`.
+- Audit-outage transcript normalized-LF SHA-256:
+  `43db8bae8271734c48af9fcd9dd72ec7f1e343f018383a825293e02e6471f5fc`.
+- The transcript records timestamped 15-second attempts through native Bun
+  1.3.11, digest-pinned official Bun 1.3.11, and a direct npm bulk-advisory
+  POST. Each returned zero advisory JSON.
+- One bounded native retry after candidate freeze and one after substantive
+  review also returned no advisory JSON and only the Bun 1.3.11 banner.
+- Candidate worktree was clean and the disposable-container count was zero.
+
+The sealed B4F1 result—63 advisories at that historical query—is classified
+only as `STALE_UNREVALIDATED`. The current advisory count and severity are
+unknown.
+
+`CF-P1-AUDIT-FRESH-01` is a hard follow-up gate. A fresh authoritative
+dependency audit and explicit disposition must pass before public webhook or
+endpoint registration; shared-development, staging, pilot, or production
+deployment; a public-runtime or release-readiness claim; or closure of the
+dependency-security checkpoint. Local B4F2A2 foundation work may proceed only
+under its own gate while this risk remains unresolved.
+
+This is one evidence-policy change-control event and consumes no implementation
+remediation round. It authorizes no public route, provider, database,
+deployment, Live Mode, Stripe Tax, dependency, billing, or source change.
+
 ## Status
 
 `READY`
