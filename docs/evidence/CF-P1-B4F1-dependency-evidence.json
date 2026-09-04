@@ -1,0 +1,34 @@
+{
+  "audit": {
+    "baselineTotal": 63,
+    "disposition": "Inherited release blocker pending the dependency-upgrade checkpoint; B4F1 does not authorize dependency or lockfile changes.",
+    "nonRegression": true,
+    "severity": {
+      "critical": 0,
+      "high": 34,
+      "low": 4,
+      "moderate": 25
+    },
+    "total": 63
+  },
+  "artifacts": {
+    "audit": {
+      "path": "docs/evidence/CF-P1-B4F1-audit.json",
+      "sha256": "e1b3bcbc076cebf4580201ed833f95366a6ead6e05496f72a215d0b7c548df6b"
+    },
+    "installedDependencyInventory": {
+      "path": "docs/evidence/CF-P1-B4F1-sbom.txt",
+      "sha256": "6eea2a58cf6d0d63e47a45d83ae303c4d9cfa3a322106be754f232b155f7903b"
+    },
+    "lockfile": {
+      "path": "bun.lockb",
+      "sha256": "87503b664f64f829f664971fb17ff90407d00ab3cd4f2d4107324cad8616db43"
+    }
+  },
+  "command": {
+    "audit": "bun audit --json",
+    "installedDependencyInventory": "bun pm ls --all"
+  },
+  "format": "Crewframe installed-component inventory and audit evidence v1",
+  "hashNormalization": "UTF-8, LF line endings, one trailing newline"
+}

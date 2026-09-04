@@ -405,6 +405,89 @@ enum Plan {
   UNLIMITED
 }
 
+enum StripeWebhookMode {
+  TEST
+  LIVE
+}
+
+enum StripeWebhookReceiptStatus {
+  RECEIVED
+  PROCESSING
+  RETRY_PENDING
+  SUCCEEDED
+  IGNORED
+  DEAD_LETTER
+}
+
+enum StripeWebhookReplayOutcome {
+  REQUESTED
+  DRY_RUN_READY
+  ENQUEUED
+  REJECTED
+  FAILED
+}
+
+model StripeWebhookReceipt {
+  id                 String                     @id @default(uuid())
+  mode               StripeWebhookMode
+  accountScopeKey    String                     @db.VarChar(255)
+  eventId            String                     @db.VarChar(255)
+  eventType          String                     @db.VarChar(255)
+  providerCreatedAt  DateTime
+  objectId           String?                    @db.VarChar(255)
+  subscriptionId     String?                    @db.VarChar(255)
+  customerId         String?                    @db.VarChar(255)
+  payloadHash        String                     @db.Char(64)
+  status             StripeWebhookReceiptStatus @default(RECEIVED)
+  attempts           Int                        @default(0)
+  leaseToken         String?                    @db.VarChar(64)
+  leaseExpiresAt     DateTime?
+  nextRetryAt        DateTime?
+  lastErrorCode      String?                    @db.VarChar(64)
+  lastErrorMessage   String?                    @db.VarChar(240)
+  retentionExpiresAt DateTime
+  completedAt        DateTime?
+  createdAt          DateTime                   @default(now())
+  updatedAt          DateTime                   @updatedAt
+
+  @@unique([mode, accountScopeKey, eventId], name: "stripe_webhook_identity")
+  @@index([status, nextRetryAt])
+  @@index([leaseExpiresAt])
+  @@index([subscriptionId])
+  @@index([retentionExpiresAt])
+}
+
+model StripeWebhookObjectLease {
+  id              String            @id @default(uuid())
+  mode            StripeWebhookMode
+  accountScopeKey String            @db.VarChar(255)
+  objectType      String            @db.VarChar(64)
+  objectId        String            @db.VarChar(255)
+  leaseToken      String            @db.VarChar(64)
+  leaseExpiresAt  DateTime
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@unique([mode, accountScopeKey, objectType, objectId], name: "stripe_webhook_object_identity")
+  @@index([leaseExpiresAt])
+}
+
+model StripeWebhookReplayAudit {
+  id               String                     @id @default(uuid())
+  receiptId        String                     @db.VarChar(191)
+  actorId          String                     @db.VarChar(191)
+  reason           String                     @db.VarChar(240)
+  dryRun           Boolean                    @default(true)
+  outcome          StripeWebhookReplayOutcome @default(REQUESTED)
+  safeErrorCode    String?                    @db.VarChar(64)
+  safeErrorMessage String?                    @db.VarChar(240)
+  requestedAt      DateTime                   @default(now())
+  completedAt      DateTime?
+
+  @@index([receiptId, requestedAt])
+  @@index([actorId, requestedAt])
+}
+
 model Subscription {
   id          String      @id @default(uuid())
   createdAt   DateTime    @default(now())
