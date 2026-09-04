@@ -1,9 +1,23 @@
 import { describe, expect, test } from 'bun:test'
 import { createHash } from 'node:crypto'
+import { copyFile, mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
 
 const scriptPath = 'scripts/verify-b4f2b-p02-synthetic-mysql.ps1'
 const fixturePath = 'tests/fixtures/mysql/b4f2b-p02-synthetic-schema.sql'
 const evidencePath = 'docs/evidence/CF-P1-B4F2B-P02-synthetic-mysql.json'
+const fixedInputPaths = [
+  'docs/architecture/CF-P1-B4F2B-boundary-p-manifest.json',
+  'docs/architecture/schemas/CF-P1-B4F2B-boundary-p.schema.json',
+  'docs/templates/CF-P1-B4F2B-boundary-r-authorization.json',
+  'docs/templates/CF-P1-B4F2B-boundary-r-evidence.json',
+  'docs/issues/CF-P1-B4F2B-P02-disposable-synthetic-mysql-proof.md',
+  'scripts/verify-b4f2b-boundary-p.ts',
+  fixturePath,
+  'docs/execution/sql/CF-P1-B4D-logical-subscription-plan-expand.sql',
+  'docs/execution/sql/CF-P1-B4F1-webhook-inbox-foundation.sql',
+]
 
 const normalize = (value: string) =>
   `${value.replace(/\r\n/g, '\n').trimEnd()}\n`
@@ -43,6 +57,21 @@ const runDeniedProof = (args: string[], environment = offlineEnvironment()) => {
   ])
 }
 
+const runProofFile = (
+  proofScript: string,
+  environment = offlineEnvironment()
+) => {
+  const child = Bun.spawn(
+    ['pwsh', '-NoProfile', '-NonInteractive', '-File', proofScript],
+    { env: environment, stderr: 'pipe', stdout: 'pipe' }
+  )
+  return Promise.all([
+    new Response(child.stdout).text(),
+    new Response(child.stderr).text(),
+    child.exited,
+  ])
+}
+
 describe('B4F2B P-02 disposable synthetic MySQL proof', () => {
   test('is pinned to the accepted gate and exact already-local image', async () => {
     const source = await Bun.file(scriptPath).text()
@@ -68,13 +97,74 @@ describe('B4F2B P-02 disposable synthetic MySQL proof', () => {
       "$proofLabel = 'com.crewframe.proof=CF-P1-B4F2B-P02'"
     )
     expect(source).toContain("'rm', '--force', '--volumes', $containerName")
-    expect(source).toContain("'volume', 'inspect', $anonymousVolume")
+    expect(source).toContain(
+      "'volume', 'ls', '--quiet', '--filter', \"name=^$VolumeName$\""
+    )
+    expect(source).toContain('Test-ExactProofContainerPresent')
+    expect(source).toContain('Find-ExactProofContainerAfterRun')
+    expect(source).toContain("'container', 'inspect', '--format', '{{.Image}}'")
     expect(source).toContain(
       "'ps', '--all', '--quiet', '--filter', \"label=$proofLabel\""
     )
+    expect(source).toContain('$anonymousVolume = Get-AnonymousDataVolume')
+    expect(source).toContain("$parts[2] -notmatch '^[a-f0-9]{64}$'")
+    expect(source).not.toContain("'volume', 'inspect', $anonymousVolume")
+    const scenario = source.slice(source.indexOf('function Invoke-ContainerScenario'))
+    const runCall = scenario.indexOf("'run', '--detach'")
+    const reconciliation = scenario.indexOf(
+      'Find-ExactProofContainerAfterRun',
+      runCall
+    )
+    const volumeCapture = scenario.indexOf(
+      '$anonymousVolume = Get-AnonymousDataVolume',
+      reconciliation
+    )
+    const injectedFailure = scenario.indexOf(
+      "throw 'EXPECTED_INJECTED_FAILURE'",
+      volumeCapture
+    )
+    const runResultCheck = scenario.indexOf('$started.ExitCode', volumeCapture)
+    const isolationCheck = scenario.indexOf(
+      'Assert-ContainerIsolation',
+      volumeCapture
+    )
+    const cleanupFinally = scenario.indexOf('finally {', runCall)
+    expect(runCall).toBeGreaterThan(0)
+    expect(reconciliation).toBeGreaterThan(runCall)
+    expect(volumeCapture).toBeGreaterThan(reconciliation)
+    expect(injectedFailure).toBeGreaterThan(volumeCapture)
+    expect(runResultCheck).toBeGreaterThan(volumeCapture)
+    expect(isolationCheck).toBeGreaterThan(volumeCapture)
+    expect(cleanupFinally).toBeGreaterThan(runCall)
     expect(source).not.toMatch(/'--publish'|'--mount'|'--volume'\s*,/)
     expect(source).not.toMatch(/'volume',\s*'(rm|prune)'|'container',\s*'prune'/)
     expect(source).not.toMatch(/docker\s+(rm|volume\s+rm|system\s+prune)/i)
+  })
+
+  test('bounds and terminates every Docker subprocess', async () => {
+    const source = await Bun.file(scriptPath).text()
+    expect(source).toContain('$dockerCommandTimeoutMilliseconds = 30000')
+    expect(source).toContain('$dockerTerminationTimeoutMilliseconds = 5000')
+    expect(source).toContain(
+      '$process.WaitForExit($dockerCommandTimeoutMilliseconds)'
+    )
+    expect(source).toContain('$process.StandardInput.WriteAsync($InputText)')
+    expect(source).toContain(
+      '$stdoutTask.Wait($dockerTerminationTimeoutMilliseconds)'
+    )
+    expect(source).toContain(
+      '$stderrTask.Wait($dockerTerminationTimeoutMilliseconds)'
+    )
+    expect(source).toContain('$process.Kill($true)')
+    expect(source).toContain(
+      '$script:activeDockerProcessCount = $script:activeDockerProcessCount + 1'
+    )
+    expect(source).toContain(
+      '$script:activeDockerProcessCount = $script:activeDockerProcessCount - 1'
+    )
+    expect(source).toContain("throw 'DOCKER_PROCESS_HANDLE_REMAINS'")
+    expect(source).not.toMatch(/\.WaitForExit\(\s*\)/)
+    expect(source).not.toMatch(/StandardInput\.Write\(/)
   })
 
   test('binds every input hash and keeps permission DDL absent', async () => {
@@ -161,7 +251,7 @@ describe('B4F2B P-02 disposable synthetic MySQL proof', () => {
       'Boundary P-02 synthetic MySQL proof failed.\n'
     )
     expect(`${stdout}${stderr}`).not.toContain(hostileMarker)
-  })
+  }, 15_000)
 
   test('rejects ambient connection configuration before Docker without echo', async () => {
     const hostileMarker = 'ambient-value-must-not-appear'
@@ -175,7 +265,111 @@ describe('B4F2B P-02 disposable synthetic MySQL proof', () => {
       'Boundary P-02 synthetic MySQL proof failed.\n'
     )
     expect(`${stdout}${stderr}`).not.toContain(hostileMarker)
-  })
+  }, 15_000)
+
+  test('rejects an intermediate output junction without changing the outside sentinel', async () => {
+    const ownerDirectory = await mkdtemp(
+      path.join(tmpdir(), 'crewframe-b4f2b-p02-output-')
+    )
+    const repositoryFixture = path.join(ownerDirectory, 'repository')
+    const outsideDirectory = path.join(ownerDirectory, 'outside-evidence')
+    const copiedScript = path.join(
+      repositoryFixture,
+      'scripts',
+      'verify-b4f2b-p02-synthetic-mysql.ps1'
+    )
+    const sentinelPath = path.join(outsideDirectory, 'sentinel.txt')
+    try {
+      await mkdir(path.dirname(copiedScript), { recursive: true })
+      await mkdir(path.join(repositoryFixture, 'docs'), { recursive: true })
+      await mkdir(outsideDirectory, { recursive: true })
+      await copyFile(scriptPath, copiedScript)
+      await writeFile(sentinelPath, 'OUTSIDE_SENTINEL_UNCHANGED\n', 'utf8')
+      await symlink(
+        outsideDirectory,
+        path.join(repositoryFixture, 'docs', 'evidence'),
+        'junction'
+      )
+
+      const [stdout, stderr, exitCode] = await runProofFile(copiedScript)
+      expect(exitCode).not.toBe(0)
+      expect(stdout).toBe('')
+      expect(stderr.replace(/\r\n/g, '\n')).toBe(
+        'Boundary P-02 synthetic MySQL proof failed.\n'
+      )
+      expect(await Bun.file(sentinelPath).text()).toBe(
+        'OUTSIDE_SENTINEL_UNCHANGED\n'
+      )
+      expect(
+        await Bun.file(
+          path.join(outsideDirectory, path.basename(evidencePath))
+        ).exists()
+      ).toBeFalse()
+    } finally {
+      await rm(ownerDirectory, { force: true, recursive: true })
+    }
+  }, 15_000)
+
+  test('rejects an intermediate fixed-input junction before Docker', async () => {
+    const ownerDirectory = await mkdtemp(
+      path.join(tmpdir(), 'crewframe-b4f2b-p02-input-')
+    )
+    const repositoryFixture = path.join(ownerDirectory, 'repository')
+    const outsideFixtures = path.join(ownerDirectory, 'outside-fixtures')
+    const copiedScript = path.join(
+      repositoryFixture,
+      'scripts',
+      'verify-b4f2b-p02-synthetic-mysql.ps1'
+    )
+    const sentinelPath = path.join(outsideFixtures, 'sentinel.txt')
+    try {
+      const manifest = JSON.parse(
+        await Bun.file(
+          'docs/architecture/CF-P1-B4F2B-boundary-p-manifest.json'
+        ).text()
+      ) as { protectedSurfaces: Array<{ path: string }> }
+      const requiredFiles = new Set([
+        ...fixedInputPaths,
+        ...manifest.protectedSurfaces.map((surface) => surface.path),
+      ])
+      requiredFiles.delete(fixturePath)
+      for (const requiredFile of Array.from(requiredFiles)) {
+        const destination = path.join(repositoryFixture, requiredFile)
+        await mkdir(path.dirname(destination), { recursive: true })
+        await copyFile(path.resolve(requiredFile), destination)
+      }
+      await mkdir(path.dirname(copiedScript), { recursive: true })
+      await copyFile(scriptPath, copiedScript)
+      await mkdir(path.join(repositoryFixture, 'docs', 'evidence'), {
+        recursive: true,
+      })
+      await mkdir(path.join(repositoryFixture, 'tests'), { recursive: true })
+      await mkdir(path.join(outsideFixtures, 'mysql'), { recursive: true })
+      await copyFile(
+        fixturePath,
+        path.join(outsideFixtures, 'mysql', path.basename(fixturePath))
+      )
+      await writeFile(sentinelPath, 'OUTSIDE_SENTINEL_UNCHANGED\n', 'utf8')
+      await symlink(
+        outsideFixtures,
+        path.join(repositoryFixture, 'tests', 'fixtures'),
+        'junction'
+      )
+
+      const [stdout, stderr, exitCode] = await runProofFile(copiedScript)
+      expect(exitCode).not.toBe(0)
+      expect(stdout).toBe('')
+      expect(stderr.replace(/\r\n/g, '\n')).toBe(
+        'Boundary P-02 synthetic MySQL proof failed.\n'
+      )
+      expect(await Bun.file(sentinelPath).text()).toBe(
+        'OUTSIDE_SENTINEL_UNCHANGED\n'
+      )
+      expect(`${stdout}${stderr}`).not.toContain(sentinelPath)
+    } finally {
+      await rm(ownerDirectory, { force: true, recursive: true })
+    }
+  }, 15_000)
 
   test('has only fixed console output and no diagnostic or log adapter', async () => {
     const source = await Bun.file(scriptPath).text()

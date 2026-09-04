@@ -12,7 +12,14 @@
   `GO_B4F2B_P02_IMPLEMENTATION_CONFIRMED`.
 - Branch: `codex/crewframe-foundation`.
 - Status: `CANDIDATE_AWAITING_EXACT_REVIEW`.
-- P-02 remediation rounds used: 0 of 2.
+- Original candidate:
+  `1ddcddeeb68f91e530aaf9b6af2c26556028f852`.
+- Original Architect decision: `APPROVAL_WITHHELD` for unbounded Docker
+  execution, ambiguous-run cleanup, non-positive volume absence, and
+  intermediate reparse handling.
+- Original Verifier decision: `HOLD` / `P02-V1` through `P02-V4` for the same
+  independently identified cleanup, path-safety, and bounded-execution gaps.
+- P-02 remediation rounds used: 1 of 2.
 - Boundary R: `BLOCKED`.
 
 ## Outcome
@@ -97,6 +104,21 @@ Final bounded cleanup evidence records:
 No broad Docker enumeration is used as a deletion target, and no prune,
 bind-volume, named-volume, network, or host cleanup action is allowed.
 
+Every Docker subprocess and standard-input write has a 30-second bound;
+standard-output/error completion and whole-process-tree termination each have
+a 5-second bound. The proof tracks every started Docker process handle and will
+not emit evidence unless the active count returns to zero. Before `docker run`,
+the generated exact name must be absent. After run is invoked, the proof
+reconciles that exact name over a bounded interval, requires the fixed proof
+label and image identity, captures a strict 64-hex anonymous-volume identity
+before any isolation assertion, and authorizes cleanup only because the same
+name was proven absent beforehand. A pre-existing collision is never deleted.
+
+Container and volume absence are positive, exit-zero daemon queries. A query
+failure is not treated as absence. If run returns a failure, malformed output,
+or times out after creating the container, the same exact reconciliation and
+cleanup path still runs before the proof can fail.
+
 ## Evidence contract
 
 `docs/evidence/CF-P1-B4F2B-P02-synthetic-mysql.json` contains only fixed input
@@ -112,9 +134,10 @@ failure line.
 
 ## Verification
 
-- Focused P-02 tests: 8 passed, 0 failed, 58 expectations.
-- P-02 plus Boundary P continuity tests: 17 passed, 0 failed, 99 expectations.
-- Complete `bun test`: 294 passed, 0 failed, 1,321 expectations across 41
+- Focused P-02 tests: 11 passed, 0 failed, 93 expectations.
+- P-02 plus Boundary P continuity tests: 20 passed, 0 failed, 134
+  expectations.
+- Complete `bun test`: 297 passed, 0 failed, 1,356 expectations across 41
   files.
 - `bun run lint`: pass with no warnings or errors.
 - `bun run typecheck`: pass.
@@ -129,6 +152,8 @@ failure line.
 - Source scans: no diagnostic, log, broad cleanup, shell-string evaluation,
   network, mount, published-port, permission-DDL, or representative-data
   adapter.
+- Intermediate fixed-input and evidence-output junction regressions: generic
+  fail-closed result before Docker, with outside sentinels unchanged.
 - Exact protected package, lockfile, Prisma schema/migration, route,
   middleware, worker, provider, runtime-configuration, and SQL surfaces remain
   unchanged.

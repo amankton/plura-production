@@ -11,8 +11,12 @@ $imageDigest = 'sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb8
 $imageReference = "mysql@$imageDigest"
 $imageId = $imageDigest
 $proofLabel = 'com.crewframe.proof=CF-P1-B4F2B-P02'
+$proofLabelValue = 'CF-P1-B4F2B-P02'
 $containerPrefix = 'crewframe-b4f2b-p02-'
+$dockerCommandTimeoutMilliseconds = 30000
+$dockerTerminationTimeoutMilliseconds = 5000
 $dockerExecutable = $null
+$activeDockerProcessCount = 0
 $repositoryRoot = [IO.Path]::GetFullPath((Split-Path -Parent $PSScriptRoot))
 $fixturePath = 'tests/fixtures/mysql/b4f2b-p02-synthetic-schema.sql'
 $b4dPath = 'docs/execution/sql/CF-P1-B4D-logical-subscription-plan-expand.sql'
@@ -57,11 +61,44 @@ function Assert-InsideRepository {
   }
 }
 
+function Assert-NoReparsePathComponents {
+  param(
+    [Parameter(Mandatory = $true)][string]$Candidate,
+    [switch]$AllowMissingLeaf
+  )
+
+  $fullCandidate = [IO.Path]::GetFullPath($Candidate)
+  Assert-InsideRepository -Candidate $fullCandidate
+  $rootItem = Get-Item -Force -LiteralPath $repositoryRoot
+  if (($rootItem.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {
+    throw 'REPOSITORY_ROOT_REPARSE_FORBIDDEN'
+  }
+  $relativePath = [IO.Path]::GetRelativePath($repositoryRoot, $fullCandidate)
+  if ($relativePath -eq '.') { return }
+  $components = @($relativePath -split '[\\/]')
+  $currentPath = $repositoryRoot
+  for ($index = 0; $index -lt $components.Count; $index++) {
+    $currentPath = Join-Path $currentPath $components[$index]
+    $item = Get-Item -Force -LiteralPath $currentPath -ErrorAction SilentlyContinue
+    if (-not $item) {
+      if ($AllowMissingLeaf -and $index -eq ($components.Count - 1)) { return }
+      throw 'PATH_COMPONENT_MISSING'
+    }
+    if (($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {
+      throw 'PATH_COMPONENT_REPARSE_FORBIDDEN'
+    }
+    if ($index -lt ($components.Count - 1) -and -not $item.PSIsContainer) {
+      throw 'PATH_COMPONENT_NOT_DIRECTORY'
+    }
+  }
+}
+
 function Get-FixedFile {
   param([Parameter(Mandatory = $true)][string]$RelativePath)
 
   $candidate = [IO.Path]::GetFullPath((Join-Path $repositoryRoot $RelativePath))
   Assert-InsideRepository -Candidate $candidate
+  Assert-NoReparsePathComponents -Candidate $candidate
   $item = Get-Item -Force -LiteralPath $candidate
   if ($item.PSIsContainer -or (($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0)) {
     throw 'FIXED_INPUT_NOT_REGULAR'
@@ -168,22 +205,58 @@ function Invoke-DockerCapture {
   }
   $process = [Diagnostics.Process]::new()
   $process.StartInfo = $startInfo
+  $processStarted = $false
+  $timedOut = $false
   try {
     if (-not $process.Start()) { throw 'DOCKER_PROCESS_START_FAILED' }
+    $processStarted = $true
+    $script:activeDockerProcessCount = $script:activeDockerProcessCount + 1
     $stdoutTask = $process.StandardOutput.ReadToEndAsync()
     $stderrTask = $process.StandardError.ReadToEndAsync()
     if ($PSBoundParameters.ContainsKey('InputText')) {
-      $process.StandardInput.Write($InputText)
-      $process.StandardInput.Close()
+      $stdinTask = $process.StandardInput.WriteAsync($InputText)
+      if (-not $stdinTask.Wait($dockerCommandTimeoutMilliseconds)) {
+        $timedOut = $true
+      }
+      else {
+        $null = $stdinTask.GetAwaiter().GetResult()
+        $process.StandardInput.Close()
+      }
     }
-    $process.WaitForExit()
+    if (-not $timedOut -and -not $process.WaitForExit($dockerCommandTimeoutMilliseconds)) {
+      $timedOut = $true
+    }
+    if ($timedOut) {
+      try { $process.Kill($true) } catch { }
+      if (-not $process.WaitForExit($dockerTerminationTimeoutMilliseconds)) {
+        throw 'DOCKER_PROCESS_TERMINATION_FAILED'
+      }
+    }
+    if (-not $stdoutTask.Wait($dockerTerminationTimeoutMilliseconds)) {
+      throw 'DOCKER_STDOUT_TIMEOUT'
+    }
+    if (-not $stderrTask.Wait($dockerTerminationTimeoutMilliseconds)) {
+      throw 'DOCKER_STDERR_TIMEOUT'
+    }
     $stdout = $stdoutTask.GetAwaiter().GetResult().Replace("`r`n", "`n").TrimEnd([char[]]"`n")
     $null = $stderrTask.GetAwaiter().GetResult()
+    if ($timedOut) { throw 'DOCKER_COMMAND_TIMEOUT' }
     $exitCode = $process.ExitCode
     $captured = if ($stdout.Length -eq 0) { @() } else { @($stdout -split "`n") }
   }
   finally {
+    $cleanupTerminationFailed = $false
+    if ($processStarted -and -not $process.HasExited) {
+      try { $process.Kill($true) } catch { }
+      if (-not $process.WaitForExit($dockerTerminationTimeoutMilliseconds)) {
+        $cleanupTerminationFailed = $true
+      }
+    }
     $process.Dispose()
+    if ($processStarted) {
+      $script:activeDockerProcessCount = $script:activeDockerProcessCount - 1
+    }
+    if ($cleanupTerminationFailed) { throw 'DOCKER_PROCESS_CLEANUP_FAILED' }
   }
   $lines = [Collections.Generic.List[string]]::new()
   foreach ($line in $captured) { $lines.Add([string]$line) }
@@ -315,7 +388,12 @@ function Get-AnonymousDataVolume {
   $lines = @($mounts.Lines | Where-Object { $_ -and $_.Trim().Length -gt 0 })
   if ($lines.Count -ne 1) { throw 'UNEXPECTED_MOUNT_SET' }
   $parts = @($lines[0] -split '\s+')
-  if ($parts.Count -ne 3 -or $parts[0] -ne 'volume' -or $parts[1] -ne '/var/lib/mysql' -or -not $parts[2]) {
+  if (
+    $parts.Count -ne 3 -or
+    $parts[0] -ne 'volume' -or
+    $parts[1] -ne '/var/lib/mysql' -or
+    $parts[2] -notmatch '^[a-f0-9]{64}$'
+  ) {
     throw 'UNEXPECTED_DATA_VOLUME'
   }
   return $parts[2]
@@ -333,6 +411,55 @@ function Assert-ZeroProofContainers {
   }
   if ($remaining.ExitCode -ne 0) { throw 'PROOF_CONTAINER_QUERY_FAILED' }
   if ($remaining.Lines.Count -ne 0) { throw 'PROOF_CONTAINER_REMAINS' }
+}
+
+function Test-ExactProofContainerPresent {
+  param([Parameter(Mandatory = $true)][string]$ContainerName)
+
+  $result = Invoke-DockerCapture -DockerArguments @(
+    'ps', '--all',
+    '--filter', "name=^/$ContainerName$",
+    '--format', '{{.Names}}|{{.Label "com.crewframe.proof"}}'
+  )
+  if ($result.Lines.Count -eq 0) { return $false }
+  if ($result.Lines.Count -ne 1 -or $result.Lines[0] -cne "$ContainerName|$proofLabelValue") {
+    throw 'EXACT_CONTAINER_IDENTITY_MISMATCH'
+  }
+  $image = Invoke-DockerCapture -DockerArguments @(
+    'container', 'inspect', '--format', '{{.Image}}', $ContainerName
+  )
+  if ($image.Lines.Count -ne 1 -or $image.Lines[0] -cne $imageId) {
+    throw 'EXACT_CONTAINER_IMAGE_MISMATCH'
+  }
+  return $true
+}
+
+function Find-ExactProofContainerAfterRun {
+  param([Parameter(Mandatory = $true)][string]$ContainerName)
+
+  $queryFailed = $false
+  for ($attempt = 0; $attempt -lt 20; $attempt++) {
+    try {
+      if (Test-ExactProofContainerPresent -ContainerName $ContainerName) {
+        return $true
+      }
+    }
+    catch {
+      $queryFailed = $true
+    }
+    Start-Sleep -Milliseconds 250
+  }
+  if ($queryFailed) { throw 'AMBIGUOUS_CONTAINER_RECONCILIATION' }
+  return $false
+}
+
+function Assert-ExactVolumeAbsent {
+  param([Parameter(Mandatory = $true)][string]$VolumeName)
+
+  $result = Invoke-DockerCapture -DockerArguments @(
+    'volume', 'ls', '--quiet', '--filter', "name=^$VolumeName$"
+  )
+  if ($result.Lines.Count -ne 0) { throw 'EXACT_VOLUME_REMAINS' }
 }
 
 function Invoke-LogicalPlanProof {
@@ -568,9 +695,14 @@ function Invoke-ContainerScenario {
   param([Parameter(Mandatory = $true)][ValidateSet('success', 'injected')][string]$Scenario)
 
   $containerName = "$containerPrefix$Scenario-$([Guid]::NewGuid().ToString('N').Substring(0, 12))"
-  $containerStarted = $false
+  $cleanupAuthorized = $false
+  $containerWasObserved = $false
   $anonymousVolume = $null
   $cleanupFailed = $false
+  if (Test-ExactProofContainerPresent -ContainerName $containerName) {
+    throw 'PREEXISTING_CONTAINER_NAME_COLLISION'
+  }
+  $cleanupAuthorized = $true
   try {
     $started = Invoke-DockerCapture -DockerArguments @(
       'run', '--detach', '--pull=never',
@@ -579,16 +711,18 @@ function Invoke-ContainerScenario {
       '--network=none',
       '--env', 'MYSQL_ALLOW_EMPTY_PASSWORD=yes',
       $imageReference
-    )
+    ) -AllowFailure
+    if (-not (Find-ExactProofContainerAfterRun -ContainerName $containerName)) {
+      throw 'CREATED_CONTAINER_NOT_OBSERVED'
+    }
+    $containerWasObserved = $true
+    $anonymousVolume = Get-AnonymousDataVolume -ContainerName $containerName
+    if ($Scenario -eq 'injected') { throw 'EXPECTED_INJECTED_FAILURE' }
     if ($started.ExitCode -ne 0 -or $started.Lines.Count -ne 1) {
       throw 'CONTAINER_START_FAILED'
     }
-    $containerStarted = $true
     Assert-ContainerIsolation -ContainerName $containerName
-    $anonymousVolume = Get-AnonymousDataVolume -ContainerName $containerName
     Wait-ForMySql -ContainerName $containerName
-
-    if ($Scenario -eq 'injected') { throw 'EXPECTED_INJECTED_FAILURE' }
 
     $fixture = Get-NormalizedText -RelativePath $fixturePath
     $fixtureApply = Invoke-MySql -ContainerName $containerName -Sql $fixture
@@ -597,17 +731,47 @@ function Invoke-ContainerScenario {
     Invoke-WebhookProof -ContainerName $containerName
   }
   finally {
-    if ($containerStarted) {
-      $removed = Invoke-DockerCapture -DockerArguments @(
-        'rm', '--force', '--volumes', $containerName
-      ) -AllowFailure
-      if ($removed.ExitCode -ne 0) { $cleanupFailed = $true }
-    }
-    if ($anonymousVolume) {
-      $volumeProbe = Invoke-DockerCapture -DockerArguments @(
-        'volume', 'inspect', $anonymousVolume
-      ) -AllowFailure
-      if ($volumeProbe.ExitCode -eq 0) { $cleanupFailed = $true }
+    if ($cleanupAuthorized) {
+      try {
+        $containerPresent = Find-ExactProofContainerAfterRun -ContainerName $containerName
+        if ($containerPresent) {
+          $containerWasObserved = $true
+          if (-not $anonymousVolume) {
+            try {
+              $anonymousVolume = Get-AnonymousDataVolume -ContainerName $containerName
+            }
+            catch {
+              $cleanupFailed = $true
+            }
+          }
+          $removed = Invoke-DockerCapture -DockerArguments @(
+            'rm', '--force', '--volumes', $containerName
+          ) -AllowFailure
+          if ($removed.ExitCode -ne 0) { $cleanupFailed = $true }
+        }
+      }
+      catch {
+        $cleanupFailed = $true
+      }
+      if ($containerWasObserved -and -not $anonymousVolume) {
+        $cleanupFailed = $true
+      }
+      try {
+        if (Test-ExactProofContainerPresent -ContainerName $containerName) {
+          $cleanupFailed = $true
+        }
+      }
+      catch {
+        $cleanupFailed = $true
+      }
+      if ($anonymousVolume) {
+        try {
+          Assert-ExactVolumeAbsent -VolumeName $anonymousVolume
+        }
+        catch {
+          $cleanupFailed = $true
+        }
+      }
     }
     try {
       Assert-ZeroProofContainers
@@ -623,8 +787,11 @@ function Assert-SafeOutputTarget {
   param([Parameter(Mandatory = $true)][string]$FullPath)
 
   Assert-InsideRepository -Candidate $FullPath
-  if (Test-Path -LiteralPath $FullPath) {
-    $item = Get-Item -Force -LiteralPath $FullPath
+  $directory = [IO.Path]::GetDirectoryName($FullPath)
+  Assert-NoReparsePathComponents -Candidate $directory
+  Assert-NoReparsePathComponents -Candidate $FullPath -AllowMissingLeaf
+  $item = Get-Item -Force -LiteralPath $FullPath -ErrorAction SilentlyContinue
+  if ($item) {
     if ($item.PSIsContainer -or (($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0)) {
       throw 'OUTPUT_TARGET_NOT_REGULAR'
     }
@@ -641,6 +808,7 @@ function Write-AtomicEvidence {
   $fullOutput = [IO.Path]::GetFullPath((Join-Path $repositoryRoot $RelativePath))
   Assert-SafeOutputTarget -FullPath $fullOutput
   $directory = [IO.Path]::GetDirectoryName($fullOutput)
+  Assert-NoReparsePathComponents -Candidate $directory
   $directoryItem = Get-Item -Force -LiteralPath $directory
   if (($directoryItem.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {
     throw 'OUTPUT_DIRECTORY_REPARSE_FORBIDDEN'
@@ -663,6 +831,7 @@ function Write-AtomicEvidence {
     $stream.Flush($true)
     $stream.Dispose()
     $stream = $null
+    Assert-NoReparsePathComponents -Candidate $temporaryPath
     Assert-SafeOutputTarget -FullPath $fullOutput
     [IO.File]::Move($temporaryPath, $fullOutput, $true)
   }
@@ -679,9 +848,11 @@ function Invoke-Proof {
   foreach ($key in $forbiddenEnvironmentKeys) {
     if (Test-Path -LiteralPath "Env:$key") { throw 'AMBIENT_CONFIGURATION_FORBIDDEN' }
   }
+  $fullOutput = [IO.Path]::GetFullPath((Join-Path $repositoryRoot $outputPath))
+  Assert-SafeOutputTarget -FullPath $fullOutput
+  Assert-FixedInputs
   $dockerCommand = Get-Command docker.exe -CommandType Application -ErrorAction Stop
   $script:dockerExecutable = $dockerCommand.Source
-  Assert-FixedInputs
   Assert-LocalDockerAndImage
   Assert-ZeroProofContainers
 
@@ -700,6 +871,7 @@ function Invoke-Proof {
 
   $temporaryEvidence = @(Get-ChildItem -Force -LiteralPath (Join-Path $repositoryRoot 'docs/evidence') -Filter '.CF-P1-B4F2B-P02-*.tmp')
   if ($temporaryEvidence.Count -ne 0) { throw 'TEMPORARY_EVIDENCE_REMAINS' }
+  if ($activeDockerProcessCount -ne 0) { throw 'DOCKER_PROCESS_HANDLE_REMAINS' }
 
   $evidence = [ordered]@{
     format = 'Crewframe B4F2B P-02 synthetic MySQL proof v1'
