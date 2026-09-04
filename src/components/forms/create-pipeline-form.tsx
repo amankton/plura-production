@@ -25,7 +25,6 @@ import { Button } from '../ui/button'
 import Loading from '../global/loading'
 import { CreatePipelineFormSchema } from '@/lib/types'
 import {
-  saveActivityLogsNotification,
   upsertFunnel,
   upsertPipeline,
 } from '@/lib/queries'
@@ -72,12 +71,6 @@ const CreatePipelineForm: React.FC<CreatePipelineFormProps> = ({
         ...values,
         id: defaultData?.id,
         subAccountId: subAccountId,
-      })
-
-      await saveActivityLogsNotification({
-        agencyId: undefined,
-        description: `Updates a pipeline | ${response?.name}`,
-        subaccountId: subAccountId,
       })
 
       toast({

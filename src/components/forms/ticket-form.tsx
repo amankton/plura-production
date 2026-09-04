@@ -1,6 +1,5 @@
 'use client'
 import {
-  saveActivityLogsNotification,
   searchContacts,
   upsertTicket,
 } from '@/lib/queries'
@@ -128,12 +127,6 @@ const TicketForm = ({ getNewTicket, laneId, subaccountId }: Props) => {
         },
         tags
       )
-
-      await saveActivityLogsNotification({
-        agencyId: undefined,
-        description: `Updated a ticket | ${response?.name}`,
-        subaccountId,
-      })
 
       toast({
         title: 'Success',

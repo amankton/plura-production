@@ -98,7 +98,6 @@ const makeStore = (overrides: Partial<ProjectionStore> = {}) => {
     listDefaultRedirectPermissions: async () => [
       { access: true, subaccountAgencyId: agencyId, subaccountId },
     ],
-    listLegacyActorNames: async () => [{ name: 'Actor' }],
     listPermittedSubaccounts: async () => [
       { access: true, permissionId: 'permission-a', subaccount },
     ],
@@ -299,7 +298,7 @@ describe('B5A2A actor-safe projection service', () => {
     const result = await makeService().getAgencySidebarProjection(agencyId)
     expect(result.actor).toEqual({ role: Role.AGENCY_OWNER })
     expect(result.agency).toEqual(agencyNavigation)
-    expect(result.legacyActivityActorName).toBe('Actor')
+    expect('legacyActivityActorName' in result).toBe(false)
     expect(result.sidebarOptions.map((option) => option.id)).toEqual([
       'option-a',
       'option-b',

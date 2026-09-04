@@ -10,10 +10,9 @@ import { twMerge } from 'tailwind-merge'
 type Props = {
   agencyDetails: Readonly<{ id: string }>
   className: string
-  userName?: string
 }
 
-const CreateSubaccountButton = ({ agencyDetails, className, userName }: Props) => {
+const CreateSubaccountButton = ({ agencyDetails, className }: Props) => {
   const { setOpen } = useModal()
 
   return (
@@ -27,7 +26,6 @@ const CreateSubaccountButton = ({ agencyDetails, className, userName }: Props) =
           >
             <SubAccountDetails
               agencyDetails={{ id: agencyDetails.id }}
-              userName={userName ?? ''}
             />
           </CustomModal>
         )

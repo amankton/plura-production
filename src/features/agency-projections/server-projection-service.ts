@@ -130,12 +130,6 @@ const projectionStore: ProjectionStore = {
       subaccountAgencyId: permission.SubAccount.agencyId,
       subaccountId: permission.subAccountId,
     })),
-  listLegacyActorNames: (values) =>
-    db.user.findMany({
-      where: { agencyId: values.agencyId, id: values.actorId },
-      select: { name: true },
-      take: 2,
-    }),
   listPermittedSubaccounts: async (values) =>
     (
       await db.permissions.findMany({

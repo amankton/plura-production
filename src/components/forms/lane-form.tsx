@@ -26,7 +26,6 @@ import Loading from '../global/loading'
 import { LaneFormSchema } from '@/lib/types'
 import {
   getPipelineDetails,
-  saveActivityLogsNotification,
   upsertFunnel,
   upsertLane,
   upsertPipeline,
@@ -79,12 +78,6 @@ const LaneForm: React.FC<CreateLaneFormProps> = ({
 
       const d = await getPipelineDetails(pipelineId)
       if (!d) return
-
-      await saveActivityLogsNotification({
-        agencyId: undefined,
-        description: `Updated a lane | ${response?.name}`,
-        subaccountId: d.subAccountId,
-      })
 
       toast({
         title: 'Success',

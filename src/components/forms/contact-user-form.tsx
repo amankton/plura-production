@@ -25,7 +25,6 @@ import Loading from '../global/loading'
 import { ContactUserFormSchema } from '@/lib/types'
 import {
   createContact,
-  saveActivityLogsNotification,
   updateContact,
 } from '@/lib/queries'
 import { toast } from '../ui/use-toast'
@@ -73,11 +72,6 @@ const ContactUserForm: React.FC<ContactUserFormProps> = ({ subaccountId }) => {
             name: values.name,
             subaccountId,
           })
-      await saveActivityLogsNotification({
-        agencyId: undefined,
-        description: `Updated a contact | ${response?.name}`,
-        subaccountId: subaccountId,
-      })
       toast({
         title: 'Success',
         description: 'Saved funnel details',

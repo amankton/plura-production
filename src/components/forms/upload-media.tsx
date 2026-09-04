@@ -20,7 +20,7 @@ import {
   FormLabel,
   FormMessage,
 } from '../ui/form'
-import { createMedia, saveActivityLogsNotification } from '@/lib/queries'
+import { createMedia } from '@/lib/queries'
 import { Input } from '../ui/input'
 import FileUpload from '../global/file-upload'
 import { Button } from '../ui/button'
@@ -49,12 +49,6 @@ const UploadMediaForm = ({ subaccountId }: Props) => {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
       const response = await createMedia(subaccountId, values)
-      await saveActivityLogsNotification({
-        agencyId: undefined,
-        description: `Uploaded a media file | ${response.name}`,
-        subaccountId,
-      })
-
       toast({ title: 'Succes', description: 'Uploaded media' })
       router.refresh()
     } catch (error) {

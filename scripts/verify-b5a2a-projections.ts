@@ -16,29 +16,55 @@ const allowedPaths = new Set([
   'docs/evidence/CF-P1-B5A2A-candidate-verification.json',
   'docs/execution/CF-P1-B5A2A-actor-safe-projections.md',
   'docs/issues/CF-P1-B5A2A-actor-safe-projections.md',
+  'docs/issues/CF-P1-B5A2B-notification-activity-boundary.md',
+  'docs/evidence/CF-P1-B5A2B-candidate-verification.json',
+  'docs/execution/CF-P1-B5A2B-notification-activity-boundary.md',
   'docs/security/agency-authority/inventory.json',
   'docs/security/agency-authority/inventory.lock.json',
   'scripts/agency-authority-inventory-lib.ts',
   'scripts/verify-b5a2a-projections.ts',
+  'scripts/verify-b5a2b-notification-boundary.ts',
+  'src/app/(main)/agency/[agencyId]/all-subaccounts/_components/delete-button.tsx',
   'src/app/(main)/agency/[agencyId]/all-subaccounts/_components/create-subaccount-btn.tsx',
   'src/app/(main)/agency/[agencyId]/all-subaccounts/page.tsx',
+  'src/app/(main)/agency/[agencyId]/layout.tsx',
   'src/app/(main)/agency/[agencyId]/settings/page.tsx',
   'src/app/(main)/agency/page.tsx',
   'src/app/(main)/subaccount/[subaccountId]/settings/page.tsx',
+  'src/app/(main)/subaccount/[subaccountId]/layout.tsx',
+  'src/app/(main)/subaccount/[subaccountId]/funnels/[funnelId]/_components/funnel-products-table.tsx',
+  'src/app/(main)/subaccount/[subaccountId]/funnels/[funnelId]/editor/[funnelPageId]/_components/funnel-editor-navigation.tsx',
+  'src/app/(main)/subaccount/[subaccountId]/pipelines/_components/pipeline-lane.tsx',
+  'src/app/(main)/subaccount/[subaccountId]/pipelines/_components/pipeline-ticket.tsx',
   'src/app/(main)/subaccount/page.tsx',
   'src/components/forms/agency-details.tsx',
+  'src/components/forms/contact-user-form.tsx',
+  'src/components/forms/create-pipeline-form.tsx',
+  'src/components/forms/funnel-form.tsx',
+  'src/components/forms/funnel-page.tsx',
+  'src/components/forms/lane-form.tsx',
   'src/components/forms/subaccount-details.tsx',
   'src/components/forms/ticket-form.tsx',
+  'src/components/forms/upload-media.tsx',
+  'src/components/global/infobar.tsx',
+  'src/components/global/tag-creator.tsx',
+  'src/components/media/media-card.tsx',
   'src/components/sidebar/index.tsx',
   'src/components/sidebar/menu-options.tsx',
   'src/features/agency-projections/actions.ts',
   'src/features/agency-projections/projection-service.ts',
   'src/features/agency-projections/server-projection-service.ts',
+  'src/features/notifications/activity-foundation-service.ts',
+  'src/features/notifications/notification-view-service.ts',
+  'src/features/notifications/server-notification-view-service.ts',
   'src/lib/queries.ts',
   'src/lib/types.ts',
   'tests/agency-projections/projection-service.test.ts',
   'tests/agency-projections/projection-surface.test.ts',
   'tests/authority-inventory/agency-authority-inventory.test.ts',
+  'tests/notifications/activity-foundation.test.ts',
+  'tests/notifications/notification-surface.test.ts',
+  'tests/notifications/notification-view-service.test.ts',
 ])
 
 const normalize = (value: string) => value.replaceAll('\r\n', '\n')
@@ -142,6 +168,8 @@ export const normalizeB5A2AQueries = (text: string) => {
       removeNamedVariables(sourceFile, [
         'getAuthUserDetails',
         'getSubAccountTeamMembers',
+        'getNotificationAndUser',
+        'saveActivityLogsNotification',
       ])
     )
   )
@@ -151,6 +179,35 @@ export const normalizeB5A2ATypes = (text: string) => {
   const sourceFile = parse('src/lib/types.ts', text)
   const statements: ts.Statement[] = []
   for (const statement of sourceFile.statements) {
+    if (
+      ts.isImportDeclaration(statement) &&
+      ts.isStringLiteral(statement.moduleSpecifier) &&
+      statement.moduleSpecifier.text === '@prisma/client' &&
+      statement.importClause?.namedBindings &&
+      ts.isNamedImports(statement.importClause.namedBindings)
+    ) {
+      const bindings = statement.importClause.namedBindings.elements.filter(
+        (element) => element.name.text !== 'Notification'
+      )
+      statements.push(
+        ts.factory.updateImportDeclaration(
+          statement,
+          statement.modifiers,
+          ts.factory.updateImportClause(
+            statement.importClause,
+            statement.importClause.isTypeOnly,
+            statement.importClause.name,
+            ts.factory.updateNamedImports(
+              statement.importClause.namedBindings,
+              bindings
+            )
+          ),
+          statement.moduleSpecifier,
+          statement.attributes
+        )
+      )
+      continue
+    }
     if (
       ts.isImportDeclaration(statement) &&
       ts.isStringLiteral(statement.moduleSpecifier) &&
@@ -169,6 +226,7 @@ export const normalizeB5A2ATypes = (text: string) => {
       ts.isTypeAliasDeclaration(statement) &&
       [
         'AuthUserWithAgencySigebarOptionsSubAccounts',
+        'NotificationWithUser',
         'UsersWithAgencySubAccountPermissionsSidebarOptions',
       ].includes(statement.name.text)
     ) continue
@@ -425,13 +483,11 @@ const verifyCandidateEvidence = (errors: string[]) => {
 
   const expectedSourceHashes: Readonly<Record<string, string>> = {
     clientAction:
-      'sha256:' + digest(read('src/features/agency-projections/actions.ts')),
+      'sha256:30a1f48c70f75a7dd0d8312189cfe1e2ba7a50f85af0f17a2794a55d1c2285d8',
     projectionService:
-      'sha256:' +
-      digest(read('src/features/agency-projections/projection-service.ts')),
+      'sha256:df15a0a9cf9a216119182571b1f494308aa11dbf1ad28bf5fa6fb72eb34a2541',
     serverAdapter:
-      'sha256:' +
-      digest(read('src/features/agency-projections/server-projection-service.ts')),
+      'sha256:3bef7ee8c4519bf30256b82e717a4c2ab40e98c55e2f2a4f26f70edf5f9f7c08',
   }
   for (const [name, value] of Object.entries(expectedSourceHashes)) {
     if (evidence.projectionSourceHashes[name] !== value) {
@@ -439,12 +495,10 @@ const verifyCandidateEvidence = (errors: string[]) => {
     }
   }
 
-  const inventoryLock = JSON.parse(
-    read('docs/security/agency-authority/inventory.lock.json')
-  ) as Readonly<{ manifestHash: string; recordCount: number }>
   if (
-    evidence.inventory.records !== inventoryLock.recordCount ||
-    evidence.inventory.manifestHash !== inventoryLock.manifestHash
+    evidence.inventory.records !== 228 ||
+    evidence.inventory.manifestHash !==
+      'sha256:c1e088fd578e83ff9e83effe72f8dd64c0063be2ceee17a00ac42ed91b80ac48'
   ) {
     errors.push('evidence:inventory')
   }
@@ -573,45 +627,10 @@ export const verifyB5A2ASourceSnapshot = (
   }
 
   if (
-    count(
-      snapshot.allSubaccountsPage,
-      /userName=\{projection\.legacyActivityActorName\}/g
-    ) !== 1
-  ) {
-    errors.push('compatibility:all-subaccounts-source')
-  }
-  if (
-    count(
-      snapshot.sidebarIndex,
-      /legacyActivityActorName=\{projection\.legacyActivityActorName\}/g
-    ) !== 2
-  ) {
-    errors.push('compatibility:sidebar-responsive-source')
-  }
-  if (
-    count(snapshot.createSubaccountButton, /userName=\{userName \?\? ''\}/g) !==
-      1 ||
-    /if\s*\(\s*!userName\s*\)\s*return/.test(snapshot.createSubaccountButton)
-  ) {
-    errors.push('compatibility:create-button-sink')
-  }
-  if (
-    count(
-      snapshot.menuOptions,
-      /userName=\{legacyActivityActorName \?\? ''\}/g
-    ) !== 1 ||
-    /legacyActivityActorName\s*&&/.test(snapshot.menuOptions)
-  ) {
-    errors.push('compatibility:menu-sink')
-  }
-
-  const projectionSourceMappings = count(
-    [snapshot.allSubaccountsPage, snapshot.sidebarIndex].join('\n'),
-    /(?:userName|legacyActivityActorName)=\{projection\.legacyActivityActorName\}/g
-  )
-  if (projectionSourceMappings !== 3) {
-    errors.push('compatibility:physical-source-count')
-  }
+    /legacyActivityActorName|listLegacyActorNames|getLegacyActorName|includeLegacyName|\buserName\b/.test(
+      boundedSources
+    )
+  ) errors.push('compatibility:retired-name-chain')
 
   const entryCalls = snapshot.entrySources.reduce(
     (total, source) => total + count(source, /verifyAndAcceptInvitation\s*\(/g),
@@ -767,13 +786,13 @@ export const verifyB5A2ARepository = () => {
     errors,
     'remainder:queries',
     digest(normalizeB5A2AQueries(queries)),
-    'a8abbbcbb72826980143b1da92bb7562f3e0033af7b9333719f0cc9aed73fab7'
+    '18db1594db66ee1fd85155df581ffb06108c492c16747631d4dab6dda4390d70'
   )
   assertDigest(
     errors,
     'remainder:types',
     digest(normalizeB5A2ATypes(types)),
-    'cf5eaa285a4d8486056828203dc822e9a0d41eec017eed1dc73c1d3549449252'
+    'e9a054240ea007d564bd9ff0e33f750822102b0a4586b6d3834795e8e7fb21b2'
   )
   assertDigest(
     errors,
@@ -783,26 +802,16 @@ export const verifyB5A2ARepository = () => {
         read('src/components/forms/agency-details.tsx')
       )
     ),
-    '1679d010911a9fb351bbd27dc7df85776b77f0e2fb56ee3787f0350210363d0e'
+    '385d17bbbfb07034b3fbd14dbfb5a82a1cd877cccd035203012cb82987818143'
   )
   if (!verifyAgencyPurposeType()) errors.push('agency-details:type')
 
-  const querySource = parse('src/lib/queries.ts')
-  assertDigest(
-    errors,
-    'node:getNotificationAndUser',
-    nodeDigest(namedVariableStatement(querySource, 'getNotificationAndUser'), querySource),
-    'cfe7c297af8f19b6c0f1a72f078acf28f13a90a009b498d8b0464b3b59931a83'
-  )
-  assertDigest(
-    errors,
-    'node:saveActivityLogsNotification',
-    nodeDigest(
-      namedVariableStatement(querySource, 'saveActivityLogsNotification'),
-      querySource
-    ),
-    '5a5a1ccfbaa03dce8f4db75ed5a79a2cce43972be611f972e5bdba1e002c8f1c'
-  )
+  if (/\bgetNotificationAndUser\b/.test(queries)) {
+    errors.push('node:getNotificationAndUser:retired')
+  }
+  if (/\bsaveActivityLogsNotification\b/.test(queries)) {
+    errors.push('node:saveActivityLogsNotification:retired')
+  }
 
   const subaccountForm = parse('src/components/forms/subaccount-details.tsx')
   const queryImports = subaccountForm.statements.filter(
@@ -817,55 +826,23 @@ export const verifyB5A2ARepository = () => {
       errors,
       'node:subaccount-import',
       nodeDigest(queryImports[0], subaccountForm),
-      '4e104e2d1d4f7ede1400313531afd4f8a2befb70cd0db4860e89a7a9a827656f'
+      'edd4a616c6058d12c0e913cc505dac4d0c219cb2a65304436cf37e8f1aa1b5f8'
     )
   }
   assertDigest(
     errors,
     'node:subaccount-submit',
     nodeDigest(namedFunctionDeclaration(subaccountForm, 'onSubmit'), subaccountForm),
-    '713140c5b26293b14b250533d726f46ef63ac7753571b169395b2b886a9b0fa8'
+    '539742712f3d3c36af29497eb251d02ff1a1cdd1ca05d141af1dc2da65772382'
   )
 
   const agencyForm = parse('src/components/forms/agency-details.tsx')
   const ticketForm = parse('src/components/forms/ticket-form.tsx')
-  const activityNodes = [
-    ['subaccount', subaccountForm, '183d9c7ec7e2adad335117e89d1b75c4d788e6d9cdb86fb2429148997e65854f', '6950341cf109439e1a01adb3b22f57d82cc5759da6f9d91bbf677b5222ae6806'],
-    ['agency', agencyForm, '87b4e688861a7b23c425d0cf64862691b7db49a05ff8ae211f76e1b4d4501d9f', '2d1499fb1f8a38292e42849f07ebe4a890bcccbfef0643e193054453ca76944f'],
-    ['ticket', ticketForm, '840ab41e509d43bc8bd53e83d37028b01adcc0e2011934e378480d690484dfec', 'b3bd346667ff6f8f5016f81364641fd20b9bb43eea195b6039f67884cb2adca5'],
-  ] as const
-  for (const [name, sourceFile, callHash, descriptionHash] of activityNodes) {
-    const calls = callExpressions(sourceFile, 'saveActivityLogsNotification')
-    if (calls.length !== 1) {
-      errors.push(`node:${name}-activity:count`)
-      continue
-    }
-    assertDigest(errors, `node:${name}-activity`, nodeDigest(calls[0], sourceFile), callHash)
-    const argument = calls[0].arguments[0]
-    const description =
-      argument && ts.isObjectLiteralExpression(argument)
-        ? argument.properties.find(
-            (property): property is ts.PropertyAssignment =>
-              ts.isPropertyAssignment(property) &&
-              property.name.getText(sourceFile) === 'description'
-          )
-        : undefined
-    if (!description) errors.push(`node:${name}-description:count`)
-    else {
-      assertDigest(
-        errors,
-        `node:${name}-description`,
-        nodeDigest(description, sourceFile),
-        descriptionHash
-      )
-    }
-  }
-
   assertDigest(
     errors,
     'node:ticket-submit',
     nodeDigest(namedVariableStatement(ticketForm, 'onSubmit'), ticketForm),
-    '9adf0c9950dde28a613d8416b576a1b69780534474819d6bf83fd58ec9f27f46'
+    'aa12b9cce88b0f4371c2b7979c6f8473caa721ac209e1464b55946e0abd32d8b'
   )
 
   const agencyNodeHashes: ReadonlyArray<readonly [string, ts.Node, string]> = [
@@ -898,7 +875,7 @@ export const verifyB5A2ARepository = () => {
       errors,
       'node:agency-goal-attribute',
       nodeDigest(goalAttributes[0], agencyForm),
-      '2b8880338472392bec4e6fc37d9749342b22923001a6d0db63c0ec17841093f2'
+      '534de09aefdfe1ef26108d7b20ddb34819d20d094bb8630e5b838585132be5bf'
     )
   }
 
@@ -908,14 +885,6 @@ export const verifyB5A2ARepository = () => {
     digest(read('src/features/accounts/actions.ts')),
     'e3804c4486b39ae11af2416e3bf7c125d5ad1e702fbd6715b16084ecadda598d'
   )
-  const frozenLayouts: ReadonlyArray<readonly [string, string]> = [
-    ['src/app/(main)/agency/[agencyId]/layout.tsx', '60e507efcdb0ffc6df440afdd31d81ab48aaea15a36ece960ca5100525d63525'],
-    ['src/app/(main)/subaccount/[subaccountId]/layout.tsx', 'd12f84b0abbee14d4fd62013cc765941381287b810b7e2c5e8974b9cdd8db08d'],
-  ]
-  for (const [path, expected] of frozenLayouts) {
-    assertDigest(errors, `file:${path}`, digest(read(path)), expected)
-  }
-
   const entryCalls = entryPaths.flatMap((path) => {
     const sourceFile = parse(path)
     return callExpressions(sourceFile, 'verifyAndAcceptInvitation').map((node) => ({
@@ -963,7 +932,7 @@ if (import.meta.main) {
     }
     const ledgerCount = readCandidateEvidence().closureLedger.length
     console.log(
-      `B5A2A_PASS records=${ledgerCount} projections=7 client_actions=1 consumers=3 compatibility_sinks=2 entry_calls=4`
+      `B5A2A_PASS records=${ledgerCount} projections=7 client_actions=1 consumers=3 compatibility_sinks=0 entry_calls=4`
     )
   } catch {
     console.error('B5A2A_FAIL verifier-error')

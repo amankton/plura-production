@@ -20,7 +20,6 @@ import { v4 } from 'uuid'
 import {
   deleteTag,
   getTagsForSubaccount,
-  saveActivityLogsNotification,
   upsertTag,
 } from '@/lib/queries'
 
@@ -101,11 +100,6 @@ const TagCreator = ({ getSelectedTags, subAccountId, defaultTags }: Props) => {
         title: 'Created the tag',
       })
 
-      await saveActivityLogsNotification({
-        agencyId: undefined,
-        description: `Updated a tag | ${response?.name}`,
-        subaccountId: subAccountId,
-      })
     } catch (error) {
       toast({
         variant: 'destructive',
@@ -126,12 +120,6 @@ const TagCreator = ({ getSelectedTags, subAccountId, defaultTags }: Props) => {
       toast({
         title: 'Deleted tag',
         description: 'The tag is deleted from your subaccount.',
-      })
-
-      await saveActivityLogsNotification({
-        agencyId: undefined,
-        description: `Deleted a tag | ${response?.name}`,
-        subaccountId: subAccountId,
       })
 
       router.refresh()

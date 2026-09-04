@@ -38,14 +38,12 @@ type Props = {
   sidebarOpt: readonly SidebarOption[]
   sidebarLogo: string
   details: AgencyNavigation | SubaccountNavigation
-  legacyActivityActorName?: string
 }
 
 const MenuOptions = ({
   actor,
   agency,
   details,
-  legacyActivityActorName,
   sidebarLogo,
   sidebarOpt,
   subAccounts,
@@ -245,7 +243,6 @@ const MenuOptions = ({
                           >
                             <SubAccountDetails
                               agencyDetails={{ id: agency.id }}
-                              userName={legacyActivityActorName ?? ''}
                             />
                           </CustomModal>
                         )

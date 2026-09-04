@@ -138,13 +138,13 @@ describe('B5A1 closed agency authority inventory', () => {
     const result = verifyRepository(process.cwd())
     expect(result.errors).toEqual([])
     expect(result.counts).toEqual({
-      records: 228,
-      databaseImports: 21,
-      directDatabaseCallers: 20,
+      records: 231,
+      databaseImports: 22,
+      directDatabaseCallers: 21,
       databaseAdapterInjections: 1,
       serverActionFiles: 5,
-      serverActionExports: 52,
-      queryExports: 38,
+      serverActionExports: 50,
+      queryExports: 36,
       apiRouteFiles: 5,
       apiHandlerSymbols: 6,
       pageFiles: 24,
@@ -221,8 +221,7 @@ describe('B5A1 closed agency authority inventory', () => {
       inventory.records
         .filter((record) => record.disposition === 'B5A2')
         .map((record) => record.symbol)
-        .sort()
-    ).toEqual(['getNotificationAndUser', 'saveActivityLogsNotification'])
+    ).toEqual([])
     expect(
       inventory.records.find(
         (record) => record.symbol === 'listTicketAssigneeOptions'
@@ -242,6 +241,38 @@ describe('B5A1 closed agency authority inventory', () => {
       concurrency: 'read snapshot; no write authority',
       effects: ['read'],
     })
+    const notificationRecords = inventory.records.filter((record) =>
+      record.path.startsWith('src/features/notifications/')
+    )
+    expect(notificationRecords).toHaveLength(5)
+    expect(notificationRecords.map((record) => record.symbol).sort()).toEqual([
+      '$db',
+      'assertNotificationViewAction',
+      'createActivityFoundationService',
+      'createNotificationViewService',
+      'notificationViewService',
+    ])
+    expect(
+      notificationRecords.find(
+        (record) => record.symbol === 'createActivityFoundationService'
+      )
+    ).toMatchObject({
+      action: 'INTERNAL_ONLY',
+      actorSource: 'blocked',
+      disposition: 'DORMANT_BLOCKED',
+      effects: ['no-op boundary'],
+    })
+    expect(
+      notificationRecords
+        .filter(
+          (record) => record.symbol !== 'createActivityFoundationService'
+        )
+        .every(
+          (record) =>
+            record.action === 'INTERNAL_ONLY' &&
+            record.disposition === 'ACCEPTED_RETAIN'
+        )
+    ).toBe(true)
   })
 
   test('keeps the JSON schema taxonomies identical to the executable validator', () => {

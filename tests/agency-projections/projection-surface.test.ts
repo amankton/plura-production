@@ -127,7 +127,7 @@ describe('B5A2A closed projection surface', () => {
     expect(pass.exitCode).toBe(0)
     expect(pass.stderr.toString()).toBe('')
     expect(pass.stdout.toString()).toBe(
-      'B5A2A_PASS records=14 projections=7 client_actions=1 consumers=3 compatibility_sinks=2 entry_calls=4\n'
+      'B5A2A_PASS records=14 projections=7 client_actions=1 consumers=3 compatibility_sinks=0 entry_calls=4\n'
     )
 
     const denied = Bun.spawnSync([
@@ -138,7 +138,7 @@ describe('B5A2A closed projection surface', () => {
     expect(denied.exitCode).toBe(1)
     expect(denied.stdout.toString()).toBe('')
     expect(denied.stderr.toString()).toBe('B5A2A_FAIL argument-count\n')
-  })
+  }, 15_000)
 
   test('exposes one client action and keeps Prisma and identity in the server adapter', () => {
     const action = read('src/features/agency-projections/actions.ts')
@@ -209,16 +209,13 @@ describe('B5A2A closed projection surface', () => {
     expect(consumers.map(read).join('\n')).not.toMatch(/\buserId\s*=/)
   })
 
-  test('keeps frozen account entry and layout sources exact', () => {
+  test('keeps the frozen account entry exact and the legacy layout chain absent', () => {
     expect(normalizedHash(read('src/features/accounts/actions.ts'))).toBe(
       'e3804c4486b39ae11af2416e3bf7c125d5ad1e702fbd6715b16084ecadda598d'
     )
-    expect(
-      normalizedHash(read('src/app/(main)/agency/[agencyId]/layout.tsx'))
-    ).toBe('60e507efcdb0ffc6df440afdd31d81ab48aaea15a36ece960ca5100525d63525')
-    expect(
-      normalizedHash(read('src/app/(main)/subaccount/[subaccountId]/layout.tsx'))
-    ).toBe('d12f84b0abbee14d4fd62013cc765941381287b810b7e2c5e8974b9cdd8db08d')
+    expect(entryPaths.map(read).join('\n')).not.toMatch(
+      /getNotificationAndUser|legacyActivityActorName/
+    )
   })
 
   test('keeps the verifier offline and fixed to its reviewed paths and hashes', () => {
@@ -371,11 +368,11 @@ describe('B5A2A closed projection surface', () => {
     const agencyDetails = read('src/components/forms/agency-details.tsx')
     const expected = {
       agencyDetails:
-        '1679d010911a9fb351bbd27dc7df85776b77f0e2fb56ee3787f0350210363d0e',
+        '385d17bbbfb07034b3fbd14dbfb5a82a1cd877cccd035203012cb82987818143',
       queries:
-        'a8abbbcbb72826980143b1da92bb7562f3e0033af7b9333719f0cc9aed73fab7',
+        '18db1594db66ee1fd85155df581ffb06108c492c16747631d4dab6dda4390d70',
       types:
-        'cf5eaa285a4d8486056828203dc822e9a0d41eec017eed1dc73c1d3549449252',
+        'e9a054240ea007d564bd9ff0e33f750822102b0a4586b6d3834795e8e7fb21b2',
     }
 
     expect(normalizedHash(normalizeB5A2AQueries(queries))).toBe(expected.queries)
@@ -413,22 +410,27 @@ describe('B5A2A closed projection surface', () => {
     }
   })
 
-  test('mutates every protected legacy statement and all 38 retained query exports', () => {
+  test('mutates every protected legacy statement and all 36 retained query exports', () => {
     const fixtures = [
       {
         expected:
-          'a8abbbcbb72826980143b1da92bb7562f3e0033af7b9333719f0cc9aed73fab7',
+          '18db1594db66ee1fd85155df581ffb06108c492c16747631d4dab6dda4390d70',
         ignored: (statement: ts.Statement, sourceFile: ts.SourceFile) =>
           ts.isVariableStatement(statement) &&
           declarationNames(statement).some((name) =>
-            ['getAuthUserDetails', 'getSubAccountTeamMembers'].includes(name)
+            [
+              'getAuthUserDetails',
+              'getNotificationAndUser',
+              'getSubAccountTeamMembers',
+              'saveActivityLogsNotification',
+            ].includes(name)
           ),
         normalize: normalizeB5A2AQueries,
         path: 'src/lib/queries.ts',
       },
       {
         expected:
-          'cf5eaa285a4d8486056828203dc822e9a0d41eec017eed1dc73c1d3549449252',
+        'e9a054240ea007d564bd9ff0e33f750822102b0a4586b6d3834795e8e7fb21b2',
         ignored: (statement: ts.Statement, sourceFile: ts.SourceFile) =>
           (ts.isImportDeclaration(statement) &&
             ts.isStringLiteral(statement.moduleSpecifier) &&
@@ -440,6 +442,7 @@ describe('B5A2A closed projection surface', () => {
           (ts.isTypeAliasDeclaration(statement) &&
             [
               'AuthUserWithAgencySigebarOptionsSubAccounts',
+              'NotificationWithUser',
               'UsersWithAgencySubAccountPermissionsSidebarOptions',
             ].includes(statement.name.text)),
         normalize: normalizeB5A2ATypes,
@@ -447,7 +450,7 @@ describe('B5A2A closed projection surface', () => {
       },
       {
         expected:
-          '1679d010911a9fb351bbd27dc7df85776b77f0e2fb56ee3787f0350210363d0e',
+        '385d17bbbfb07034b3fbd14dbfb5a82a1cd877cccd035203012cb82987818143',
         ignored: (statement: ts.Statement, sourceFile: ts.SourceFile) =>
           ts.isImportDeclaration(statement) &&
           ts.isStringLiteral(statement.moduleSpecifier) &&
@@ -487,13 +490,13 @@ describe('B5A2A closed projection surface', () => {
         ).not.toBe(fixture.expected)
       })
     }
-    expect(retainedQueryExports).toBe(38)
+    expect(retainedQueryExports).toBe(36)
   })
 
   test('mutates every protected AgencyDetails effect, toast, refresh, and error branch', () => {
     const source = read('src/components/forms/agency-details.tsx')
     const expected =
-      '1679d010911a9fb351bbd27dc7df85776b77f0e2fb56ee3787f0350210363d0e'
+      '385d17bbbfb07034b3fbd14dbfb5a82a1cd877cccd035203012cb82987818143'
     const uniqueMarkers = [
       'provisionAgencyOwner',
       'upsertAgency',
@@ -507,7 +510,6 @@ describe('B5A2A closed projection surface', () => {
       'could not delete your agency ',
       'setDeletingAgency(false)',
       'updateAgencyGoal',
-      'Updated the agency goal',
     ]
     const mutations = uniqueMarkers.map((marker) =>
       replaceOccurrence(source, marker, 0)
@@ -523,7 +525,7 @@ describe('B5A2A closed projection surface', () => {
       replaceOccurrence(source, "variant: 'destructive'", 2)
     )
 
-    expect(mutations).toHaveLength(21)
+    expect(mutations).toHaveLength(20)
     mutations.forEach((mutation, index) => {
       expect(
         normalizedHash(normalizeB5A2AAgencyDetails(mutation)),

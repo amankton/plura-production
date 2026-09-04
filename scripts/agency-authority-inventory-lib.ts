@@ -667,11 +667,9 @@ const effectsFromText = (
 
 const queryEffects: Record<string, Effect[]> = {
   getAuthUserDetails: ['read'],
-  saveActivityLogsNotification: ['read', 'create', 'notification', 'log'],
   updateAgencyGoal: ['update'],
   deleteAgency: ['delete'],
   upsertAgency: ['read', 'create', 'update'],
-  getNotificationAndUser: ['read', 'log'],
   upsertSubAccount: ['read', 'create', 'update'],
   deleteSubAccount: ['delete'],
   getMedia: ['read'],
@@ -751,6 +749,21 @@ const apiEffects: Record<string, Effect[]> = {
 
 const internalEffectOverrides: Record<string, Effect[]> = {
   'src/features/agency-projections/server-projection-service.ts#agencyProjectionService': [
+    'read',
+  ],
+  'src/features/notifications/activity-foundation-service.ts#createActivityFoundationService': [
+    'no-op boundary',
+  ],
+  'src/features/notifications/notification-view-service.ts#assertNotificationViewAction': [
+    'no-op boundary',
+  ],
+  'src/features/notifications/notification-view-service.ts#createNotificationViewService': [
+    'read',
+  ],
+  'src/features/notifications/server-notification-view-service.ts#$db': [
+    'read',
+  ],
+  'src/features/notifications/server-notification-view-service.ts#notificationViewService': [
     'read',
   ],
   'src/lib/stripe/billing-catalog-server.ts#getCrewframePriceForPlan': [
@@ -1070,11 +1083,9 @@ export const discoverRepository = (rootInput: string): DiscoveredSurface[] => {
 
 const queryRequestedIds: Record<string, string[]> = {
   getAuthUserDetails: [],
-  saveActivityLogsNotification: ['agencyId', 'description', 'subaccountId'],
   updateAgencyGoal: ['agencyId', 'goal'],
   deleteAgency: ['agencyId'],
   upsertAgency: ['agency.id'],
-  getNotificationAndUser: ['agencyId'],
   upsertSubAccount: ['subaccount.id'],
   deleteSubAccount: ['subaccountId'],
   getMedia: ['subaccountId'],
@@ -1172,6 +1183,10 @@ const b5a2aAcceptedSurfaces = new Set([
   'page loader:src/app/(main)/subaccount/page.tsx#default',
   'provider callback:src/app/(main)/agency/page.tsx#$provider:clerk.currentUser',
   'server action:src/features/agency-projections/actions.ts#listTicketAssigneeOptions',
+  'internal-only:src/features/notifications/notification-view-service.ts#assertNotificationViewAction',
+  'internal-only:src/features/notifications/notification-view-service.ts#createNotificationViewService',
+  'internal-only:src/features/notifications/server-notification-view-service.ts#$db',
+  'internal-only:src/features/notifications/server-notification-view-service.ts#notificationViewService',
 ])
 
 const b5a2aActions: Readonly<Record<string, Action>> = {
@@ -1232,11 +1247,9 @@ const domainFor = (surface: DiscoveredSurface): Domain => {
   ) return 'team/permission/invitation'
   const queryDomains: Record<string, Domain> = {
     getAuthUserDetails: 'identity/account',
-    saveActivityLogsNotification: 'notification/activity',
     updateAgencyGoal: 'agency',
     deleteAgency: 'agency',
     upsertAgency: 'agency',
-    getNotificationAndUser: 'notification/activity',
     upsertSubAccount: 'subaccount',
     deleteSubAccount: 'subaccount',
     getMedia: 'upload/media',
@@ -1281,6 +1294,7 @@ const domainFor = (surface: DiscoveredSurface): Domain => {
   if (path.includes('/features/team/') || path.includes('/team/') || /Team|Member|Permission|invite/i.test(symbol)) return 'team/permission/invitation'
   if (path.includes('/agency/(auth)/')) return 'identity/account'
   if (path.includes('/features/accounts/') || path.includes('/lib/auth/')) return 'identity/account'
+  if (path.includes('/features/notifications/')) return 'notification/activity'
   if (/notification|activity/i.test(symbol)) return 'notification/activity'
   if (/media/i.test(symbol) || path.includes('/media/')) return 'upload/media'
   if (/funnel/i.test(symbol) || path.includes('/funnels/')) return 'funnel/page/editor'
@@ -1299,6 +1313,10 @@ const dispositionFor = (
   domain: Domain
 ): Disposition => {
   const { path, symbol } = surface
+  if (
+    surface.surfaceId ===
+    'internal-only:src/features/notifications/activity-foundation-service.ts#createActivityFoundationService'
+  ) return 'DORMANT_BLOCKED'
   if (b5a2aAcceptedSurfaces.has(surface.surfaceId)) return 'ACCEPTED_RETAIN'
   if (path.startsWith('src/app/site/')) return 'ACCEPTED_RETAIN'
   if (
@@ -1392,6 +1410,10 @@ const actionFor = (
 ): Action => {
   const b5a2aAction = b5a2aActions[surface.surfaceId]
   if (b5a2aAction) return b5a2aAction
+  if (
+    surface.surfaceId ===
+    'internal-only:src/features/notifications/activity-foundation-service.ts#createActivityFoundationService'
+  ) return 'INTERNAL_ONLY'
   if (disposition === 'PUBLIC_REVIEW_REQUIRED') return 'PUBLIC_BOUNDED'
   if (disposition === 'DORMANT_BLOCKED' || disposition.startsWith('B5A')) {
     return 'UNDEFINED_BLOCKED'
@@ -1672,7 +1694,20 @@ const validateRecord = (record: InventoryRecord, index: number): string[] => {
   if (record.disposition !== 'PUBLIC_REVIEW_REQUIRED' && record.publicBoundary === 'BLOCKED_PUBLIC_REVIEW') errors.push(`${prefix}:privateBoundary`)
   if (!/^sha256:[a-f0-9]{64}$/.test(record.sourceHash)) errors.push(`${prefix}:sourceHash`)
   if (record.disposition === 'ACCEPTED_RETAIN' && (record.action === 'UNDEFINED_BLOCKED' || record.actorSource === 'blocked')) errors.push(`${prefix}:acceptedBlocked`)
-  if ((record.disposition.startsWith('B5A') || record.disposition === 'DORMANT_BLOCKED') && (record.action !== 'UNDEFINED_BLOCKED' || record.actorSource !== 'blocked')) errors.push(`${prefix}:remediationAuthority`)
+  const dormantActivityFoundation =
+    record.surfaceId ===
+    'internal-only:src/features/notifications/activity-foundation-service.ts#createActivityFoundationService'
+  if (
+    (record.disposition.startsWith('B5A') ||
+      (record.disposition === 'DORMANT_BLOCKED' && !dormantActivityFoundation)) &&
+    (record.action !== 'UNDEFINED_BLOCKED' || record.actorSource !== 'blocked')
+  ) errors.push(`${prefix}:remediationAuthority`)
+  if (
+    dormantActivityFoundation &&
+    (record.disposition !== 'DORMANT_BLOCKED' ||
+      record.action !== 'INTERNAL_ONLY' ||
+      record.actorSource !== 'blocked')
+  ) errors.push(`${prefix}:dormantActivityFoundation`)
   if (record.disposition === 'PUBLIC_REVIEW_REQUIRED' && (record.action !== 'PUBLIC_BOUNDED' || record.actorSource !== 'anonymous-public contract')) errors.push(`${prefix}:publicAuthority`)
   return errors
 }

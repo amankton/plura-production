@@ -1,5 +1,5 @@
 'use client'
-import { NotificationWithUser } from '@/lib/types'
+import type { NotificationViewItem } from '@/features/notifications/notification-view-service'
 import { UserButton } from '@clerk/nextjs'
 import React, { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -19,7 +19,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar'
 import { ModeToggle } from './mode-toggle'
 
 type Props = {
-  notifications: NotificationWithUser | []
+  notifications: readonly NotificationViewItem[]
   role?: Role
   className?: string
   subAccountId?: string
@@ -79,23 +79,23 @@ const InfoBar = ({ notifications, subAccountId, className, role }: Props) => {
                   <div className="flex gap-2">
                     <Avatar>
                       <AvatarImage
-                        src={notification.User.avatarUrl}
+                        src={notification.actor.avatarUrl}
                         alt="Profile Picture"
                       />
                       <AvatarFallback className="bg-primary">
-                        {notification.User.name.slice(0, 2).toUpperCase()}
+                        {notification.actor.name.slice(0, 2).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col">
                       <p>
                         <span className="font-bold">
-                          {notification.notification.split('|')[0]}
+                          {notification.message.split('|')[0]}
                         </span>
                         <span className="text-muted-foreground">
-                          {notification.notification.split('|')[1]}
+                          {notification.message.split('|')[1]}
                         </span>
                         <span className="font-bold">
-                          {notification.notification.split('|')[2]}
+                          {notification.message.split('|')[2]}
                         </span>
                       </p>
                       <small className="text-xs text-muted-foreground">

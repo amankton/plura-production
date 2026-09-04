@@ -19,7 +19,7 @@ import { Textarea } from '../ui/textarea'
 import { Button } from '../ui/button'
 import Loading from '../global/loading'
 import { CreateFunnelFormSchema } from '@/lib/types'
-import { saveActivityLogsNotification, upsertFunnel } from '@/lib/queries'
+import { upsertFunnel } from '@/lib/queries'
 import { v4 } from 'uuid'
 import { toast } from '../ui/use-toast'
 import { useModal } from '@/providers/modal-provider'
@@ -70,11 +70,6 @@ const FunnelForm: React.FC<CreateFunnelProps> = ({
     const response = await upsertFunnel({
       funnel: values,
       funnelId: defaultData?.id || v4(),
-      subaccountId: subAccountId,
-    })
-    await saveActivityLogsNotification({
-      agencyId: undefined,
-      description: `Update funnel | ${response.name}`,
       subaccountId: subAccountId,
     })
     if (response)

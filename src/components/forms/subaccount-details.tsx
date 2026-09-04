@@ -27,7 +27,7 @@ import {
 
 import FileUpload from '../global/file-upload'
 import { useToast } from '../ui/use-toast'
-import { saveActivityLogsNotification, upsertSubAccount } from '@/lib/queries'
+import { upsertSubAccount } from '@/lib/queries'
 import { useEffect } from 'react'
 import Loading from '../global/loading'
 import { useModal } from '@/providers/modal-provider'
@@ -63,13 +63,11 @@ interface SubAccountDetailsProps {
     subAccountLogo: string
     zipCode: string
   }>
-  userName: string
 }
 
 const SubAccountDetails: React.FC<SubAccountDetailsProps> = ({
   details,
   agencyDetails,
-  userName,
 }) => {
   const { toast } = useToast()
   const { setClose } = useModal()
@@ -106,12 +104,6 @@ const SubAccountDetails: React.FC<SubAccountDetailsProps> = ({
         agencyId: agencyDetails.id,
       })
       if (!response) throw new Error('No response from server')
-      await saveActivityLogsNotification({
-        agencyId: response.agencyId,
-        description: `${userName} | updated sub account | ${response.name}`,
-        subaccountId: response.id,
-      })
-
       toast({
         title: 'Subaccount details saved',
         description: 'Successfully saved your subaccount details.',

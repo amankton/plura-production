@@ -29,7 +29,6 @@ const Sidebar = async ({ id, type }: Props) => {
         actor={projection.actor}
         agency={projection.agency}
         details={details}
-        legacyActivityActorName={projection.legacyActivityActorName}
         sidebarLogo={sideBarLogo}
         sidebarOpt={projection.sidebarOptions}
         subAccounts={projection.subaccounts}
@@ -38,7 +37,6 @@ const Sidebar = async ({ id, type }: Props) => {
         actor={projection.actor}
         agency={projection.agency}
         details={details}
-        legacyActivityActorName={projection.legacyActivityActorName}
         sidebarLogo={sideBarLogo}
         sidebarOpt={projection.sidebarOptions}
         subAccounts={projection.subaccounts}

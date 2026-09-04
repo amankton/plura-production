@@ -41,7 +41,6 @@ import { Input } from '../ui/input'
 import { Switch } from '../ui/switch'
 import {
   deleteAgency,
-  saveActivityLogsNotification,
   updateAgencyGoal,
   upsertAgency,
 } from '@/lib/queries'
@@ -392,11 +391,6 @@ const AgencyDetails = ({ data }: Props) => {
                     onValueChange={async (val) => {
                       if (!data?.id) return
                       await updateAgencyGoal({ agencyId: data.id, goal: val })
-                      await saveActivityLogsNotification({
-                        agencyId: data.id,
-                        description: `Updated the agency goal to | ${val} Sub Account`,
-                        subaccountId: undefined,
-                      })
                       router.refresh()
                     }}
                     min={1}

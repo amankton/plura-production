@@ -42,7 +42,6 @@ const AllSubaccountsPage = async ({ params }: Props) => {
         <CreateSubaccountButton
           agencyDetails={{ id: projection.agency.id }}
           className="w-[200px] self-end m-6"
-          userName={projection.legacyActivityActorName}
         />
         <Command className="rounded-lg bg-transparent">
           <CommandInput placeholder="Search Account..." />

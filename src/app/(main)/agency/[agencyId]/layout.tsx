@@ -2,14 +2,8 @@ import BlurPage from '@/components/global/blur-page'
 import InfoBar from '@/components/global/infobar'
 import Sidebar from '@/components/sidebar'
 import Unauthorized from '@/components/unauthorized'
-import {
-  getNotificationAndUser,
-} from '@/lib/queries'
 import { verifyAndAcceptInvitation } from '@/features/accounts/actions'
-import {
-  assertAgencyOperator,
-} from '@/lib/auth/agency-context'
-import { getAgencyContext } from '@/lib/auth/server-agency-context'
+import { notificationViewService } from '@/features/notifications/server-notification-view-service'
 import { redirect } from 'next/navigation'
 import React from 'react'
 
@@ -23,18 +17,10 @@ const layout = async ({ children, params }: Props) => {
   if (!agencyId) {
     return redirect('/agency')
   }
-  const context = await getAgencyContext(params.agencyId)
-  try {
-    assertAgencyOperator(context)
-  } catch {
-    return <Unauthorized />
-  }
-
-  let allNoti: any = []
-  const notifications = await getNotificationAndUser(context.agencyId)
-  if (notifications) allNoti = notifications
-
- 
+  const projection = await notificationViewService
+    .getAgencyFeed(params.agencyId)
+    .catch(() => null)
+  if (!projection) return <Unauthorized />
 
   return (
     <div className="h-screen overflow-hidden">
@@ -44,8 +30,8 @@ const layout = async ({ children, params }: Props) => {
       />
       <div className="md:pl-[300px]">
         <InfoBar
-          notifications={allNoti}
-          role={allNoti.User?.role}
+          notifications={projection.notifications}
+          role={projection.viewerRole}
         />
         <div className="relative">
           <BlurPage>{children}</BlurPage>

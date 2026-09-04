@@ -20,7 +20,6 @@ const SubaccountSettingPage = async ({ params }: Props) => {
         <SubAccountDetails
           agencyDetails={{ id: projection.agency.id }}
           details={projection.details}
-          userName={projection.actor.name}
         />
         <UserDetails
           subAccounts={projection.subaccounts}

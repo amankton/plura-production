@@ -86,7 +86,6 @@ export type AgencySidebarProjection = Readonly<{
   actor: ActorNavigation
   agency: AgencyNavigation
   kind: 'agency'
-  legacyActivityActorName?: string
   sidebarOptions: readonly SidebarOption[]
   subaccounts: readonly SubaccountNavigation[]
 }>
@@ -96,14 +95,12 @@ export type SubaccountSidebarProjection = Readonly<{
   agency: AgencyNavigation
   currentSubaccount: SubaccountNavigation
   kind: 'subaccount'
-  legacyActivityActorName?: string
   sidebarOptions: readonly SidebarOption[]
   subaccounts: readonly SubaccountNavigation[]
 }>
 
 export type AgencySubaccountsProjection = Readonly<{
   agency: Readonly<{ id: string }>
-  legacyActivityActorName?: string
   subaccounts: readonly SubaccountNavigation[]
 }>
 
@@ -198,10 +195,6 @@ export type ProjectionStore = {
     actorId: string
     agencyId: string
   }) => Promise<readonly DefaultRedirectPermissionRecord[]>
-  listLegacyActorNames: (values: {
-    actorId: string
-    agencyId: string
-  }) => Promise<readonly Readonly<{ name: string }>[]>
   listPermittedSubaccounts: (values: {
     actorId: string
     agencyId: string
@@ -346,14 +339,6 @@ export const createProjectionService = ({
   resolveTenantContext,
   store,
 }: ProjectionServiceDependencies) => {
-  const getLegacyActorName = async (context: AgencyContext | TenantContext) =>
-    exactlyOne(
-      await store.listLegacyActorNames({
-        actorId: context.actor.id,
-        agencyId: context.agencyId,
-      })
-    ).name
-
   const getVisibleSubaccounts = async (context: TenantContext) => {
     if (privilegedRoles.has(context.actor.role)) {
       const subaccounts = withinProjectionLimit(
@@ -497,12 +482,10 @@ export const createProjectionService = ({
       const context = await resolveAgencyContext(agencyId)
       assertAgencyOperator(context)
 
-      const [agency, sidebarOptions, subaccounts, legacyActivityActorName] =
-        await Promise.all([
+      const [agency, sidebarOptions, subaccounts] = await Promise.all([
           store.listAgencyNavigations(context.agencyId),
           store.listAgencySidebarOptions(context.agencyId),
           store.listAgencySubaccounts(context.agencyId),
-          getLegacyActorName(context),
         ])
 
       const agencyProjection = exactlyOne(agency)
@@ -515,7 +498,6 @@ export const createProjectionService = ({
         actor: { role: context.actor.role },
         agency: mapAgencyNavigation(agencyProjection),
         kind: 'agency',
-        legacyActivityActorName,
         sidebarOptions: sidebarOptions
           .slice()
           .sort(
@@ -540,8 +522,7 @@ export const createProjectionService = ({
     ): Promise<SubaccountSidebarProjection> => {
       const subaccountId = parseSelector(rawSubaccountId)
       const context = await resolveTenantContext(subaccountId)
-      const includeLegacyName = privilegedRoles.has(context.actor.role)
-      const [agency, currentSubaccount, sidebarOptions, subaccounts, legacyName] =
+      const [agency, currentSubaccount, sidebarOptions, subaccounts] =
         await Promise.all([
           store.listAgencyNavigations(context.agencyId),
           store.listSubaccountNavigations({
@@ -553,7 +534,6 @@ export const createProjectionService = ({
             subaccountId: context.subaccountId,
           }),
           getVisibleSubaccounts(context),
-          includeLegacyName ? getLegacyActorName(context) : Promise.resolve(null),
         ])
 
       const agencyProjection = exactlyOne(agency)
@@ -568,7 +548,7 @@ export const createProjectionService = ({
       ) {
         throw new AccessError('FORBIDDEN')
       }
-      const baseProjection: SubaccountSidebarProjection = {
+      return {
         actor: { role: context.actor.role },
         agency: mapAgencyNavigation(agencyProjection),
         currentSubaccount: mapSubaccountNavigation(currentSubaccountProjection),
@@ -583,16 +563,6 @@ export const createProjectionService = ({
           .map(mapSidebarOption),
         subaccounts,
       }
-      if (legacyName === null) return baseProjection
-      return {
-        actor: baseProjection.actor,
-        agency: baseProjection.agency,
-        currentSubaccount: baseProjection.currentSubaccount,
-        kind: baseProjection.kind,
-        legacyActivityActorName: legacyName,
-        sidebarOptions: baseProjection.sidebarOptions,
-        subaccounts: baseProjection.subaccounts,
-      }
     },
 
     getAgencySubaccountsProjection: async (
@@ -601,10 +571,9 @@ export const createProjectionService = ({
       const agencyId = parseSelector(rawAgencyId)
       const context = await resolveAgencyContext(agencyId)
       assertAgencyOperator(context)
-      const [agency, subaccounts, legacyActivityActorName] = await Promise.all([
+      const [agency, subaccounts] = await Promise.all([
         store.listAgencyReferences(context.agencyId),
         store.listAgencySubaccounts(context.agencyId),
-        getLegacyActorName(context),
       ])
       const agencyProjection = exactlyOne(agency)
       if (agencyProjection.id !== context.agencyId) {
@@ -613,7 +582,6 @@ export const createProjectionService = ({
       withinProjectionLimit(subaccounts)
       return {
         agency: mapAgencyReference(agencyProjection),
-        legacyActivityActorName,
         subaccounts: subaccounts
           .map((subaccount) => {
             if (subaccount.agencyId !== context.agencyId) {

@@ -9,7 +9,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { saveActivityLogsNotification, upsertFunnelPage } from '@/lib/queries'
+import { upsertFunnelPage } from '@/lib/queries'
 import { DeviceTypes, useEditor } from '@/providers/editor/editor-provider'
 import { FunnelPage } from '@prisma/client'
 import clsx from 'clsx'
@@ -99,11 +99,6 @@ const FunnelEditorNavigation = ({
         },
         funnelId
       )
-      await saveActivityLogsNotification({
-        agencyId: undefined,
-        description: `Updated a funnel page | ${response?.name}`,
-        subaccountId: subaccountId,
-      })
       toast('Success', {
         description: 'Saved Editor',
       })

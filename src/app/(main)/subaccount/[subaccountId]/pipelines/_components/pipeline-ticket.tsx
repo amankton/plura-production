@@ -35,7 +35,7 @@ import {
   HoverCardTrigger,
 } from '@/components/ui/hover-card'
 import { toast } from '@/components/ui/use-toast'
-import { deleteTicket, saveActivityLogsNotification } from '@/lib/queries'
+import { deleteTicket } from '@/lib/queries'
 import { TicketWithTags } from '@/lib/types'
 import { useModal } from '@/providers/modal-provider'
 import { Contact2, Edit, MoreHorizontalIcon, Trash, User2 } from 'lucide-react'
@@ -97,12 +97,6 @@ const PipelineTicket = ({
       toast({
         title: 'Deleted',
         description: 'Deleted ticket from lane.',
-      })
-
-      await saveActivityLogsNotification({
-        agencyId: undefined,
-        description: `Deleted a ticket | ${response?.name}`,
-        subaccountId: subaccountId,
       })
 
       router.refresh()

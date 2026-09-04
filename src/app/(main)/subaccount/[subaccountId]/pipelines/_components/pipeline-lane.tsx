@@ -21,7 +21,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { deleteLane, saveActivityLogsNotification } from '@/lib/queries'
+import { deleteLane } from '@/lib/queries'
 import { LaneDetail, TicketWithTags } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { useModal } from '@/providers/modal-provider'
@@ -107,11 +107,6 @@ const PipelineLane: React.FC<PipelaneLaneProps> = ({
   const handleDeleteLane = async () => {
     try {
       const response = await deleteLane(laneDetails.id)
-      await saveActivityLogsNotification({
-        agencyId: undefined,
-        description: `Deleted a lane | ${response?.name}`,
-        subaccountId,
-      })
       router.refresh()
     } catch (error) {
       console.log(error)
