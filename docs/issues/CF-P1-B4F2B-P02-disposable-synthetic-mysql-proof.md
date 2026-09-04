@@ -199,12 +199,33 @@ volume. No persistent or representative state exists to reverse.
 
 ## Status
 
-`READY`
+`DONE`
+
+## Lifecycle seal
+
+- Accepted implementation:
+  `8f8ba7b8343b3bd53f9c852923ac803c5e049a32`.
+- Documentation-only execution seal:
+  `98a1cf742a8217b499fe0495d40e0fe3660bd67f`.
+- Architect implementation token:
+  `APPROVE_B4F2B_P02_CANDIDATE`.
+- Verifier implementation token:
+  `PASS_B4F2B_P02_CANDIDATE`.
+- Acceptance seal clearance:
+  `GO_B4F2B_P02_CANDIDATE_SEAL`.
+- Execution-seal verification:
+  `PASS_B4F2B_P02_SEAL`.
+- Remediation rounds used: 1 of 2.
+- This lifecycle transition records only that the bounded, disposable,
+  synthetic P-02 proof completed. It creates no present or future authority to
+  rerun it, access Boundary R, use a credential or representative artifact,
+  mutate a database, connect an application runtime, deploy, or change a
+  readiness classification.
+- The parent B4F2B issue remains `READY`; Boundary R remains `BLOCKED`.
 
 ## Execution gate
 
-- `P-02: ALLOWED` only after this exact work item receives Architect,
-  Verifier, and Acceptance gate confirmation.
+- `P-02: HISTORICAL_EXECUTION_ONLY`; any new run requires a new exact gate.
 - `Boundary R: BLOCKED`.
 
 ## Human input
