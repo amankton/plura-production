@@ -492,7 +492,7 @@ export const createPrismaWebhookProcessingAdapters = (
             }),
           ])
           if (
-            (agencySubscription?.subscritiptionId &&
+            (agencySubscription &&
               agencySubscription.subscritiptionId !==
                 projection.subscriptionId) ||
             (providerSubscription &&

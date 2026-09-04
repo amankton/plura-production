@@ -18,7 +18,7 @@
   `AMEND_B4F2A2_AUDIT_EVIDENCE_STALE_UNREVALIDATED`.
 - Implementation SHA: **pending immutable candidate**.
 - Independent implementation verification: **pending**.
-- Implementation remediation rounds used: 0 of 2.
+- Implementation remediation rounds used: 1 of 2.
 - Evidence-policy change-control events: 1.
 - Dependency-audit classification: **STALE_UNREVALIDATED**.
 - Current dependency-advisory state: **UNKNOWN**.
@@ -64,6 +64,8 @@ run this capability without a future, separately authorized composition.
   different provider subscription both fail closed.
 - Existing subscription updates condition on stable row ID, agency ID, and
   prior provider-subscription binding and require exactly one affected row.
+  Empty or otherwise different stored provider bindings are conflicts, not
+  unbound authority, and cannot be overwritten.
   Current state updates never touch the legacy `plan` or `price` fields.
 - Connected-account and unsupported receipts become durably `IGNORED` before
   provider, agency, object-lease, or projection work.

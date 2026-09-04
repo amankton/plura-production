@@ -762,6 +762,59 @@ const verifyProjectionAndRollback = async () => {
     where: { id: 'subscription_conflicting_agency' },
   })
 
+  const emptyBindingReceipt = await createReceipt(client, {
+    subscriptionId: 'sub_empty_binding',
+  })
+  await client.subscription.create({
+    data: {
+      active: true,
+      agencyId: 'agency_a',
+      currentPeriodEndDate: new Date('2031-01-01T00:00:00.000Z'),
+      customerId: 'cus_agency',
+      id: 'subscription_empty_binding',
+      logicalPlan: 'BASIC',
+      plan: 'price_1OYxkqFj9oKEERu1NbKUxXxN',
+      price: 'legacy-empty-binding-marker',
+      priceId: 'price_basic',
+      subscritiptionId: '',
+    },
+  })
+  const emptyBindingClaim = await claimForProjection(
+    emptyBindingReceipt.id,
+    'sub_empty_binding',
+    'empty-binding'
+  )
+  assert(
+    !(await emptyBindingClaim.store.projectAndComplete({
+      now: new Date(now.getTime() + 1),
+      objectLease: emptyBindingClaim.objectLease,
+      projection: projection({ subscriptionId: 'sub_empty_binding' }),
+      receiptId: emptyBindingReceipt.id,
+      receiptLeaseToken: emptyBindingClaim.receipt.leaseToken!,
+    })),
+    'Projection reassigned an empty stored provider binding'
+  )
+  const emptyBinding = await client.subscription.findUniqueOrThrow({
+    where: { id: 'subscription_empty_binding' },
+  })
+  assert(
+    emptyBinding.subscritiptionId === '' &&
+      emptyBinding.plan === 'price_1OYxkqFj9oKEERu1NbKUxXxN' &&
+      emptyBinding.price === 'legacy-empty-binding-marker',
+    'Empty stored binding or legacy fields were modified'
+  )
+  assert(
+    (
+      await client.stripeWebhookReceipt.findUniqueOrThrow({
+        where: { id: emptyBindingReceipt.id },
+      })
+    ).status === 'PROCESSING',
+    'Empty stored binding produced a false terminal receipt'
+  )
+  await client.subscription.delete({
+    where: { id: 'subscription_empty_binding' },
+  })
+
   const bindingReceipt = await createReceipt(client, {
     subscriptionId: 'sub_binding',
   })
