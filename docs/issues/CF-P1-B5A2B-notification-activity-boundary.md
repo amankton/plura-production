@@ -667,13 +667,64 @@ rollback is required because none may change.
 
 ## Status
 
-`READY`
+`DONE`
 
-Gate remediation: 1 of 2 rounds used under
-`GO_B5A2B_GATE_REMEDIATION_1`.
+## Lifecycle seal
+
+- Original implementation-gate draft:
+  `0d28d0dffa4e3a4fa078beaf6cc5881f891a7211`.
+- Accepted remediated implementation gate:
+  `1b3b36256629d3aaae567ffb66a351ece036359e`.
+- Gate Architect token: `APPROVE_B5A2B_IMPLEMENTATION_GATE`.
+- Gate Verifier token: `PASS_B5A2B_IMPLEMENTATION_GATE`.
+- Gate Acceptance token: `ACCEPT_B5A2B_IMPLEMENTATION_GATE_AND_PUSH`.
+- Implementation authoring token: `GO_B5A2B_IMPLEMENTATION`.
+- Original held implementation candidate:
+  `df9d73353f52bca948f5e718bf7dd7dd5998ab0f`.
+- Implementation-remediation-one candidate:
+  `c78cfaeff36b8f6fd0fc260d5197f3ecf197e00e`.
+- Implementation-remediation-two final candidate:
+  `d0f6539dce86dbf68eadf9457893c0b38bd5bad1`.
+- First implementation hold: `HOLD_B5A2B_IMPLEMENTATION_CANDIDATE`.
+- First remediation token: `GO_B5A2B_IMPLEMENTATION_REMEDIATION_1`.
+- Second implementation hold: `HOLD_B5A2B_REMEDIATION_CANDIDATE`.
+- Final remediation token: `GO_B5A2B_IMPLEMENTATION_REMEDIATION_2`.
+- Implementation Architect token:
+  `APPROVE_B5A2B_REMEDIATION_CANDIDATE`.
+- Implementation Verifier token: `PASS_B5A2B_REMEDIATION_CANDIDATE`.
+- Implementation Acceptance token: `ACCEPT_B5A2B_REMEDIATION_CANDIDATE`.
+- Evidence/execution-seal authoring token:
+  `GO_B5A2B_EVIDENCE_EXECUTION_SEAL_AUTHORING`.
+- Held execution-seal candidate:
+  `c2b3ddd7676b9bd33f1f3fa116bbb79a5642ba87`.
+- Corrected execution seal:
+  `1f44d6bb98037aad75a68d9c7e0cc511b428ba72`.
+- Execution-seal hold: `HOLD_B5A2B_EXECUTION_SEAL`.
+- Evidence-correction token:
+  `GO_B5A2B_EXECUTION_SEAL_EVIDENCE_CORRECTION`.
+- Execution-seal Architect token: `APPROVE_B5A2B_EXECUTION_SEAL`.
+- Execution-seal Verifier token: `PASS_B5A2B_EXECUTION_SEAL`.
+- Execution-seal Acceptance token: `ACCEPT_B5A2B_EXECUTION_SEAL`.
+- Lifecycle authoring token: `GO_B5A2B_LIFECYCLE_SEAL_AUTHORING`.
+- Gate remediation used: 1 of 2 rounds under
+  `GO_B5A2B_GATE_REMEDIATION_1`.
+- Implementation remediation used: 2 of 2 rounds. The implementation
+  remediation allowance is exhausted.
+- The four-value canonical-hash correction is a separate evidence-only event,
+  not a third implementation remediation round.
+- The dormant activity foundation remains `DORMANT_BLOCKED` with zero
+  production registry entries, templates, events, adapters, callers, or
+  writes.
+- This transition closes only B5A2B notification visibility, writer
+  retirement, compatibility removal, and its dormant foundation. B5A3-B5A8
+  remain blocked. Dependency audit remains `STALE_UNREVALIDATED`, advisories
+  remain `UNKNOWN`, and `CF-P1-AUDIT-FRESH-01` remains open. Permission
+  migration remains `DESIGN_REQUIRED`. Representative database/provider and
+  public-runtime evidence remain blocked. Local, shared-development, staging,
+  pilot, and production readiness remain `FAIL`. Re-theme/taste validation,
+  CRM/Odoo, Composio, agent-runtime, credentials, deployment, and release
+  remain blocked pending their own exact gates.
 
 ## Execution gate
 
-`BLOCKED`; no B5A2B production implementation is authorized until Architect,
-Verifier, and Acceptance approve this exact documentation candidate and
-Acceptance issues an exact implementation token.
+`HISTORICAL_EXECUTION_ONLY`; any new B5A2B work requires a new exact gate.
