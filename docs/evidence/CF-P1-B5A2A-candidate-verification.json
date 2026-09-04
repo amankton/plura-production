@@ -5,6 +5,7 @@
   "productionImplementationSha": "8482550f03ddb5cb14d4aba411ec5877a5946248",
   "priorReviewSealSha": "4d80995620b52ee3ba2f6783c248fa50d1fc9681",
   "candidateSha": "7832c703ddbc2d527d83b2a810d8f6890db9fdca",
+  "finalReviewSealSha": "e49214949fcacdb6b9e3b8cb1e6478bb177986dc",
   "remediation": {
     "round": 2,
     "maximumRounds": 2,

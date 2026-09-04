@@ -9,6 +9,8 @@
   `8482550f03ddb5cb14d4aba411ec5877a5946248`.
 - Prior review seal: `4d80995620b52ee3ba2f6783c248fa50d1fc9681`.
 - Final remediation candidate: `7832c703ddbc2d527d83b2a810d8f6890db9fdca`.
+- Final reviewed evidence seal:
+  `e49214949fcacdb6b9e3b8cb1e6478bb177986dc`.
 - Remediation round: 2 of 2.
 - Architect review: `APPROVE_B5A2A_IMPLEMENTATION_CANDIDATE`.
 - Independent verification: `PASS_B5A2A_IMPLEMENTATION_CANDIDATE`.
