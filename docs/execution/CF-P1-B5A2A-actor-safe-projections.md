@@ -5,8 +5,11 @@
 - Immutable implementation parent:
   `bbe5ec82a8184c21fc0d09f767891c5dc7f08534`.
 - Original held candidate: `30917ecfec561ed2beb1fc1929c9c5f809739aaf`.
-- Remediation candidate: `8482550f03ddb5cb14d4aba411ec5877a5946248`.
-- Remediation round: 1 of 2.
+- Production implementation candidate:
+  `8482550f03ddb5cb14d4aba411ec5877a5946248`.
+- Prior review seal: `4d80995620b52ee3ba2f6783c248fa50d1fc9681`.
+- Final remediation candidate: `7832c703ddbc2d527d83b2a810d8f6890db9fdca`.
+- Remediation round: 2 of 2.
 - Exact Architect and Verifier re-review: pending.
 - Branch: `codex/crewframe-foundation`.
 
@@ -40,9 +43,19 @@ The held candidate was corrected without opening downstream scope:
   prohibited imports, types, casts, wrappers, spreads, extra consumers,
   compatibility sinks, entry calls, client actions, and legacy drift.
 
+## Remediation round 2
+
+The final bounded remediation changes test evidence only. It mutates all 100
+protected top-level statements across the three writable legacy files,
+including every one of the 38 retained query exports, and separately mutates
+21 provisioning, upsert, Stripe, delete, goal-update, toast, refresh, cleanup,
+and error-path markers in `AgencyDetails`. Every fixed in-memory mutation is
+rejected by the same normalized remainder functions used by the repository
+verifier. Production source remains byte-exact to the round-one implementation.
+
 ## Verification snapshot
 
-At remediation candidate `8482550f03ddb5cb14d4aba411ec5877a5946248`:
+At final remediation candidate `7832c703ddbc2d527d83b2a810d8f6890db9fdca`:
 
 - fixed B5A2A verifier: pass — 14 ledger records, seven projections, one client
   action, three details consumers, two logical compatibility sinks, and four
@@ -50,8 +63,8 @@ At remediation candidate `8482550f03ddb5cb14d4aba411ec5877a5946248`:
 - authority inventory: pass — 228 records, 21 database imports (20 direct and
   one injected), 52 server-action exports, 38 query exports, and manifest
   `sha256:c1e088fd578e83ff9e83effe72f8dd64c0063be2ceee17a00ac42ed91b80ac48`;
-- focused suites: 40 passed, 338 expectations;
-- complete suite: 337 passed, 1,694 expectations across 44 files;
+- focused suites: 42 passed, 464 expectations;
+- complete suite: 339 passed, 1,820 expectations across 44 files;
 - lint, typecheck, production build, and 13-page static generation: pass;
 - frozen offline install: 895 installs across 705 packages, no changes; and
 - diff, allowlist, protected-file, secret/PII/log/provider/schema/package,

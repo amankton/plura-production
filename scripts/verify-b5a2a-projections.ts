@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url'
 import ts from 'typescript'
 
 const IMPLEMENTATION_PARENT = 'bbe5ec82a8184c21fc0d09f767891c5dc7f08534'
-const REMEDIATION_CANDIDATE = '8482550f03ddb5cb14d4aba411ec5877a5946248'
+const REMEDIATION_CANDIDATE = '7832c703ddbc2d527d83b2a810d8f6890db9fdca'
 const EVIDENCE_PATH =
   'docs/evidence/CF-P1-B5A2A-candidate-verification.json'
 const EXECUTION_PATH = 'docs/execution/CF-P1-B5A2A-actor-safe-projections.md'
@@ -466,7 +466,7 @@ const verifyCandidateEvidence = (errors: string[]) => {
   for (const token of [
     IMPLEMENTATION_PARENT,
     REMEDIATION_CANDIDATE,
-    'Remediation round: 1 of 2',
+    'Remediation round: 2 of 2',
     'STALE_UNREVALIDATED',
     'CF-P1-AUDIT-FRESH-01',
     'DESIGN_REQUIRED',
