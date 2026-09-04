@@ -16,8 +16,14 @@
 - Confirmation token: `GO_B4F2A2_IMPLEMENTATION_CONFIRMED`.
 - Audit evidence amendment:
   `AMEND_B4F2A2_AUDIT_EVIDENCE_STALE_UNREVALIDATED`.
-- Implementation SHA: **pending immutable candidate**.
-- Independent implementation verification: **pending**.
+- Implementation SHA: `51d79426b7e452acaa9e139b635ea1d19cf57530`.
+- Architect implementation approval: `APPROVE_B4F2A2_CANDIDATE`.
+- Architect audit-amendment approval:
+  `APPROVE_B4F2A2_AUDIT_AMENDMENT`.
+- Verifier audit-amendment approval: `PASS_B4F2A2_AUDIT_AMENDMENT`.
+- Independent implementation verification:
+  `PASS_B4F2A2_CANDIDATE_WITH_AUDIT_AMENDMENT`.
+- Acceptance seal clearance: `GO_B4F2A2_CANDIDATE_SEAL`.
 - Implementation remediation rounds used: 1 of 2.
 - Evidence-policy change-control events: 1.
 - Dependency-audit classification: **STALE_UNREVALIDATED**.
@@ -215,9 +221,9 @@ deployment, or persistent data change to reverse.
 
 ## Remaining blockers
 
-1. Freeze and independently review one exact implementation SHA, including the
-   A2-specific audit amendment.
-2. Seal accepted execution and lifecycle evidence before advancing.
+1. Independently verify this documentation-only execution seal, then complete
+   a separately reviewed lifecycle seal before advancing.
+2. Keep the issue lifecycle `READY` until `PASS_B4F2A2_SEAL` is issued.
 3. Keep `CF-P1-AUDIT-FRESH-01` open until a fresh authoritative audit succeeds.
 4. Obtain explicit future authorization and separate proof for representative
    schema/migration/backup/restore, worker hosting/availability, credentials,
