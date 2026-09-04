@@ -1,11 +1,11 @@
 'use client'
 
-import {
-  Agency,
-  AgencySidebarOption,
-  SubAccount,
-  SubAccountSidebarOption,
-} from '@prisma/client'
+import type {
+  ActorNavigation,
+  AgencyNavigation,
+  SidebarOption,
+  SubaccountNavigation,
+} from '@/features/agency-projections/projection-service'
 import React, { useEffect, useMemo, useState } from 'react'
 import { Sheet, SheetClose, SheetContent, SheetTrigger } from '../ui/sheet'
 import { Button } from '../ui/button'
@@ -31,22 +31,24 @@ import { Separator } from '../ui/separator'
 import { icons } from '@/lib/constants'
 
 type Props = {
+  actor: ActorNavigation
+  agency: AgencyNavigation
   defaultOpen?: boolean
-  subAccounts: SubAccount[]
-  sidebarOpt: AgencySidebarOption[] | SubAccountSidebarOption[]
+  subAccounts: readonly SubaccountNavigation[]
+  sidebarOpt: readonly SidebarOption[]
   sidebarLogo: string
-  details: any
-  user: any
-  id: string
+  details: AgencyNavigation | SubaccountNavigation
+  legacyActivityActorName?: string
 }
 
 const MenuOptions = ({
+  actor,
+  agency,
   details,
-  id,
+  legacyActivityActorName,
   sidebarLogo,
   sidebarOpt,
   subAccounts,
-  user,
   defaultOpen,
 }: Props) => {
   const { setOpen } = useModal()
@@ -128,49 +130,48 @@ const MenuOptions = ({
                 <CommandInput placeholder="Search Accounts..." />
                 <CommandList className="pb-16">
                   <CommandEmpty> No results found</CommandEmpty>
-                  {(user?.role === 'AGENCY_OWNER' ||
-                    user?.role === 'AGENCY_ADMIN') &&
-                    user?.Agency && (
+                  {(actor.role === 'AGENCY_OWNER' ||
+                    actor.role === 'AGENCY_ADMIN') && (
                       <CommandGroup heading="Agency">
                         <CommandItem className="!bg-transparent my-2 text-primary broder-[1px] border-border p-2 rounded-md hover:!bg-muted cursor-pointer transition-all">
                           {defaultOpen ? (
                             <Link
-                              href={`/agency/${user?.Agency?.id}`}
+                              href={`/agency/${agency.id}`}
                               className="flex gap-4 w-full h-full"
                             >
                               <div className="relative w-16">
                                 <Image
-                                  src={user?.Agency?.agencyLogo}
+                                  src={agency.agencyLogo}
                                   alt="Agency Logo"
                                   fill
                                   className="rounded-md object-contain"
                                 />
                               </div>
                               <div className="flex flex-col flex-1">
-                                {user?.Agency?.name}
+                                {agency.name}
                                 <span className="text-muted-foreground">
-                                  {user?.Agency?.address}
+                                  {agency.address}
                                 </span>
                               </div>
                             </Link>
                           ) : (
                             <SheetClose asChild>
                               <Link
-                                href={`/agency/${user?.Agency?.id}`}
+                                href={`/agency/${agency.id}`}
                                 className="flex gap-4 w-full h-full"
                               >
                                 <div className="relative w-16">
                                   <Image
-                                    src={user?.Agency?.agencyLogo}
+                                    src={agency.agencyLogo}
                                     alt="Agency Logo"
                                     fill
                                     className="rounded-md object-contain"
                                   />
                                 </div>
                                 <div className="flex flex-col flex-1">
-                                  {user?.Agency?.name}
+                                  {agency.name}
                                   <span className="text-muted-foreground">
-                                    {user?.Agency?.address}
+                                    {agency.address}
                                   </span>
                                 </div>
                               </Link>
@@ -231,8 +232,9 @@ const MenuOptions = ({
                       : 'No Accounts'}
                   </CommandGroup>
                 </CommandList>
-                {(user?.role === 'AGENCY_OWNER' ||
-                  user?.role === 'AGENCY_ADMIN') && (
+                {(actor.role === 'AGENCY_OWNER' ||
+                  actor.role === 'AGENCY_ADMIN') &&
+                  legacyActivityActorName && (
                   <SheetClose>
                     <Button
                       className="w-full flex gap-2"
@@ -243,9 +245,8 @@ const MenuOptions = ({
                             subheading="You can switch between your agency account and the subaccount from the sidebar"
                           >
                             <SubAccountDetails
-                              agencyDetails={user?.Agency as Agency}
-                              userId={user?.id as string}
-                              userName={user?.name}
+                              agencyDetails={{ id: agency.id }}
+                              userName={legacyActivityActorName}
                             />
                           </CustomModal>
                         )

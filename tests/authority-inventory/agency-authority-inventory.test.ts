@@ -138,13 +138,13 @@ describe('B5A1 closed agency authority inventory', () => {
     const result = verifyRepository(process.cwd())
     expect(result.errors).toEqual([])
     expect(result.counts).toEqual({
-      records: 230,
-      databaseImports: 23,
-      directDatabaseCallers: 22,
+      records: 228,
+      databaseImports: 21,
+      directDatabaseCallers: 20,
       databaseAdapterInjections: 1,
-      serverActionFiles: 4,
-      serverActionExports: 53,
-      queryExports: 40,
+      serverActionFiles: 5,
+      serverActionExports: 52,
+      queryExports: 38,
       apiRouteFiles: 5,
       apiHandlerSymbols: 6,
       pageFiles: 24,
@@ -217,6 +217,22 @@ describe('B5A1 closed agency authority inventory', () => {
         (record) => record.symbol === 'isCrewframePlan'
       )?.effects
     ).toEqual(['read'])
+    expect(
+      inventory.records
+        .filter((record) => record.disposition === 'B5A2')
+        .map((record) => record.symbol)
+        .sort()
+    ).toEqual(['getNotificationAndUser', 'saveActivityLogsNotification'])
+    expect(
+      inventory.records.find(
+        (record) => record.symbol === 'listTicketAssigneeOptions'
+      )
+    ).toMatchObject({
+      action: 'team:read',
+      actorSource: 'provider subject',
+      disposition: 'ACCEPTED_RETAIN',
+      requestedIds: ['subaccountId'],
+    })
   })
 
   test('keeps the JSON schema taxonomies identical to the executable validator', () => {

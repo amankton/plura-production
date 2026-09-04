@@ -1,6 +1,6 @@
 import AgencyDetails from '@/components/forms/agency-details'
-import { getAuthUserDetails } from '@/lib/queries'
 import { verifyAndAcceptInvitation } from '@/features/accounts/actions'
+import { agencyProjectionService } from '@/features/agency-projections/server-projection-service'
 import { currentUser } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import React from 'react'
@@ -10,19 +10,16 @@ const Page = async ({
 }: {
   searchParams: { plan: string }
 }) => {
-  const agencyId = await verifyAndAcceptInvitation()
-  console.log(agencyId)
-
-  //get the users details
-  const user = await getAuthUserDetails()
-  if (agencyId) {
-    if (user?.role === 'SUBACCOUNT_GUEST' || user?.role === 'SUBACCOUNT_USER') {
+  await verifyAndAcceptInvitation()
+  const entry = await agencyProjectionService.getAccountEntryProjection()
+  if (entry.kind === 'ROUTE') {
+    if (entry.role === 'SUBACCOUNT_GUEST' || entry.role === 'SUBACCOUNT_USER') {
       return redirect('/subaccount')
-    } else if (user?.role === 'AGENCY_OWNER' || user?.role === 'AGENCY_ADMIN') {
+    } else if (entry.role === 'AGENCY_OWNER' || entry.role === 'AGENCY_ADMIN') {
       if (searchParams.plan) {
-        return redirect(`/agency/${agencyId}/billing?plan=${searchParams.plan}`)
+        return redirect(`/agency/${entry.agencyId}/billing?plan=${searchParams.plan}`)
       }
-      return redirect(`/agency/${agencyId}`)
+      return redirect(`/agency/${entry.agencyId}`)
     } else {
       return <div>Not authorized</div>
     }

@@ -26,7 +26,6 @@ import {
 } from '@/components/ui/card'
 
 import FileUpload from '../global/file-upload'
-import { Agency, SubAccount } from '@prisma/client'
 import { useToast } from '../ui/use-toast'
 import { saveActivityLogsNotification, upsertSubAccount } from '@/lib/queries'
 import { useEffect } from 'react'
@@ -51,16 +50,25 @@ const formSchema = z.object({
 
 interface SubAccountDetailsProps {
   //To add the sub account to the agency
-  agencyDetails: Agency
-  details?: Partial<SubAccount>
-  userId: string
+  agencyDetails: Readonly<{ id: string }>
+  details?: Readonly<{
+    address: string
+    city: string
+    companyEmail: string
+    companyPhone: string
+    country: string
+    id: string
+    name: string
+    state: string
+    subAccountLogo: string
+    zipCode: string
+  }>
   userName: string
 }
 
 const SubAccountDetails: React.FC<SubAccountDetailsProps> = ({
   details,
   agencyDetails,
-  userId,
   userName,
 }) => {
   const { toast } = useToast()

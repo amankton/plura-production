@@ -1,8 +1,6 @@
 import AgencyDetails from '@/components/forms/agency-details'
 import UserDetails from '@/components/forms/user-details'
-import { db } from '@/lib/db'
-import { getAgencyContext } from '@/lib/auth/server-agency-context'
-import { assertAgencyOperator } from '@/lib/auth/agency-context'
+import { agencyProjectionService } from '@/features/agency-projections/server-projection-service'
 import React from 'react'
 
 type Props = {
@@ -10,31 +8,15 @@ type Props = {
 }
 
 const SettingsPage = async ({ params }: Props) => {
-  const context = await getAgencyContext(params.agencyId)
-  assertAgencyOperator(context)
-
-  const userDetails = await db.user.findUnique({
-    where: { id: context.actor.id },
-  })
-
-  if (!userDetails) return null
-  const agencyDetails = await db.agency.findUnique({
-    where: { id: context.agencyId },
-    include: {
-      SubAccount: true,
-    },
-  })
-
-  if (!agencyDetails) return null
-
-  const subAccounts = agencyDetails.SubAccount
+  const projection =
+    await agencyProjectionService.getAgencySettingsProjection(params.agencyId)
 
   return (
     <div className="flex lg:!flex-row flex-col gap-4">
-      <AgencyDetails data={agencyDetails} />
+      <AgencyDetails data={projection.agency} />
       <UserDetails
-        subAccounts={subAccounts}
-        userData={userDetails}
+        subAccounts={projection.subaccounts}
+        userData={projection.actor}
       />
     </div>
   )

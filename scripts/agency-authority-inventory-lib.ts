@@ -1156,8 +1156,77 @@ const apiRequestedIds: Record<string, string[]> = {
   ],
 }
 
+const b5a2aAcceptedSurfaces = new Set([
+  'internal-only:src/features/agency-projections/projection-service.ts#createProjectionService',
+  'internal-only:src/features/agency-projections/server-projection-service.ts#$db',
+  'internal-only:src/features/agency-projections/server-projection-service.ts#agencyProjectionService',
+  'layout loader:src/app/(main)/agency/[agencyId]/layout.tsx#default',
+  'layout loader:src/app/(main)/subaccount/[subaccountId]/layout.tsx#default',
+  'page loader:src/app/(main)/agency/[agencyId]/all-subaccounts/page.tsx#default',
+  'page loader:src/app/(main)/agency/[agencyId]/settings/page.tsx#default',
+  'page loader:src/app/(main)/agency/page.tsx#default',
+  'page loader:src/app/(main)/subaccount/[subaccountId]/settings/page.tsx#default',
+  'page loader:src/app/(main)/subaccount/page.tsx#default',
+  'provider callback:src/app/(main)/agency/page.tsx#$provider:clerk.currentUser',
+  'server action:src/features/agency-projections/actions.ts#listTicketAssigneeOptions',
+])
+
+const b5a2aActions: Readonly<Record<string, Action>> = {
+  'layout loader:src/app/(main)/agency/[agencyId]/layout.tsx#default':
+    'agency:view',
+  'layout loader:src/app/(main)/subaccount/[subaccountId]/layout.tsx#default':
+    'subaccount:view',
+  'page loader:src/app/(main)/agency/[agencyId]/all-subaccounts/page.tsx#default':
+    'agency:view',
+  'page loader:src/app/(main)/agency/[agencyId]/settings/page.tsx#default':
+    'agency:view',
+  'page loader:src/app/(main)/agency/page.tsx#default': 'account:entry',
+  'page loader:src/app/(main)/subaccount/[subaccountId]/settings/page.tsx#default':
+    'subaccount:view',
+  'page loader:src/app/(main)/subaccount/page.tsx#default': 'subaccount:view',
+  'provider callback:src/app/(main)/agency/page.tsx#$provider:clerk.currentUser':
+    'account:entry',
+  'server action:src/features/agency-projections/actions.ts#listTicketAssigneeOptions':
+    'team:read',
+}
+
+const b5a2aPersistencePredicates: Readonly<Record<string, string>> = {
+  'internal-only:src/features/agency-projections/projection-service.ts#createProjectionService':
+    'provider subject resolves actor context; every requested tenant is bound to actor.agencyId',
+  'internal-only:src/features/agency-projections/server-projection-service.ts#$db':
+    'operation-specific actor, agency, subaccount, permission, and role predicates are conjunctive',
+  'internal-only:src/features/agency-projections/server-projection-service.ts#agencyProjectionService':
+    'server-derived actor context selects only purpose-specific DTO fields',
+  'layout loader:src/app/(main)/agency/[agencyId]/layout.tsx#default':
+    'actor.agencyId = requested agency.id',
+  'layout loader:src/app/(main)/subaccount/[subaccountId]/layout.tsx#default':
+    'actor.agencyId = requested subAccount.agencyId AND permission is active when required',
+  'page loader:src/app/(main)/agency/[agencyId]/all-subaccounts/page.tsx#default':
+    'actor.agencyId = requested agency.id AND every subAccount.agencyId = actor.agencyId',
+  'page loader:src/app/(main)/agency/[agencyId]/settings/page.tsx#default':
+    'actor.id and requested agency.id share actor.agencyId',
+  'page loader:src/app/(main)/agency/page.tsx#default':
+    'actor.id = authenticated provider subject; onboarding performs no tenant query',
+  'page loader:src/app/(main)/subaccount/[subaccountId]/settings/page.tsx#default':
+    'actor.agencyId = requested subAccount.agencyId AND actor permission is active when required',
+  'page loader:src/app/(main)/subaccount/page.tsx#default':
+    'permission.User.id = actor.id AND permission.SubAccount.agencyId = actor.agencyId AND access = true',
+  'provider callback:src/app/(main)/agency/page.tsx#$provider:clerk.currentUser':
+    'provider profile supplies onboarding email display only and grants no authority',
+  'server action:src/features/agency-projections/actions.ts#listTicketAssigneeOptions':
+    'permission.subAccountId = requested subaccount AND access = true AND user and subaccount share actor.agencyId',
+}
+
 const domainFor = (surface: DiscoveredSurface): Domain => {
   const { path, symbol } = surface
+  if (
+    surface.surfaceId ===
+    'provider callback:src/app/(main)/agency/page.tsx#$provider:clerk.currentUser'
+  ) return 'identity/account'
+  if (
+    surface.surfaceId ===
+    'server action:src/features/agency-projections/actions.ts#listTicketAssigneeOptions'
+  ) return 'team/permission/invitation'
   const queryDomains: Record<string, Domain> = {
     getAuthUserDetails: 'identity/account',
     saveActivityLogsNotification: 'notification/activity',
@@ -1227,6 +1296,7 @@ const dispositionFor = (
   domain: Domain
 ): Disposition => {
   const { path, symbol } = surface
+  if (b5a2aAcceptedSurfaces.has(surface.surfaceId)) return 'ACCEPTED_RETAIN'
   if (path.startsWith('src/app/site/')) return 'ACCEPTED_RETAIN'
   if (
     path.startsWith('src/app/[domain]/') ||
@@ -1317,6 +1387,8 @@ const actionFor = (
   surface: DiscoveredSurface,
   disposition: Disposition
 ): Action => {
+  const b5a2aAction = b5a2aActions[surface.surfaceId]
+  if (b5a2aAction) return b5a2aAction
   if (disposition === 'PUBLIC_REVIEW_REQUIRED') return 'PUBLIC_BOUNDED'
   if (disposition === 'DORMANT_BLOCKED' || disposition.startsWith('B5A')) {
     return 'UNDEFINED_BLOCKED'
@@ -1351,6 +1423,11 @@ const actionFor = (
 }
 
 const requestedIdsFor = (surface: DiscoveredSurface) => {
+  if (
+    surface.surfaceId ===
+    'server action:src/features/agency-projections/actions.ts#listTicketAssigneeOptions'
+  ) return ['subaccountId']
+  if (surface.path.startsWith('src/features/agency-projections/')) return []
   if (surface.path === 'src/lib/queries.ts' && queryRequestedIds[surface.symbol]) {
     return queryRequestedIds[surface.symbol]
   }
@@ -1514,7 +1591,8 @@ export const buildInventoryDraft = (
           ? 'no tenant persistence; routing publication requires separate public review'
           : presentationalSurface
             ? 'no tenant persistence or authority decision'
-        : persistencePredicateFor(domain, surface.observedEffects),
+        : b5a2aPersistencePredicates[surface.surfaceId] ??
+          persistencePredicateFor(domain, surface.observedEffects),
       denial: marketingSurface || publicSignInSurface
         ? 'public unavailable'
         : presentationalSurface

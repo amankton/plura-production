@@ -1,14 +1,15 @@
 'use client'
 import {
-  getSubAccountTeamMembers,
   saveActivityLogsNotification,
   searchContacts,
   upsertTicket,
 } from '@/lib/queries'
+import { listTicketAssigneeOptions } from '@/features/agency-projections/actions'
+import type { TicketAssigneeOption } from '@/features/agency-projections/projection-service'
 import { TicketFormSchema, TicketWithTags } from '@/lib/types'
 import { useModal } from '@/providers/modal-provider'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Contact, Tag, User } from '@prisma/client'
+import { Contact, Tag } from '@prisma/client'
 import { useRouter } from 'next/navigation'
 import React, { useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -64,7 +65,9 @@ const TicketForm = ({ getNewTicket, laneId, subaccountId }: Props) => {
   const [search, setSearch] = useState('')
   const [contactList, setContactList] = useState<Contact[]>([])
   const saveTimerRef = useRef<ReturnType<typeof setTimeout>>()
-  const [allTeamMembers, setAllTeamMembers] = useState<User[]>([])
+  const [allTeamMembers, setAllTeamMembers] = useState<
+    readonly TicketAssigneeOption[]
+  >([])
   const [assignedTo, setAssignedTo] = useState(
     defaultData.ticket?.Assigned?.id || ''
   )
@@ -83,7 +86,7 @@ const TicketForm = ({ getNewTicket, laneId, subaccountId }: Props) => {
   useEffect(() => {
     if (subaccountId) {
       const fetchData = async () => {
-        const response = await getSubAccountTeamMembers(subaccountId)
+        const response = await listTicketAssigneeOptions(subaccountId)
         if (response) setAllTeamMembers(response)
       }
       fetchData()

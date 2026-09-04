@@ -18,8 +18,7 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command'
-import { getAuthUserDetails } from '@/lib/queries'
-import { SubAccount } from '@prisma/client'
+import { agencyProjectionService } from '@/features/agency-projections/server-projection-service'
 import Image from 'next/image'
 import Link from 'next/link'
 
@@ -32,24 +31,26 @@ type Props = {
 }
 
 const AllSubaccountsPage = async ({ params }: Props) => {
-  const user = await getAuthUserDetails()
-  if (!user) return
+  const projection =
+    await agencyProjectionService.getAgencySubaccountsProjection(
+      params.agencyId
+    )
 
   return (
     <AlertDialog>
       <div className="flex flex-col ">
         <CreateSubaccountButton
-          user={user}
-          id={params.agencyId}
+          agencyDetails={{ id: projection.agency.id }}
           className="w-[200px] self-end m-6"
+          userName={projection.legacyActivityActorName}
         />
         <Command className="rounded-lg bg-transparent">
           <CommandInput placeholder="Search Account..." />
           <CommandList>
             <CommandEmpty>No Results Found.</CommandEmpty>
             <CommandGroup heading="Sub Accounts">
-              {!!user.Agency?.SubAccount.length ? (
-                user.Agency.SubAccount.map((subaccount: SubAccount) => (
+              {!!projection.subaccounts.length ? (
+                projection.subaccounts.map((subaccount) => (
                   <CommandItem
                     key={subaccount.id}
                     className="h-32 !bg-background my-2 text-primary border-[1px] border-border p-4 rounded-lg hover:!bg-background cursor-pointer transition-all"

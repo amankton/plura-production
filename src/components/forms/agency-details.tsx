@@ -1,5 +1,4 @@
 'use client'
-import { Agency } from '@prisma/client'
 import { useForm } from 'react-hook-form'
 import React, { useEffect, useState } from 'react'
 import { NumberInput } from '@tremor/react'
@@ -51,7 +50,20 @@ import { Button } from '../ui/button'
 import Loading from '../global/loading'
 
 type Props = {
-  data?: Partial<Agency>
+  data?: Readonly<{
+    address?: string
+    agencyLogo?: string
+    city?: string
+    companyEmail?: string
+    companyPhone?: string
+    country?: string
+    goal?: number
+    id?: string
+    name?: string
+    state?: string
+    whiteLabel?: boolean
+    zipCode?: string
+  }>
 }
 
 const FormSchema = z.object({

@@ -249,30 +249,6 @@
       "sourceHash": "sha256:5e7b5d1f2da775d36ac23c69ed92677179a4d7a485587583efaa268746b2b482"
     },
     {
-      "surfaceId": "internal-only:src/app/(main)/agency/[agencyId]/settings/page.tsx#$db",
-      "domain": "agency",
-      "path": "src/app/(main)/agency/[agencyId]/settings/page.tsx",
-      "symbol": "$db",
-      "invocation": "internal-only",
-      "effects": [
-        "read"
-      ],
-      "actorSource": "blocked",
-      "requestedIds": [
-        "agencyId"
-      ],
-      "action": "UNDEFINED_BLOCKED",
-      "ownershipPath": [
-        "Agency"
-      ],
-      "persistencePredicate": "actor.agencyId = agency.id",
-      "denial": "unauthorized",
-      "concurrency": "read snapshot; no write authority",
-      "publicBoundary": "PRIVATE",
-      "disposition": "B5A2",
-      "sourceHash": "sha256:6325f8b04cfc0fa56d8e85bd5707a425480f6e0be4a79343ce1841ebde6e0d48"
-    },
-    {
       "surfaceId": "internal-only:src/app/(main)/subaccount/[subaccountId]/funnels/[funnelId]/editor/[funnelPageId]/page.tsx#$db",
       "domain": "funnel/page/editor",
       "path": "src/app/(main)/subaccount/[subaccountId]/funnels/[funnelId]/editor/[funnelPageId]/page.tsx",
@@ -410,31 +386,6 @@
       "sourceHash": "sha256:524bba03c72d0cca0743e2b771625bc652347e18688daafaa604af110adf794b"
     },
     {
-      "surfaceId": "internal-only:src/app/(main)/subaccount/[subaccountId]/settings/page.tsx#$db",
-      "domain": "subaccount",
-      "path": "src/app/(main)/subaccount/[subaccountId]/settings/page.tsx",
-      "symbol": "$db",
-      "invocation": "internal-only",
-      "effects": [
-        "read"
-      ],
-      "actorSource": "blocked",
-      "requestedIds": [
-        "subaccountId"
-      ],
-      "action": "UNDEFINED_BLOCKED",
-      "ownershipPath": [
-        "Agency",
-        "SubAccount"
-      ],
-      "persistencePredicate": "actor.agencyId = subAccount.agencyId AND subAccount.id = requestedSubaccountId",
-      "denial": "unauthorized",
-      "concurrency": "read snapshot; no write authority",
-      "publicBoundary": "PRIVATE",
-      "disposition": "B5A2",
-      "sourceHash": "sha256:aa7de29c77676c90e1284f8ef07739c20234778a2d6439031018181377822944"
-    },
-    {
       "surfaceId": "internal-only:src/app/[domain]/page.tsx#$db",
       "domain": "routing/public",
       "path": "src/app/[domain]/page.tsx",
@@ -562,6 +513,72 @@
       "publicBoundary": "PRIVATE",
       "disposition": "ACCEPTED_RETAIN",
       "sourceHash": "sha256:9c3d0b4c1bea8c4b7139d5c220be5f0398b4075e4bc072587002375c6ff6574f"
+    },
+    {
+      "surfaceId": "internal-only:src/features/agency-projections/projection-service.ts#createProjectionService",
+      "domain": "internal persistence",
+      "path": "src/features/agency-projections/projection-service.ts",
+      "symbol": "createProjectionService",
+      "invocation": "internal-only",
+      "effects": [
+        "read"
+      ],
+      "actorSource": "internal-derived actor",
+      "requestedIds": [],
+      "action": "INTERNAL_ONLY",
+      "ownershipPath": [
+        "InternalBoundary"
+      ],
+      "persistencePredicate": "provider subject resolves actor context; every requested tenant is bound to actor.agencyId",
+      "denial": "unauthorized",
+      "concurrency": "read snapshot; no write authority",
+      "publicBoundary": "PRIVATE",
+      "disposition": "ACCEPTED_RETAIN",
+      "sourceHash": "sha256:04f9c07b3cfcbbfc214e88e335deed5a2eed09fd35de2e31b8101f9361a2f783"
+    },
+    {
+      "surfaceId": "internal-only:src/features/agency-projections/server-projection-service.ts#$db",
+      "domain": "internal persistence",
+      "path": "src/features/agency-projections/server-projection-service.ts",
+      "symbol": "$db",
+      "invocation": "internal-only",
+      "effects": [
+        "read"
+      ],
+      "actorSource": "internal-derived actor",
+      "requestedIds": [],
+      "action": "INTERNAL_ONLY",
+      "ownershipPath": [
+        "InternalBoundary"
+      ],
+      "persistencePredicate": "operation-specific actor, agency, subaccount, permission, and role predicates are conjunctive",
+      "denial": "unauthorized",
+      "concurrency": "read snapshot; no write authority",
+      "publicBoundary": "PRIVATE",
+      "disposition": "ACCEPTED_RETAIN",
+      "sourceHash": "sha256:b5a67d4626368c964efc931220eee1b8034332fa5e5523091f41e31380958e78"
+    },
+    {
+      "surfaceId": "internal-only:src/features/agency-projections/server-projection-service.ts#agencyProjectionService",
+      "domain": "agency",
+      "path": "src/features/agency-projections/server-projection-service.ts",
+      "symbol": "agencyProjectionService",
+      "invocation": "internal-only",
+      "effects": [
+        "create"
+      ],
+      "actorSource": "internal-derived actor",
+      "requestedIds": [],
+      "action": "INTERNAL_ONLY",
+      "ownershipPath": [
+        "Agency"
+      ],
+      "persistencePredicate": "server-derived actor context selects only purpose-specific DTO fields",
+      "denial": "unauthorized",
+      "concurrency": "unique or idempotent create with collision handling",
+      "publicBoundary": "PRIVATE",
+      "disposition": "ACCEPTED_RETAIN",
+      "sourceHash": "sha256:b5a67d4626368c964efc931220eee1b8034332fa5e5523091f41e31380958e78"
     },
     {
       "surfaceId": "internal-only:src/features/billing/billing-service.ts#createBillingService",
@@ -1489,7 +1506,7 @@
       "concurrency": "expected-state conditional write with exact affected count",
       "publicBoundary": "PRIVATE",
       "disposition": "B5A8",
-      "sourceHash": "sha256:9629a2bc0d55baafc00f6d0b80d7327ac37719fc2f367a0cdab5573456b0c4c2"
+      "sourceHash": "sha256:deb9ea72e91318876ce5d6c7c2c28daec8a40d2d0611a655ee58446ef2520d1e"
     },
     {
       "surfaceId": "internal-only:src/lib/routing/middleware-routing.ts#enforcePathProtection",
@@ -2617,54 +2634,6 @@
       "sourceHash": "sha256:9f18a322932ae260980a46143dbc3c549c60373c6d8ef5557c7daae59cb8d7b4"
     },
     {
-      "surfaceId": "internal-only:src/lib/types.ts#__getUsersWithAgencySubAccountPermissionsSidebarOptions",
-      "domain": "team/permission/invitation",
-      "path": "src/lib/types.ts",
-      "symbol": "__getUsersWithAgencySubAccountPermissionsSidebarOptions",
-      "invocation": "internal-only",
-      "effects": [
-        "read"
-      ],
-      "actorSource": "blocked",
-      "requestedIds": [
-        "agencyId"
-      ],
-      "action": "UNDEFINED_BLOCKED",
-      "ownershipPath": [
-        "Agency",
-        "User",
-        "Permission|Invitation"
-      ],
-      "persistencePredicate": "target.agencyId = actor.agencyId AND permission.subAccount.agencyId = actor.agencyId",
-      "denial": "unauthorized",
-      "concurrency": "read snapshot; no write authority",
-      "publicBoundary": "PRIVATE",
-      "disposition": "B5A2",
-      "sourceHash": "sha256:57ee01f9500436294b413fda64c86b45693f4780bdb543897b5d4272cbdfcd74"
-    },
-    {
-      "surfaceId": "internal-only:src/lib/types.ts#$db",
-      "domain": "internal persistence",
-      "path": "src/lib/types.ts",
-      "symbol": "$db",
-      "invocation": "internal-only",
-      "effects": [
-        "read"
-      ],
-      "actorSource": "blocked",
-      "requestedIds": [],
-      "action": "UNDEFINED_BLOCKED",
-      "ownershipPath": [
-        "InternalBoundary"
-      ],
-      "persistencePredicate": "internal caller supplies a validated bounded contract",
-      "denial": "unauthorized",
-      "concurrency": "read snapshot; no write authority",
-      "publicBoundary": "PRIVATE",
-      "disposition": "B5A2",
-      "sourceHash": "sha256:57ee01f9500436294b413fda64c86b45693f4780bdb543897b5d4272cbdfcd74"
-    },
-    {
       "surfaceId": "layout loader:src/app/(main)/agency/(auth)/layout.tsx#default",
       "domain": "identity/account",
       "path": "src/app/(main)/agency/(auth)/layout.tsx",
@@ -2695,19 +2664,19 @@
       "effects": [
         "read"
       ],
-      "actorSource": "blocked",
+      "actorSource": "provider subject",
       "requestedIds": [
         "agencyId"
       ],
-      "action": "UNDEFINED_BLOCKED",
+      "action": "agency:view",
       "ownershipPath": [
         "Agency"
       ],
-      "persistencePredicate": "actor.agencyId = agency.id",
+      "persistencePredicate": "actor.agencyId = requested agency.id",
       "denial": "unauthorized",
       "concurrency": "read snapshot; no write authority",
       "publicBoundary": "PRIVATE",
-      "disposition": "B5A2",
+      "disposition": "ACCEPTED_RETAIN",
       "sourceHash": "sha256:60e507efcdb0ffc6df440afdd31d81ab48aaea15a36ece960ca5100525d63525"
     },
     {
@@ -2741,20 +2710,20 @@
       "effects": [
         "read"
       ],
-      "actorSource": "blocked",
+      "actorSource": "provider subject",
       "requestedIds": [
         "subaccountId"
       ],
-      "action": "UNDEFINED_BLOCKED",
+      "action": "subaccount:view",
       "ownershipPath": [
         "Agency",
         "SubAccount"
       ],
-      "persistencePredicate": "actor.agencyId = subAccount.agencyId AND subAccount.id = requestedSubaccountId",
+      "persistencePredicate": "actor.agencyId = requested subAccount.agencyId AND permission is active when required",
       "denial": "unauthorized",
       "concurrency": "read snapshot; no write authority",
       "publicBoundary": "PRIVATE",
-      "disposition": "B5A2",
+      "disposition": "ACCEPTED_RETAIN",
       "sourceHash": "sha256:d12f84b0abbee14d4fd62013cc765941381287b810b7e2c5e8974b9cdd8db08d"
     },
     {
@@ -2866,20 +2835,20 @@
       "effects": [
         "read"
       ],
-      "actorSource": "blocked",
+      "actorSource": "provider subject",
       "requestedIds": [
         "agencyId"
       ],
-      "action": "UNDEFINED_BLOCKED",
+      "action": "agency:view",
       "ownershipPath": [
         "Agency"
       ],
-      "persistencePredicate": "actor.agencyId = agency.id",
+      "persistencePredicate": "actor.agencyId = requested agency.id AND every subAccount.agencyId = actor.agencyId",
       "denial": "unauthorized",
       "concurrency": "read snapshot; no write authority",
       "publicBoundary": "PRIVATE",
-      "disposition": "B5A2",
-      "sourceHash": "sha256:96ab560857c70226dab4a32e54b932dbd995ac12b7511aa2ef694842df863c54"
+      "disposition": "ACCEPTED_RETAIN",
+      "sourceHash": "sha256:5fb0f5c29e1186e3efb37dac5b5dd51c6468b6ced1928ea431c009955e3fd77b"
     },
     {
       "surfaceId": "page loader:src/app/(main)/agency/[agencyId]/billing/page.tsx#default",
@@ -2966,20 +2935,20 @@
       "effects": [
         "read"
       ],
-      "actorSource": "blocked",
+      "actorSource": "provider subject",
       "requestedIds": [
         "agencyId"
       ],
-      "action": "UNDEFINED_BLOCKED",
+      "action": "agency:view",
       "ownershipPath": [
         "Agency"
       ],
-      "persistencePredicate": "actor.agencyId = agency.id",
+      "persistencePredicate": "actor.id and requested agency.id share actor.agencyId",
       "denial": "unauthorized",
       "concurrency": "read snapshot; no write authority",
       "publicBoundary": "PRIVATE",
-      "disposition": "B5A2",
-      "sourceHash": "sha256:6325f8b04cfc0fa56d8e85bd5707a425480f6e0be4a79343ce1841ebde6e0d48"
+      "disposition": "ACCEPTED_RETAIN",
+      "sourceHash": "sha256:d6da936c5bcb90931875d2b9f9aead15bdb28a16f2885a49b6919425beeda1f4"
     },
     {
       "surfaceId": "page loader:src/app/(main)/agency/[agencyId]/team/page.tsx#default",
@@ -3016,18 +2985,18 @@
       "effects": [
         "composite"
       ],
-      "actorSource": "blocked",
+      "actorSource": "provider subject",
       "requestedIds": [],
-      "action": "UNDEFINED_BLOCKED",
+      "action": "account:entry",
       "ownershipPath": [
         "Agency"
       ],
-      "persistencePredicate": "actor.agencyId = agency.id AND expected-state matches AND affected-count = 1",
+      "persistencePredicate": "actor.id = authenticated provider subject; onboarding performs no tenant query",
       "denial": "unauthorized",
       "concurrency": "expected-state conditional write with exact affected count",
       "publicBoundary": "PRIVATE",
-      "disposition": "B5A2",
-      "sourceHash": "sha256:e2cdf414c3bf1c82f0a8359b5f9cabd51b3d7a53dc1d7ee9a5f1c4ec8ea7f1e8"
+      "disposition": "ACCEPTED_RETAIN",
+      "sourceHash": "sha256:18098a9e792f9bfe77d590dd388955f804e128dc0428aa7f114230b625e6d096"
     },
     {
       "surfaceId": "page loader:src/app/(main)/agency/unauthorized/page.tsx#default",
@@ -3305,21 +3274,21 @@
       "effects": [
         "read"
       ],
-      "actorSource": "blocked",
+      "actorSource": "provider subject",
       "requestedIds": [
         "subaccountId"
       ],
-      "action": "UNDEFINED_BLOCKED",
+      "action": "subaccount:view",
       "ownershipPath": [
         "Agency",
         "SubAccount"
       ],
-      "persistencePredicate": "actor.agencyId = subAccount.agencyId AND subAccount.id = requestedSubaccountId",
+      "persistencePredicate": "actor.agencyId = requested subAccount.agencyId AND actor permission is active when required",
       "denial": "unauthorized",
       "concurrency": "read snapshot; no write authority",
       "publicBoundary": "PRIVATE",
-      "disposition": "B5A2",
-      "sourceHash": "sha256:aa7de29c77676c90e1284f8ef07739c20234778a2d6439031018181377822944"
+      "disposition": "ACCEPTED_RETAIN",
+      "sourceHash": "sha256:87764d51839054101e116474c0699aeaa5113cb6574446050bfe39806fa5be3e"
     },
     {
       "surfaceId": "page loader:src/app/(main)/subaccount/page.tsx#default",
@@ -3330,19 +3299,19 @@
       "effects": [
         "read"
       ],
-      "actorSource": "blocked",
+      "actorSource": "provider subject",
       "requestedIds": [],
-      "action": "UNDEFINED_BLOCKED",
+      "action": "subaccount:view",
       "ownershipPath": [
         "Agency",
         "SubAccount"
       ],
-      "persistencePredicate": "actor.agencyId = subAccount.agencyId AND subAccount.id = requestedSubaccountId",
+      "persistencePredicate": "permission.User.id = actor.id AND permission.SubAccount.agencyId = actor.agencyId AND access = true",
       "denial": "unauthorized",
       "concurrency": "read snapshot; no write authority",
       "publicBoundary": "PRIVATE",
-      "disposition": "B5A2",
-      "sourceHash": "sha256:03cc81898f7eea3e7da544e19976849825c8d4602ba530f0f06f5e53831aa95b"
+      "disposition": "ACCEPTED_RETAIN",
+      "sourceHash": "sha256:21f576934c34b9d56feda0066a8e4e93eedcc480224309f9db7a62998f5f56b0"
     },
     {
       "surfaceId": "provider callback:src/app/(main)/agency/[agencyId]/billing/page.tsx#$provider:stripe.products.list",
@@ -3424,27 +3393,29 @@
     },
     {
       "surfaceId": "provider callback:src/app/(main)/agency/page.tsx#$provider:clerk.currentUser",
-      "domain": "agency",
+      "domain": "identity/account",
       "path": "src/app/(main)/agency/page.tsx",
       "symbol": "$provider:clerk.currentUser",
       "invocation": "provider callback",
       "effects": [
         "external call"
       ],
-      "actorSource": "blocked",
+      "actorSource": "provider subject",
       "requestedIds": [
         "providerSubject"
       ],
-      "action": "UNDEFINED_BLOCKED",
+      "action": "account:entry",
       "ownershipPath": [
-        "Agency"
+        "ProviderSubject",
+        "Actor",
+        "Agency?"
       ],
-      "persistencePredicate": "actor.agencyId = agency.id",
+      "persistencePredicate": "provider profile supplies onboarding email display only and grants no authority",
       "denial": "unauthorized",
       "concurrency": "server binding plus idempotency key where effectful",
       "publicBoundary": "PRIVATE",
-      "disposition": "B5A2",
-      "sourceHash": "sha256:e2cdf414c3bf1c82f0a8359b5f9cabd51b3d7a53dc1d7ee9a5f1c4ec8ea7f1e8"
+      "disposition": "ACCEPTED_RETAIN",
+      "sourceHash": "sha256:18098a9e792f9bfe77d590dd388955f804e128dc0428aa7f114230b625e6d096"
     },
     {
       "surfaceId": "provider callback:src/app/(main)/subaccount/[subaccountId]/page.tsx#$provider:stripe.accounts.retrieve",
@@ -3961,7 +3932,7 @@
       "concurrency": "server binding plus idempotency key where effectful",
       "publicBoundary": "PRIVATE",
       "disposition": "ACCEPTED_RETAIN",
-      "sourceHash": "sha256:9629a2bc0d55baafc00f6d0b80d7327ac37719fc2f367a0cdab5573456b0c4c2"
+      "sourceHash": "sha256:deb9ea72e91318876ce5d6c7c2c28daec8a40d2d0611a655ee58446ef2520d1e"
     },
     {
       "surfaceId": "provider callback:src/lib/stripe/billing-catalog-server.ts#$provider:stripe.prices.list",
@@ -4349,6 +4320,32 @@
       "sourceHash": "sha256:e3804c4486b39ae11af2416e3bf7c125d5ad1e702fbd6715b16084ecadda598d"
     },
     {
+      "surfaceId": "server action:src/features/agency-projections/actions.ts#listTicketAssigneeOptions",
+      "domain": "team/permission/invitation",
+      "path": "src/features/agency-projections/actions.ts",
+      "symbol": "listTicketAssigneeOptions",
+      "invocation": "server action",
+      "effects": [
+        "read"
+      ],
+      "actorSource": "provider subject",
+      "requestedIds": [
+        "subaccountId"
+      ],
+      "action": "team:read",
+      "ownershipPath": [
+        "Agency",
+        "User",
+        "Permission|Invitation"
+      ],
+      "persistencePredicate": "permission.subAccountId = requested subaccount AND access = true AND user and subaccount share actor.agencyId",
+      "denial": "unauthorized",
+      "concurrency": "read snapshot; no write authority",
+      "publicBoundary": "PRIVATE",
+      "disposition": "ACCEPTED_RETAIN",
+      "sourceHash": "sha256:30a1f48c70f75a7dd0d8312189cfe1e2ba7a50f85af0f17a2794a55d1c2285d8"
+    },
+    {
       "surfaceId": "server action:src/features/commerce/actions.ts#configureFunnelProducts",
       "domain": "billing/commerce/webhook",
       "path": "src/features/commerce/actions.ts",
@@ -4672,7 +4669,7 @@
       "concurrency": "read snapshot; no write authority",
       "publicBoundary": "PRIVATE",
       "disposition": "B5A6",
-      "sourceHash": "sha256:9629a2bc0d55baafc00f6d0b80d7327ac37719fc2f367a0cdab5573456b0c4c2"
+      "sourceHash": "sha256:deb9ea72e91318876ce5d6c7c2c28daec8a40d2d0611a655ee58446ef2520d1e"
     },
     {
       "surfaceId": "server action:src/lib/queries.ts#createContact",
@@ -4700,7 +4697,7 @@
       "concurrency": "unique or idempotent create with collision handling",
       "publicBoundary": "PRIVATE",
       "disposition": "ACCEPTED_RETAIN",
-      "sourceHash": "sha256:9629a2bc0d55baafc00f6d0b80d7327ac37719fc2f367a0cdab5573456b0c4c2"
+      "sourceHash": "sha256:deb9ea72e91318876ce5d6c7c2c28daec8a40d2d0611a655ee58446ef2520d1e"
     },
     {
       "surfaceId": "server action:src/lib/queries.ts#createMedia",
@@ -4728,7 +4725,7 @@
       "concurrency": "unique or idempotent create with collision handling",
       "publicBoundary": "PRIVATE",
       "disposition": "B5A3",
-      "sourceHash": "sha256:9629a2bc0d55baafc00f6d0b80d7327ac37719fc2f367a0cdab5573456b0c4c2"
+      "sourceHash": "sha256:deb9ea72e91318876ce5d6c7c2c28daec8a40d2d0611a655ee58446ef2520d1e"
     },
     {
       "surfaceId": "server action:src/lib/queries.ts#deleteAgency",
@@ -4752,7 +4749,7 @@
       "concurrency": "expected-state conditional write with exact affected count",
       "publicBoundary": "PRIVATE",
       "disposition": "B5A7",
-      "sourceHash": "sha256:9629a2bc0d55baafc00f6d0b80d7327ac37719fc2f367a0cdab5573456b0c4c2"
+      "sourceHash": "sha256:deb9ea72e91318876ce5d6c7c2c28daec8a40d2d0611a655ee58446ef2520d1e"
     },
     {
       "surfaceId": "server action:src/lib/queries.ts#deleteFunnelePage",
@@ -4780,7 +4777,7 @@
       "concurrency": "expected-state conditional write with exact affected count",
       "publicBoundary": "PRIVATE",
       "disposition": "B5A4",
-      "sourceHash": "sha256:9629a2bc0d55baafc00f6d0b80d7327ac37719fc2f367a0cdab5573456b0c4c2"
+      "sourceHash": "sha256:deb9ea72e91318876ce5d6c7c2c28daec8a40d2d0611a655ee58446ef2520d1e"
     },
     {
       "surfaceId": "server action:src/lib/queries.ts#deleteLane",
@@ -4808,7 +4805,7 @@
       "concurrency": "expected-state conditional write with exact affected count",
       "publicBoundary": "PRIVATE",
       "disposition": "B5A5",
-      "sourceHash": "sha256:9629a2bc0d55baafc00f6d0b80d7327ac37719fc2f367a0cdab5573456b0c4c2"
+      "sourceHash": "sha256:deb9ea72e91318876ce5d6c7c2c28daec8a40d2d0611a655ee58446ef2520d1e"
     },
     {
       "surfaceId": "server action:src/lib/queries.ts#deleteMedia",
@@ -4834,7 +4831,7 @@
       "concurrency": "expected-state conditional write with exact affected count",
       "publicBoundary": "PRIVATE",
       "disposition": "B5A3",
-      "sourceHash": "sha256:9629a2bc0d55baafc00f6d0b80d7327ac37719fc2f367a0cdab5573456b0c4c2"
+      "sourceHash": "sha256:deb9ea72e91318876ce5d6c7c2c28daec8a40d2d0611a655ee58446ef2520d1e"
     },
     {
       "surfaceId": "server action:src/lib/queries.ts#deletePipeline",
@@ -4862,7 +4859,7 @@
       "concurrency": "expected-state conditional write with exact affected count",
       "publicBoundary": "PRIVATE",
       "disposition": "B5A5",
-      "sourceHash": "sha256:9629a2bc0d55baafc00f6d0b80d7327ac37719fc2f367a0cdab5573456b0c4c2"
+      "sourceHash": "sha256:deb9ea72e91318876ce5d6c7c2c28daec8a40d2d0611a655ee58446ef2520d1e"
     },
     {
       "surfaceId": "server action:src/lib/queries.ts#deleteSubAccount",
@@ -4887,7 +4884,7 @@
       "concurrency": "expected-state conditional write with exact affected count",
       "publicBoundary": "PRIVATE",
       "disposition": "B5A7",
-      "sourceHash": "sha256:9629a2bc0d55baafc00f6d0b80d7327ac37719fc2f367a0cdab5573456b0c4c2"
+      "sourceHash": "sha256:deb9ea72e91318876ce5d6c7c2c28daec8a40d2d0611a655ee58446ef2520d1e"
     },
     {
       "surfaceId": "server action:src/lib/queries.ts#deleteTag",
@@ -4915,7 +4912,7 @@
       "concurrency": "expected-state conditional write with exact affected count",
       "publicBoundary": "PRIVATE",
       "disposition": "B5A5",
-      "sourceHash": "sha256:9629a2bc0d55baafc00f6d0b80d7327ac37719fc2f367a0cdab5573456b0c4c2"
+      "sourceHash": "sha256:deb9ea72e91318876ce5d6c7c2c28daec8a40d2d0611a655ee58446ef2520d1e"
     },
     {
       "surfaceId": "server action:src/lib/queries.ts#deleteTicket",
@@ -4944,31 +4941,7 @@
       "concurrency": "expected-state conditional write with exact affected count",
       "publicBoundary": "PRIVATE",
       "disposition": "B5A6",
-      "sourceHash": "sha256:9629a2bc0d55baafc00f6d0b80d7327ac37719fc2f367a0cdab5573456b0c4c2"
-    },
-    {
-      "surfaceId": "server action:src/lib/queries.ts#getAuthUserDetails",
-      "domain": "identity/account",
-      "path": "src/lib/queries.ts",
-      "symbol": "getAuthUserDetails",
-      "invocation": "server action",
-      "effects": [
-        "read"
-      ],
-      "actorSource": "blocked",
-      "requestedIds": [],
-      "action": "UNDEFINED_BLOCKED",
-      "ownershipPath": [
-        "ProviderSubject",
-        "Actor",
-        "Agency?"
-      ],
-      "persistencePredicate": "actor.providerSubject = authenticated provider subject",
-      "denial": "unauthorized",
-      "concurrency": "read snapshot; no write authority",
-      "publicBoundary": "PRIVATE",
-      "disposition": "B5A2",
-      "sourceHash": "sha256:9629a2bc0d55baafc00f6d0b80d7327ac37719fc2f367a0cdab5573456b0c4c2"
+      "sourceHash": "sha256:deb9ea72e91318876ce5d6c7c2c28daec8a40d2d0611a655ee58446ef2520d1e"
     },
     {
       "surfaceId": "server action:src/lib/queries.ts#getDomainContent",
@@ -4994,7 +4967,7 @@
       "concurrency": "read snapshot; no write authority",
       "publicBoundary": "BLOCKED_PUBLIC_REVIEW",
       "disposition": "PUBLIC_REVIEW_REQUIRED",
-      "sourceHash": "sha256:9629a2bc0d55baafc00f6d0b80d7327ac37719fc2f367a0cdab5573456b0c4c2"
+      "sourceHash": "sha256:deb9ea72e91318876ce5d6c7c2c28daec8a40d2d0611a655ee58446ef2520d1e"
     },
     {
       "surfaceId": "server action:src/lib/queries.ts#getFunnel",
@@ -5021,7 +4994,7 @@
       "concurrency": "read snapshot; no write authority",
       "publicBoundary": "PRIVATE",
       "disposition": "B5A4",
-      "sourceHash": "sha256:9629a2bc0d55baafc00f6d0b80d7327ac37719fc2f367a0cdab5573456b0c4c2"
+      "sourceHash": "sha256:deb9ea72e91318876ce5d6c7c2c28daec8a40d2d0611a655ee58446ef2520d1e"
     },
     {
       "surfaceId": "server action:src/lib/queries.ts#getFunnelPageDetails",
@@ -5048,7 +5021,7 @@
       "concurrency": "read snapshot; no write authority",
       "publicBoundary": "PRIVATE",
       "disposition": "B5A4",
-      "sourceHash": "sha256:9629a2bc0d55baafc00f6d0b80d7327ac37719fc2f367a0cdab5573456b0c4c2"
+      "sourceHash": "sha256:deb9ea72e91318876ce5d6c7c2c28daec8a40d2d0611a655ee58446ef2520d1e"
     },
     {
       "surfaceId": "server action:src/lib/queries.ts#getFunnels",
@@ -5075,7 +5048,7 @@
       "concurrency": "read snapshot; no write authority",
       "publicBoundary": "PRIVATE",
       "disposition": "B5A4",
-      "sourceHash": "sha256:9629a2bc0d55baafc00f6d0b80d7327ac37719fc2f367a0cdab5573456b0c4c2"
+      "sourceHash": "sha256:deb9ea72e91318876ce5d6c7c2c28daec8a40d2d0611a655ee58446ef2520d1e"
     },
     {
       "surfaceId": "server action:src/lib/queries.ts#getLanesWithTicketAndTags",
@@ -5104,7 +5077,7 @@
       "concurrency": "read snapshot; no write authority",
       "publicBoundary": "PRIVATE",
       "disposition": "B5A6",
-      "sourceHash": "sha256:9629a2bc0d55baafc00f6d0b80d7327ac37719fc2f367a0cdab5573456b0c4c2"
+      "sourceHash": "sha256:deb9ea72e91318876ce5d6c7c2c28daec8a40d2d0611a655ee58446ef2520d1e"
     },
     {
       "surfaceId": "server action:src/lib/queries.ts#getMedia",
@@ -5130,7 +5103,7 @@
       "concurrency": "read snapshot; no write authority",
       "publicBoundary": "PRIVATE",
       "disposition": "B5A3",
-      "sourceHash": "sha256:9629a2bc0d55baafc00f6d0b80d7327ac37719fc2f367a0cdab5573456b0c4c2"
+      "sourceHash": "sha256:deb9ea72e91318876ce5d6c7c2c28daec8a40d2d0611a655ee58446ef2520d1e"
     },
     {
       "surfaceId": "server action:src/lib/queries.ts#getNotificationAndUser",
@@ -5157,7 +5130,7 @@
       "concurrency": "read snapshot; no write authority",
       "publicBoundary": "PRIVATE",
       "disposition": "B5A2",
-      "sourceHash": "sha256:9629a2bc0d55baafc00f6d0b80d7327ac37719fc2f367a0cdab5573456b0c4c2"
+      "sourceHash": "sha256:deb9ea72e91318876ce5d6c7c2c28daec8a40d2d0611a655ee58446ef2520d1e"
     },
     {
       "surfaceId": "server action:src/lib/queries.ts#getPipelineDetails",
@@ -5185,7 +5158,7 @@
       "concurrency": "read snapshot; no write authority",
       "publicBoundary": "PRIVATE",
       "disposition": "B5A5",
-      "sourceHash": "sha256:9629a2bc0d55baafc00f6d0b80d7327ac37719fc2f367a0cdab5573456b0c4c2"
+      "sourceHash": "sha256:deb9ea72e91318876ce5d6c7c2c28daec8a40d2d0611a655ee58446ef2520d1e"
     },
     {
       "surfaceId": "server action:src/lib/queries.ts#getPipelines",
@@ -5214,33 +5187,7 @@
       "concurrency": "read snapshot; no write authority",
       "publicBoundary": "PRIVATE",
       "disposition": "B5A6",
-      "sourceHash": "sha256:9629a2bc0d55baafc00f6d0b80d7327ac37719fc2f367a0cdab5573456b0c4c2"
-    },
-    {
-      "surfaceId": "server action:src/lib/queries.ts#getSubAccountTeamMembers",
-      "domain": "team/permission/invitation",
-      "path": "src/lib/queries.ts",
-      "symbol": "getSubAccountTeamMembers",
-      "invocation": "server action",
-      "effects": [
-        "read"
-      ],
-      "actorSource": "blocked",
-      "requestedIds": [
-        "subaccountId"
-      ],
-      "action": "UNDEFINED_BLOCKED",
-      "ownershipPath": [
-        "Agency",
-        "User",
-        "Permission|Invitation"
-      ],
-      "persistencePredicate": "target.agencyId = actor.agencyId AND permission.subAccount.agencyId = actor.agencyId",
-      "denial": "unauthorized",
-      "concurrency": "read snapshot; no write authority",
-      "publicBoundary": "PRIVATE",
-      "disposition": "B5A2",
-      "sourceHash": "sha256:9629a2bc0d55baafc00f6d0b80d7327ac37719fc2f367a0cdab5573456b0c4c2"
+      "sourceHash": "sha256:deb9ea72e91318876ce5d6c7c2c28daec8a40d2d0611a655ee58446ef2520d1e"
     },
     {
       "surfaceId": "server action:src/lib/queries.ts#getTagsForSubaccount",
@@ -5268,7 +5215,7 @@
       "concurrency": "read snapshot; no write authority",
       "publicBoundary": "PRIVATE",
       "disposition": "B5A5",
-      "sourceHash": "sha256:9629a2bc0d55baafc00f6d0b80d7327ac37719fc2f367a0cdab5573456b0c4c2"
+      "sourceHash": "sha256:deb9ea72e91318876ce5d6c7c2c28daec8a40d2d0611a655ee58446ef2520d1e"
     },
     {
       "surfaceId": "server action:src/lib/queries.ts#getTicketsWithTags",
@@ -5297,7 +5244,7 @@
       "concurrency": "read snapshot; no write authority",
       "publicBoundary": "PRIVATE",
       "disposition": "B5A6",
-      "sourceHash": "sha256:9629a2bc0d55baafc00f6d0b80d7327ac37719fc2f367a0cdab5573456b0c4c2"
+      "sourceHash": "sha256:deb9ea72e91318876ce5d6c7c2c28daec8a40d2d0611a655ee58446ef2520d1e"
     },
     {
       "surfaceId": "server action:src/lib/queries.ts#listContacts",
@@ -5323,7 +5270,7 @@
       "concurrency": "read snapshot; no write authority",
       "publicBoundary": "PRIVATE",
       "disposition": "ACCEPTED_RETAIN",
-      "sourceHash": "sha256:9629a2bc0d55baafc00f6d0b80d7327ac37719fc2f367a0cdab5573456b0c4c2"
+      "sourceHash": "sha256:deb9ea72e91318876ce5d6c7c2c28daec8a40d2d0611a655ee58446ef2520d1e"
     },
     {
       "surfaceId": "server action:src/lib/queries.ts#saveActivityLogsNotification",
@@ -5354,7 +5301,7 @@
       "concurrency": "unique or idempotent create with collision handling",
       "publicBoundary": "PRIVATE",
       "disposition": "B5A2",
-      "sourceHash": "sha256:9629a2bc0d55baafc00f6d0b80d7327ac37719fc2f367a0cdab5573456b0c4c2"
+      "sourceHash": "sha256:deb9ea72e91318876ce5d6c7c2c28daec8a40d2d0611a655ee58446ef2520d1e"
     },
     {
       "surfaceId": "server action:src/lib/queries.ts#searchContacts",
@@ -5381,7 +5328,7 @@
       "concurrency": "read snapshot; no write authority",
       "publicBoundary": "PRIVATE",
       "disposition": "ACCEPTED_RETAIN",
-      "sourceHash": "sha256:9629a2bc0d55baafc00f6d0b80d7327ac37719fc2f367a0cdab5573456b0c4c2"
+      "sourceHash": "sha256:deb9ea72e91318876ce5d6c7c2c28daec8a40d2d0611a655ee58446ef2520d1e"
     },
     {
       "surfaceId": "server action:src/lib/queries.ts#submitPublicLead",
@@ -5410,7 +5357,7 @@
       "concurrency": "unique or idempotent create with collision handling",
       "publicBoundary": "BLOCKED_PUBLIC_REVIEW",
       "disposition": "PUBLIC_REVIEW_REQUIRED",
-      "sourceHash": "sha256:9629a2bc0d55baafc00f6d0b80d7327ac37719fc2f367a0cdab5573456b0c4c2"
+      "sourceHash": "sha256:deb9ea72e91318876ce5d6c7c2c28daec8a40d2d0611a655ee58446ef2520d1e"
     },
     {
       "surfaceId": "server action:src/lib/queries.ts#updateAgencyGoal",
@@ -5435,7 +5382,7 @@
       "concurrency": "expected-state conditional write with exact affected count",
       "publicBoundary": "PRIVATE",
       "disposition": "B5A7",
-      "sourceHash": "sha256:9629a2bc0d55baafc00f6d0b80d7327ac37719fc2f367a0cdab5573456b0c4c2"
+      "sourceHash": "sha256:deb9ea72e91318876ce5d6c7c2c28daec8a40d2d0611a655ee58446ef2520d1e"
     },
     {
       "surfaceId": "server action:src/lib/queries.ts#updateContact",
@@ -5464,7 +5411,7 @@
       "concurrency": "expected-state conditional write with exact affected count",
       "publicBoundary": "PRIVATE",
       "disposition": "ACCEPTED_RETAIN",
-      "sourceHash": "sha256:9629a2bc0d55baafc00f6d0b80d7327ac37719fc2f367a0cdab5573456b0c4c2"
+      "sourceHash": "sha256:deb9ea72e91318876ce5d6c7c2c28daec8a40d2d0611a655ee58446ef2520d1e"
     },
     {
       "surfaceId": "server action:src/lib/queries.ts#updateLanesOrder",
@@ -5494,7 +5441,7 @@
       "concurrency": "atomic exact-membership batch with stable order",
       "publicBoundary": "PRIVATE",
       "disposition": "B5A5",
-      "sourceHash": "sha256:9629a2bc0d55baafc00f6d0b80d7327ac37719fc2f367a0cdab5573456b0c4c2"
+      "sourceHash": "sha256:deb9ea72e91318876ce5d6c7c2c28daec8a40d2d0611a655ee58446ef2520d1e"
     },
     {
       "surfaceId": "server action:src/lib/queries.ts#updateTicketsOrder",
@@ -5525,7 +5472,7 @@
       "concurrency": "atomic exact-membership batch with stable order",
       "publicBoundary": "PRIVATE",
       "disposition": "B5A6",
-      "sourceHash": "sha256:9629a2bc0d55baafc00f6d0b80d7327ac37719fc2f367a0cdab5573456b0c4c2"
+      "sourceHash": "sha256:deb9ea72e91318876ce5d6c7c2c28daec8a40d2d0611a655ee58446ef2520d1e"
     },
     {
       "surfaceId": "server action:src/lib/queries.ts#upsertAgency",
@@ -5551,7 +5498,7 @@
       "concurrency": "expected-state conditional write with exact affected count",
       "publicBoundary": "PRIVATE",
       "disposition": "B5A7",
-      "sourceHash": "sha256:9629a2bc0d55baafc00f6d0b80d7327ac37719fc2f367a0cdab5573456b0c4c2"
+      "sourceHash": "sha256:deb9ea72e91318876ce5d6c7c2c28daec8a40d2d0611a655ee58446ef2520d1e"
     },
     {
       "surfaceId": "server action:src/lib/queries.ts#upsertFunnel",
@@ -5581,7 +5528,7 @@
       "concurrency": "expected-state conditional write with exact affected count",
       "publicBoundary": "PRIVATE",
       "disposition": "B5A4",
-      "sourceHash": "sha256:9629a2bc0d55baafc00f6d0b80d7327ac37719fc2f367a0cdab5573456b0c4c2"
+      "sourceHash": "sha256:deb9ea72e91318876ce5d6c7c2c28daec8a40d2d0611a655ee58446ef2520d1e"
     },
     {
       "surfaceId": "server action:src/lib/queries.ts#upsertFunnelPage",
@@ -5611,7 +5558,7 @@
       "concurrency": "expected-state conditional write with exact affected count",
       "publicBoundary": "PRIVATE",
       "disposition": "B5A4",
-      "sourceHash": "sha256:9629a2bc0d55baafc00f6d0b80d7327ac37719fc2f367a0cdab5573456b0c4c2"
+      "sourceHash": "sha256:deb9ea72e91318876ce5d6c7c2c28daec8a40d2d0611a655ee58446ef2520d1e"
     },
     {
       "surfaceId": "server action:src/lib/queries.ts#upsertLane",
@@ -5642,7 +5589,7 @@
       "concurrency": "expected-state conditional write with exact affected count",
       "publicBoundary": "PRIVATE",
       "disposition": "B5A5",
-      "sourceHash": "sha256:9629a2bc0d55baafc00f6d0b80d7327ac37719fc2f367a0cdab5573456b0c4c2"
+      "sourceHash": "sha256:deb9ea72e91318876ce5d6c7c2c28daec8a40d2d0611a655ee58446ef2520d1e"
     },
     {
       "surfaceId": "server action:src/lib/queries.ts#upsertPipeline",
@@ -5672,7 +5619,7 @@
       "concurrency": "expected-state conditional write with exact affected count",
       "publicBoundary": "PRIVATE",
       "disposition": "B5A5",
-      "sourceHash": "sha256:9629a2bc0d55baafc00f6d0b80d7327ac37719fc2f367a0cdab5573456b0c4c2"
+      "sourceHash": "sha256:deb9ea72e91318876ce5d6c7c2c28daec8a40d2d0611a655ee58446ef2520d1e"
     },
     {
       "surfaceId": "server action:src/lib/queries.ts#upsertSubAccount",
@@ -5699,7 +5646,7 @@
       "concurrency": "expected-state conditional write with exact affected count",
       "publicBoundary": "PRIVATE",
       "disposition": "B5A7",
-      "sourceHash": "sha256:9629a2bc0d55baafc00f6d0b80d7327ac37719fc2f367a0cdab5573456b0c4c2"
+      "sourceHash": "sha256:deb9ea72e91318876ce5d6c7c2c28daec8a40d2d0611a655ee58446ef2520d1e"
     },
     {
       "surfaceId": "server action:src/lib/queries.ts#upsertTag",
@@ -5729,7 +5676,7 @@
       "concurrency": "expected-state conditional write with exact affected count",
       "publicBoundary": "PRIVATE",
       "disposition": "B5A5",
-      "sourceHash": "sha256:9629a2bc0d55baafc00f6d0b80d7327ac37719fc2f367a0cdab5573456b0c4c2"
+      "sourceHash": "sha256:deb9ea72e91318876ce5d6c7c2c28daec8a40d2d0611a655ee58446ef2520d1e"
     },
     {
       "surfaceId": "server action:src/lib/queries.ts#upsertTicket",
@@ -5764,7 +5711,7 @@
       "concurrency": "expected-state conditional write with exact affected count",
       "publicBoundary": "PRIVATE",
       "disposition": "B5A6",
-      "sourceHash": "sha256:9629a2bc0d55baafc00f6d0b80d7327ac37719fc2f367a0cdab5573456b0c4c2"
+      "sourceHash": "sha256:deb9ea72e91318876ce5d6c7c2c28daec8a40d2d0611a655ee58446ef2520d1e"
     },
     {
       "surfaceId": "upload router/callback:src/app/api/uploadthing/core.ts#$upload-callback:agencyLogo",
