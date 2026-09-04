@@ -141,7 +141,12 @@ export const createActivityFoundationService = ({
       throw new AccessError('CONFLICT')
     }
 
-    const message = definition.render(label)
+    let message: string
+    try {
+      message = definition.render(label)
+    } catch {
+      throw new AccessError('CONFLICT')
+    }
     if (
       typeof message !== 'string' ||
       message.length === 0 ||
@@ -164,7 +169,7 @@ export const createActivityFoundationService = ({
     } catch {
       throw new AccessError('CONFLICT')
     }
-    if (result === 'CONFLICT') throw new AccessError('CONFLICT')
-    return result
+    if (result === 'CREATED' || result === 'DUPLICATE') return result
+    throw new AccessError('CONFLICT')
   },
 })

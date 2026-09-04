@@ -152,6 +152,23 @@ describe('dormant activity foundation', () => {
     await expectAccessCode(
       service.record({
         ...input,
+        receipt: { ...input.receipt, subaccountId: 'subaccount-foreign' },
+      }),
+      'CONFLICT'
+    )
+    await expectAccessCode(
+      service.record({
+        ...input,
+        context: {
+          agencyId: input.context.agencyId,
+          subaccountId: input.context.subaccountId,
+        },
+      }),
+      'FORBIDDEN'
+    )
+    await expectAccessCode(
+      service.record({
+        ...input,
         receipt: { ...input.receipt, stale: true },
       }),
       'CONFLICT'
@@ -188,5 +205,47 @@ describe('dormant activity foundation', () => {
       'CONFLICT'
     )
     expect(writes).toEqual([])
+  })
+
+  test('contains renderer failures and rejects unknown adapter outcomes', async () => {
+    let writes = 0
+    const store: ActivityFoundationStore = {
+      createOnce: async () => {
+        writes += 1
+        return 'CREATED'
+      },
+    }
+    const failingRegistry: ReadonlyMap<string, ActivityEventDefinition> = new Map([
+      [
+        event,
+        {
+          render: () => {
+            throw new Error('template-detail')
+          },
+          requiresLabel: true,
+          scope: 'SUBACCOUNT',
+        },
+      ],
+    ])
+    await expectAccessCode(
+      createActivityFoundationService({
+        registry: failingRegistry,
+        store,
+      }).record(input),
+      'CONFLICT'
+    )
+    expect(writes).toBe(0)
+
+    const unknownResultStore: ActivityFoundationStore = {
+      createOnce: async () => 'CREATED',
+    }
+    Reflect.set(unknownResultStore, 'createOnce', async () => 'UNREVIEWED')
+    await expectAccessCode(
+      createActivityFoundationService({
+        registry,
+        store: unknownResultStore,
+      }).record(input),
+      'CONFLICT'
+    )
   })
 })

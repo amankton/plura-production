@@ -185,10 +185,15 @@ export const createNotificationViewService = (store: NotificationViewStore) => (
   getAgencyFeed: async (
     context: AgencyContext | TenantContext
   ): Promise<NotificationViewProjection> => {
-    const records = await store.listAgencyNotifications({
-      agencyId: context.agencyId,
-      take: sentinelTake,
-    })
+    let records: readonly NotificationViewRecord[]
+    try {
+      records = await store.listAgencyNotifications({
+        agencyId: context.agencyId,
+        take: sentinelTake,
+      })
+    } catch {
+      throw new AccessError('CONFLICT')
+    }
     return {
       notifications: mapRecords(records, context.agencyId),
       viewerRole: context.actor.role,
@@ -197,11 +202,16 @@ export const createNotificationViewService = (store: NotificationViewStore) => (
   getSubaccountFeed: async (
     context: TenantContext
   ): Promise<NotificationViewProjection> => {
-    const records = await store.listSubaccountNotifications({
-      agencyId: context.agencyId,
-      subaccountId: context.subaccountId,
-      take: sentinelTake,
-    })
+    let records: readonly NotificationViewRecord[]
+    try {
+      records = await store.listSubaccountNotifications({
+        agencyId: context.agencyId,
+        subaccountId: context.subaccountId,
+        take: sentinelTake,
+      })
+    } catch {
+      throw new AccessError('CONFLICT')
+    }
     return {
       notifications: mapRecords(
         records,

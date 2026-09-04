@@ -10,7 +10,7 @@ const IMPLEMENTATION_GATE = '1b3b36256629d3aaae567ffb66a351ece036359e'
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed })
 
-const writerPaths = [
+export const b5a2bWriterPaths = [
   'src/app/(main)/agency/[agencyId]/all-subaccounts/_components/delete-button.tsx',
   'src/app/(main)/subaccount/[subaccountId]/funnels/[funnelId]/_components/funnel-products-table.tsx',
   'src/app/(main)/subaccount/[subaccountId]/funnels/[funnelId]/editor/[funnelPageId]/_components/funnel-editor-navigation.tsx',
@@ -28,6 +28,7 @@ const writerPaths = [
   'src/components/global/tag-creator.tsx',
   'src/components/media/media-card.tsx',
 ] as const
+const writerPaths = b5a2bWriterPaths
 
 const compatibilityPaths = [
   'src/features/agency-projections/projection-service.ts',
@@ -38,6 +39,15 @@ const compatibilityPaths = [
   'src/app/(main)/agency/[agencyId]/all-subaccounts/_components/create-subaccount-btn.tsx',
   'src/components/forms/subaccount-details.tsx',
   'src/app/(main)/subaccount/[subaccountId]/settings/page.tsx',
+] as const
+
+export const b5a2bLegacyControlNodeHashes = [
+  '8880e1739333046513c7b48ad099bf95505c295717cf52f17147248212fbac0b',
+  'a6648029bf425722674a234b71219abc46e5b5b732ff415f56f77c8ab81a4327',
+  'da18ceba4cbabc973e0c82a52334a466cdaacb45d927cbdedb310d1ecfbb98de',
+  'd1624507371a52ba6fb5ac63e381ffadce58a6ee01213491523a3b31efac85b0',
+  'b2e2cc619ca660bf7d3ff57cd6e6d3a7d3398a3d60f77df08c49c0dc01564654',
+  'd8dd8e46ffb555e874d73ca923a74de3355a3a5170271783ada2bdab5da1c27e',
 ] as const
 
 const protectedCandidateHashes: Readonly<Record<string, string>> = {
@@ -158,6 +168,31 @@ const parse = (path: string, text: string) =>
     path.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS
   )
 
+const descendants = (sourceFile: ts.SourceFile) => {
+  const nodes: ts.Node[] = []
+  const visit = (node: ts.Node) => {
+    nodes.push(node)
+    ts.forEachChild(node, visit)
+  }
+  visit(sourceFile)
+  return nodes
+}
+
+const namedNodeHash = (path: string, text: string, name: string) => {
+  const sourceFile = parse(path, text)
+  const matches = descendants(sourceFile).filter(
+    (node) =>
+      (ts.isVariableStatement(node) &&
+        node.declarationList.declarations.some(
+          (declaration) =>
+            ts.isIdentifier(declaration.name) && declaration.name.text === name
+        )) ||
+      (ts.isFunctionDeclaration(node) && node.name?.text === name) ||
+      (ts.isTypeAliasDeclaration(node) && node.name.text === name)
+  )
+  return matches.length === 1 ? digest(matches[0].getText(sourceFile)) : null
+}
+
 const runtimeExportNames = (path: string, text: string) => {
   const sourceFile = parse(path, text)
   const names: string[] = []
@@ -257,6 +292,103 @@ export const normalizeWriterRemainder = (path: string, text: string) => {
   }
 }
 
+const writerCallCounts: Readonly<Record<string, number>> = {
+  'src/app/(main)/agency/[agencyId]/all-subaccounts/_components/delete-button.tsx': 1,
+  'src/app/(main)/subaccount/[subaccountId]/funnels/[funnelId]/_components/funnel-products-table.tsx': 1,
+  'src/app/(main)/subaccount/[subaccountId]/funnels/[funnelId]/editor/[funnelPageId]/_components/funnel-editor-navigation.tsx': 1,
+  'src/app/(main)/subaccount/[subaccountId]/pipelines/_components/pipeline-lane.tsx': 1,
+  'src/app/(main)/subaccount/[subaccountId]/pipelines/_components/pipeline-ticket.tsx': 1,
+  'src/components/forms/agency-details.tsx': 1,
+  'src/components/forms/contact-user-form.tsx': 1,
+  'src/components/forms/create-pipeline-form.tsx': 1,
+  'src/components/forms/funnel-form.tsx': 1,
+  'src/components/forms/funnel-page.tsx': 2,
+  'src/components/forms/lane-form.tsx': 1,
+  'src/components/forms/subaccount-details.tsx': 1,
+  'src/components/forms/ticket-form.tsx': 1,
+  'src/components/forms/upload-media.tsx': 1,
+  'src/components/global/tag-creator.tsx': 2,
+  'src/components/media/media-card.tsx': 1,
+}
+
+const legacyWriterCounts = (path: string, text: string) => {
+  const sourceFile = parse(path, text)
+  const nodes = descendants(sourceFile)
+  const imports = nodes.filter(
+    (node) =>
+      ts.isImportSpecifier(node) &&
+      node.name.text === 'saveActivityLogsNotification'
+  ).length
+  const calls = nodes.filter(
+    (node) =>
+      ts.isCallExpression(node) &&
+      ts.isIdentifier(node.expression) &&
+      node.expression.text === 'saveActivityLogsNotification'
+  ).length
+  return { calls, imports }
+}
+
+export const verifyWriterRetirementSnapshot = (
+  parent: Readonly<Record<string, string>>,
+  candidate: Readonly<Record<string, string>>
+) => {
+  const errors: string[] = []
+  for (const path of writerPaths) {
+    const parentText = parent[path]
+    const candidateText = candidate[path]
+    if (typeof parentText !== 'string' || typeof candidateText !== 'string') {
+      errors.push(`writer-missing:${path}`)
+      continue
+    }
+    const parentCounts = legacyWriterCounts(path, parentText)
+    const candidateCounts = legacyWriterCounts(path, candidateText)
+    if (parentCounts.imports !== 1) errors.push(`writer-import:${path}`)
+    if (parentCounts.calls !== writerCallCounts[path]) {
+      errors.push(`writer-call:${path}`)
+    }
+    if (candidateCounts.imports !== 0 || candidateCounts.calls !== 0) {
+      errors.push(`writer-candidate:${path}`)
+    }
+    if (
+      path !== 'src/components/forms/subaccount-details.tsx' &&
+      digest(normalizeWriterRemainder(path, parentText)) !==
+        digest(normalizeWriterRemainder(path, candidateText))
+    ) errors.push(`writer-remainder:${path}`)
+  }
+  return errors.sort()
+}
+
+export const verifyLegacyControlSnapshot = (
+  parentProjection: string,
+  candidateProjection: string
+) => {
+  const errors: string[] = []
+  const sourceFile = parse('projection-service.ts', parentProjection)
+  const hashes = new Set(
+    descendants(sourceFile).map((node) => digest(node.getText(sourceFile)))
+  )
+  for (const expected of b5a2bLegacyControlNodeHashes) {
+    if (!hashes.has(expected)) errors.push(`legacy-control:${expected}`)
+  }
+  if (
+    /includeLegacyName|legacyName|legacyActivityActorName|getLegacyActorName|listLegacyActorNames/.test(
+      candidateProjection
+    )
+  ) errors.push('legacy-control:candidate')
+  return errors.sort()
+}
+
+export const verifyProtectedCandidateSnapshot = (
+  snapshot: Readonly<Record<string, string>>
+) =>
+  Object.entries(snapshot)
+    .flatMap(([path, text]) => {
+      const expected = protectedCandidateHashes[path]
+      if (!expected) return [`protected-unknown:${path}`]
+      return digest(text) === expected ? [] : [`protected:${path}`]
+    })
+    .sort()
+
 export type B5A2BSourceSnapshot = Readonly<{
   activityFoundation: string
   agencyLayout: string
@@ -298,6 +430,31 @@ export const verifyB5A2BSourceSnapshot = (
   if (/requestedAction|rawAction|input\.action/.test(snapshot.serverView)) {
     errors.push('caller-action')
   }
+  const policyHashes: Readonly<Record<string, string>> = {
+    agencyRoles:
+      'fa51863adb1ffad5c58abd59e50f0340dfd15596e2977ac4f69b77ebbd2c67da',
+    assertNotificationViewAction:
+      '720cd08d27567142bd82896ad867e63f021371701d7d4f229fb529f5c0ed1b36',
+    isAction:
+      'd151b515e4fc56a4d585d7ff2172f44632620e1a916aa453cd16e6c980b4f89f',
+    isRole:
+      '462c7e308e7ecbeaa59a7cf74182eecfdeec20886b2f516d9d407c323ae260a2',
+    NotificationViewAction:
+      'cda7561b3c1e2cb096f8ae9df1dbfb24a30b3c70d2490977cb3f92ae83959df9',
+  }
+  for (const [name, expected] of Object.entries(policyHashes)) {
+    if (
+      namedNodeHash('notification-view-service.ts', snapshot.notificationView, name) !==
+      expected
+    ) errors.push(`policy-node:${name}`)
+  }
+  if (
+    namedNodeHash(
+      'server-notification-view-service.ts',
+      snapshot.serverView,
+      'notificationViewService'
+    ) !== 'f8e99481ae9ee4d1de7831e2e2dfedeccfe387d470c7f68dbd487018537f4a37'
+  ) errors.push('server-policy-node')
   if (/dangerouslySetInnerHTML|DOMParser|parseFromString/.test(snapshot.infoBar)) {
     errors.push('infobar-html')
   }
@@ -362,6 +519,9 @@ export const verifyB5A2BSourceSnapshot = (
   ]) {
     if (!snapshot.notificationView.includes(marker)) errors.push('view-contract')
   }
+  if (count(snapshot.notificationView, /catch\s*\{[\s\S]*?new AccessError\('CONFLICT'\)/g) < 2) {
+    errors.push('view-error-contract')
+  }
   if (
     !snapshot.agencyLayout.includes(
       'notificationViewService\n    .getAgencyFeed(params.agencyId)'
@@ -384,7 +544,7 @@ export const verifyB5A2BSourceSnapshot = (
     "hasExactKeys(rawInput, ['context', 'event', 'label', 'receipt'])",
     "value.affectedRows !== 1",
     'value.stale',
-    "result === 'CONFLICT'",
+    "result === 'CREATED'",
     "throw new AccessError('CONFLICT')",
     'Array.from(message).length > 1024',
   ]) {
@@ -392,6 +552,15 @@ export const verifyB5A2BSourceSnapshot = (
       errors.push('activity-contract')
     }
   }
+  if (
+    !snapshot.activityFoundation.includes(
+      "result === 'CREATED' || result === 'DUPLICATE'"
+    ) ||
+    count(
+      snapshot.activityFoundation,
+      /catch\s*\{[\s\S]*?new AccessError\('CONFLICT'\)/g
+    ) < 2
+  ) errors.push('activity-finite-outcome')
   return Array.from(new Set(errors)).sort()
 }
 
@@ -466,6 +635,18 @@ export const verifyB5A2BRepository = () => {
 
   const parentWriters = writerPaths.map(readParent).join('\n')
   const currentWriters = writerPaths.map(read).join('\n')
+  const parentWriterSnapshot = Object.fromEntries(
+    writerPaths.map((path) => [path, readParent(path)])
+  )
+  const currentWriterSnapshot = Object.fromEntries(
+    writerPaths.map((path) => [path, read(path)])
+  )
+  errors.push(
+    ...verifyWriterRetirementSnapshot(
+      parentWriterSnapshot,
+      currentWriterSnapshot
+    )
+  )
   if (count(parentWriters, /\bsaveActivityLogsNotification\b/g) !== 34) {
     errors.push('writer-parent-symbol-count')
   }
@@ -504,6 +685,12 @@ export const verifyB5A2BRepository = () => {
       .split('\n')
       .filter((line) => /\buserName\b/.test(line)).length !== 9
   ) errors.push('compatibility-parent-ledger')
+  errors.push(
+    ...verifyLegacyControlSnapshot(
+      readParent('src/features/agency-projections/projection-service.ts'),
+      read('src/features/agency-projections/projection-service.ts')
+    )
+  )
 
   const diff = Bun.spawnSync(
     ['git', 'diff', '--name-only', IMPLEMENTATION_GATE, '--'],

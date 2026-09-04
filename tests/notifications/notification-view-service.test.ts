@@ -177,6 +177,23 @@ describe('notification view service', () => {
     ])
   })
 
+  test('contains both persistence failures behind the finite conflict contract', async () => {
+    const store: NotificationViewStore = {
+      listAgencyNotifications: async () => {
+        throw new Error('database-detail')
+      },
+      listSubaccountNotifications: async () => {
+        throw new Error('database-detail')
+      },
+    }
+    const service = createNotificationViewService(store)
+    await expectAccessCode(service.getAgencyFeed(agencyContext), 'CONFLICT')
+    await expectAccessCode(
+      service.getSubaccountFeed(tenantContext()),
+      'CONFLICT'
+    )
+  })
+
   test('returns exactly 100 ordered items without silent truncation', async () => {
     const rows = Array.from({ length: 100 }, (_, index) =>
       record(

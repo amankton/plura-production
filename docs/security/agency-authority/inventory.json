@@ -906,7 +906,7 @@
       "concurrency": "no state transition",
       "publicBoundary": "PRIVATE",
       "disposition": "DORMANT_BLOCKED",
-      "sourceHash": "sha256:d0c643311c5f15785da65c3face5c9e261437f00a841f2b5f8ba047e83d80916"
+      "sourceHash": "sha256:2192860b8f357ec09bccefb5a1aa0393afef7f852a6331ea3da659799f84f4f5"
     },
     {
       "surfaceId": "internal-only:src/features/notifications/notification-view-service.ts#assertNotificationViewAction",
@@ -930,7 +930,7 @@
       "concurrency": "no state transition",
       "publicBoundary": "PRIVATE",
       "disposition": "ACCEPTED_RETAIN",
-      "sourceHash": "sha256:2d81d93445668acf6e0272e4a0627a9dd94d4e08ec393e01ad03d90b12de1df2"
+      "sourceHash": "sha256:b228266eda04d13f343c2f39c3ac9d6200216afaed8877b340739454e2c5e9ad"
     },
     {
       "surfaceId": "internal-only:src/features/notifications/notification-view-service.ts#createNotificationViewService",
@@ -954,7 +954,7 @@
       "concurrency": "read snapshot; no write authority",
       "publicBoundary": "PRIVATE",
       "disposition": "ACCEPTED_RETAIN",
-      "sourceHash": "sha256:2d81d93445668acf6e0272e4a0627a9dd94d4e08ec393e01ad03d90b12de1df2"
+      "sourceHash": "sha256:b228266eda04d13f343c2f39c3ac9d6200216afaed8877b340739454e2c5e9ad"
     },
     {
       "surfaceId": "internal-only:src/features/notifications/server-notification-view-service.ts#$db",
