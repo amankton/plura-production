@@ -31,6 +31,11 @@ application connection, shared environment, or persistent mutation.
 - Accepted B4F2A2 lifecycle seal:
   `6a6a430216f6d350ff8d235a405e613880efa459`.
 - Intake token: `GO_B4F2B_INTAKE`.
+- Intake-contract SHA: `a092bd012419cc2e847d6db0a24d2b1abe936d6c`.
+- Architect intake approval: `APPROVE_B4F2B_INTAKE_CONTRACT`.
+- Verifier intake approval: `PASS_B4F2B_INTAKE_CONTRACT`.
+- Boundary P implementation clearance:
+  `GO_B4F2B_BOUNDARY_P_IMPLEMENTATION`.
 - B4F2A2 is local-only and unwired.
 - Dependency audit is `STALE_UNREVALIDATED`; current advisories are `UNKNOWN`.
 - `CF-P1-AUDIT-FRESH-01` remains open and every shared, public, deployed, or
@@ -229,8 +234,13 @@ Dependency audit remains `STALE_UNREVALIDATED`, current advisories remain
 
 ## Execution Gate
 
-`BLOCKED` — intake authorizes only this versioned planning contract. Boundary P
-implementation and every Boundary R operation require later exact clearance.
+- `Boundary P: ALLOWED` — versioned plans, runbooks, approval/evidence
+  templates, offline inventory, fail-closed local tooling, focused tests, and
+  disposable synthetic-only MySQL proof within this issue's contract.
+- `Boundary R: BLOCKED` — no password-manager access, secret, connection
+  string, network/database connection, representative metadata, backup,
+  restore, migration, application/shared runtime, provider operation,
+  deployment, or destructive action is authorized.
 
 ## Target environment
 
