@@ -1,0 +1,249 @@
+{
+  "format": "Crewframe B5A2B candidate verification v1",
+  "implementationParentSha": "7f236cbba1281c0bdaccbfa6770fcc0c128a4f80",
+  "gateDraftSha": "0d28d0dffa4e3a4fa078beaf6cc5881f891a7211",
+  "acceptedGateSha": "1b3b36256629d3aaae567ffb66a351ece036359e",
+  "originalCandidateSha": "df9d73353f52bca948f5e718bf7dd7dd5998ab0f",
+  "remediationOneSha": "c78cfaeff36b8f6fd0fc260d5197f3ecf197e00e",
+  "candidateSha": "d0f6539dce86dbf68eadf9457893c0b38bd5bad1",
+  "reviewSealBinding": "PENDING_LIFECYCLE_SEAL",
+  "remediation": {
+    "round": 2,
+    "maximumRounds": 2,
+    "architectReview": "APPROVE_B5A2B_REMEDIATION_CANDIDATE",
+    "verifierReview": "PASS_B5A2B_REMEDIATION_CANDIDATE",
+    "acceptanceToken": "ACCEPT_B5A2B_REMEDIATION_CANDIDATE",
+    "evidenceSealAuthoringToken": "GO_B5A2B_EVIDENCE_EXECUTION_SEAL_AUTHORING"
+  },
+  "closureLedger": [
+    {
+      "surfaceId": "server action:src/lib/queries.ts#getNotificationAndUser",
+      "parentSourceHash": "sha256:deb9ea72e91318876ce5d6c7c2c28daec8a40d2d0611a655ee58446ef2520d1e",
+      "parentDeclarationHash": "sha256:cfe7c297af8f19b6c0f1a72f078acf28f13a90a009b498d8b0464b3b59931a83",
+      "disposition": "REMOVED_REPLACED",
+      "replacement": "notificationViewService"
+    },
+    {
+      "surfaceId": "server action:src/lib/queries.ts#saveActivityLogsNotification",
+      "parentSourceHash": "sha256:deb9ea72e91318876ce5d6c7c2c28daec8a40d2d0611a655ee58446ef2520d1e",
+      "parentDeclarationHash": "sha256:5a5a1ccfbaa03dce8f4db75ed5a79a2cce43972be611f972e5bdba1e002c8f1c",
+      "disposition": "REMOVED_NO_LIVE_REPLACEMENT",
+      "replacement": "DORMANT_BLOCKED"
+    }
+  ],
+  "surfaceCounts": {
+    "ownedLegacyRecords": 2,
+    "readerImportsBefore": 2,
+    "readerCallsBefore": 2,
+    "readerImportsAfter": 2,
+    "readerCallsAfter": 2,
+    "writerImportsBefore": 16,
+    "writerCallsBefore": 18,
+    "writerImportsAfter": 0,
+    "writerCallsAfter": 0,
+    "legacyExportsAfter": 0,
+    "productionModulesAdded": 3,
+    "productionNotificationReaders": 2,
+    "productionNotificationWriters": 0,
+    "productionActivityCallers": 0,
+    "implementationChangedFiles": 42
+  },
+  "temporaryNameLedger": {
+    "files": 8,
+    "legacyActivityActorNameLinesBefore": 14,
+    "listLegacyActorNamesLinesBefore": 3,
+    "getLegacyActorNameLinesBefore": 4,
+    "activityOnlyUserNameLinesBefore": 9,
+    "remainingCompatibilityNames": 0,
+    "privilegedControlNodes": 6,
+    "paths": [
+      "src/features/agency-projections/projection-service.ts",
+      "src/features/agency-projections/server-projection-service.ts",
+      "src/components/sidebar/index.tsx",
+      "src/components/sidebar/menu-options.tsx",
+      "src/app/(main)/agency/[agencyId]/all-subaccounts/page.tsx",
+      "src/app/(main)/agency/[agencyId]/all-subaccounts/_components/create-subaccount-btn.tsx",
+      "src/components/forms/subaccount-details.tsx",
+      "src/app/(main)/subaccount/[subaccountId]/settings/page.tsx"
+    ]
+  },
+  "notificationContract": {
+    "maximumItems": 100,
+    "sentinelTake": 101,
+    "persistenceReaders": 2,
+    "persistenceOrderTerms": 2,
+    "order": [
+      "createdAt:DESC",
+      "id:DESC"
+    ],
+    "projectionRootKeys": [
+      "notifications",
+      "viewerRole"
+    ],
+    "projectionItemKeys": [
+      "actor",
+      "createdAt",
+      "id",
+      "message",
+      "subAccountId"
+    ],
+    "projectionActorKeys": [
+      "avatarUrl",
+      "id",
+      "name",
+      "role"
+    ],
+    "actionIdentifiers": [
+      "notification:view-agency",
+      "notification:view-subaccount"
+    ],
+    "allowedRoleActionPairs": 6,
+    "finiteDenialIdentifiers": [
+      "CONFLICT",
+      "FORBIDDEN",
+      "PROVISIONING_REQUIRED",
+      "UNAUTHENTICATED"
+    ],
+    "databaseFailurePathsContained": 2,
+    "overflowRejected": true,
+    "duplicateRejected": true,
+    "unstableOrderRejected": true,
+    "foreignOwnershipRejected": true,
+    "staleOrDeletedScopeRejected": true,
+    "partialFeedReturned": false
+  },
+  "dormantFoundation": {
+    "productionRegistryEntries": 0,
+    "productionTemplates": 0,
+    "productionEvents": 0,
+    "productionAdapters": 0,
+    "productionCallers": 0,
+    "productionWrites": 0,
+    "testRegistryEntries": 1,
+    "testTemplates": 1,
+    "testAcceptedOutcomes": 2,
+    "testDeniedCases": 22,
+    "validFakeWrites": 1,
+    "rollbackRetainedWrites": 0,
+    "namedReachabilityMutations": 13,
+    "runtimeResultAllowlistCount": 2
+  },
+  "inventory": {
+    "recordsBefore": 228,
+    "recordsAfter": 231,
+    "legacyRecordsRemoved": 2,
+    "internalRecordsAdded": 5,
+    "databaseImportsBefore": 21,
+    "databaseImportsAfter": 22,
+    "directDatabaseCallersBefore": 20,
+    "directDatabaseCallersAfter": 21,
+    "databaseAdapterInjections": 1,
+    "serverActionFiles": 5,
+    "serverActionExportsBefore": 52,
+    "serverActionExportsAfter": 50,
+    "queryExportsBefore": 38,
+    "queryExportsAfter": 36,
+    "apiRouteFiles": 5,
+    "apiHandlers": 6,
+    "pages": 24,
+    "layouts": 7,
+    "uploadRoutes": 4,
+    "uploadCallbacks": 4,
+    "providerBoundaries": 33,
+    "manifestBefore": "sha256:c1e088fd578e83ff9e83effe72f8dd64c0063be2ceee17a00ac42ed91b80ac48",
+    "manifestAfter": "sha256:073ec09f33f304352df5f6f262a4e197c2139c11788dff113745593b414c7258"
+  },
+  "verification": {
+    "commands": [
+      { "name": "notificationVerifier", "result": "PASS", "exitStatus": 0 },
+      { "name": "projectionVerifier", "result": "PASS", "exitStatus": 0 },
+      { "name": "inventoryVerifier", "result": "PASS", "exitStatus": 0 },
+      { "name": "focusedTests", "result": "PASS", "exitStatus": 0 },
+      { "name": "fullTests", "result": "PASS", "exitStatus": 0 },
+      { "name": "lint", "result": "PASS", "exitStatus": 0 },
+      { "name": "typecheck", "result": "PASS", "exitStatus": 0 },
+      { "name": "build", "result": "PASS_ISOLATED", "exitStatus": 0 },
+      { "name": "frozenOfflineInstall", "result": "PASS_NO_CHANGES", "exitStatus": 0 },
+      { "name": "diffAndAllowlist", "result": "PASS", "exitStatus": 0 },
+      { "name": "boundedScopeScans", "result": "PASS", "exitStatus": 0 }
+    ],
+    "commandCount": 11,
+    "focusedTests": 71,
+    "focusedExpectations": 1354,
+    "focusedTestFiles": 6,
+    "fullTests": 368,
+    "fullExpectations": 2710,
+    "fullTestFiles": 47,
+    "staticPages": 13,
+    "fixedSourceBoundaryMutations": 28,
+    "namedDormantReachabilityMutations": 13,
+    "actionPolicyAndSelectionMutations": 18,
+    "writerImportMutations": 16,
+    "writerCallMutations": 18,
+    "protectedStatementMutations": 296,
+    "protectedCallMutations": 328,
+    "privilegedControlMutations": 6,
+    "installedPackages": 705,
+    "installedComponents": 895
+  },
+  "sourceHashes": {
+    "notificationViewService": "sha256:b228266eda04d13f343c2f39c3ac9d6200216afaed8877b340739454e2c5e9ad",
+    "serverNotificationViewService": "sha256:c38c0e856f58b8ee452b02009e354022035fd26a03dcb0c7897ec684bd3bdbda",
+    "activityFoundationService": "sha256:4c18bad32a2c316050c94b31cf6a97619b90cd00f62c570b47144cd394c76ea7",
+    "notificationVerifier": "sha256:2a81f5a8dd5871897ff51dec6e53aab800d58764177573591402336dadc23693",
+    "notificationViewTests": "sha256:5aabe8e919166f3e510519cff8c5822f1a65c289ab9104dfd1149b8ff3b35a9a",
+    "activityFoundationTests": "sha256:6127a9eead258cbbc839bef8a8a607aab99ae214543873574758b0e41632b160",
+    "notificationSurfaceTests": "sha256:7457d67cb30ffb6c003e7de4080264cea5f7cfa9aba6068b9ecf74da2c16c243",
+    "inventory": "sha256:762110ec4030dfd42b2cc8ddfcff52513dad940aeb846f986af96b2f1e8d6a1d",
+    "inventoryLock": "sha256:2b7cf8b564640f4e7e54bc16e4845f601d97b035715e738a351db3c76c2fbdb9"
+  },
+  "inventorySourceHashes": {
+    "activityFoundation": "sha256:2192860b8f357ec09bccefb5a1aa0393afef7f852a6331ea3da659799f84f4f5",
+    "notificationView": "sha256:b228266eda04d13f343c2f39c3ac9d6200216afaed8877b340739454e2c5e9ad",
+    "serverNotificationView": "sha256:c38c0e856f58b8ee452b02009e354022035fd26a03dcb0c7897ec684bd3bdbda"
+  },
+  "protectedGitBlobs": {
+    "packageManifest": "c8a1a9d11f484792d9d2ffee9d5c728144841105",
+    "lockfile": "9fd7455e517b55bd2cc77a882cc4468f0eebb526",
+    "prismaSchema": "68cc70de4c0e3d3d18fa29c00869d256c3230700",
+    "middleware": "2d619a87849a6749937b3472702d0ae1455a8e99",
+    "historicalB5A2AEvidence": "68425d31f41aadd44d6b77c89ca01476126f3250"
+  },
+  "zeroUse": {
+    "networkAccessed": false,
+    "providerAccessed": false,
+    "representativeDatabaseAccessed": false,
+    "representativeDataAccessed": false,
+    "credentialsAccessed": false,
+    "schemaChanged": false,
+    "packagesChanged": false,
+    "publicRoutesChanged": false,
+    "liveActivityEventsAdded": false,
+    "externalActionsAdded": false,
+    "deploymentChanged": false,
+    "productionLogsAdded": false,
+    "rethemeChanged": false,
+    "crmOdooChanged": false,
+    "composioChanged": false,
+    "agentRuntimeChanged": false
+  },
+  "rollback": {
+    "code": "REVERT_B5A2B_CANDIDATE_RANGE",
+    "database": "NO_ROLLBACK_REQUIRED",
+    "provider": "NO_ROLLBACK_REQUIRED"
+  },
+  "holds": {
+    "b5a3ThroughB5a8": "BLOCKED",
+    "permissionMigration": "DESIGN_REQUIRED",
+    "dependencyAudit": "STALE_UNREVALIDATED",
+    "advisories": "UNKNOWN",
+    "openHardGate": "CF-P1-AUDIT-FRESH-01",
+    "representativeProviderDatabase": "BLOCKED",
+    "deployment": "BLOCKED",
+    "readiness": "FAIL",
+    "rethemeTasteValidation": "BLOCKED",
+    "crmOdooIntroduction": "BLOCKED",
+    "composio": "BLOCKED",
+    "agentRuntime": "BLOCKED"
+  }
+}
