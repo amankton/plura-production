@@ -102,6 +102,9 @@ const setup = (authorized = true) => {
     setEligible: (value: boolean) => {
       eligible = value
     },
+    setExists: (value: boolean) => {
+      exists = value
+    },
   }
 }
 
@@ -205,6 +208,27 @@ describe('Stripe webhook receipt replay', () => {
     expect(context.audits[0]).toMatchObject({
       outcome: 'FAILED',
       safeErrorCode: 'receipt_not_terminal',
+    })
+  })
+
+  test('audits a missing stored receipt and enqueues nothing', async () => {
+    const context = setup()
+    context.setExists(false)
+    expect(
+      requestStripeWebhookReplay(
+        'user_internal',
+        { dryRun: false, reason: 'Investigate missing receipt', receiptId },
+        context.dependencies
+      )
+    ).rejects.toBeInstanceOf(WebhookProcessingError)
+    expect(context.getEligibilityReads()).toBe(0)
+    expect(context.requeues).toHaveLength(0)
+    expect(context.audits).toHaveLength(1)
+    expect(context.audits[0]).toMatchObject({
+      dryRun: false,
+      outcome: 'FAILED',
+      receiptId,
+      safeErrorCode: 'receipt_not_found',
     })
   })
 
