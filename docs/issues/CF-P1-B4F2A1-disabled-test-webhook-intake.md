@@ -230,8 +230,10 @@ deployment, Live Mode, Stripe Tax, dependency, billing, or source change.
 
 ## Execution Gate
 
-`ALLOWED` — exact Architect and Verifier entry tokens recorded. Implementation
-still requires `GO_B4F2A1_IMPLEMENTATION` from the Acceptance Orchestrator.
+`ALLOWED` (historical) — implementation was authorized by
+`GO_B4F2A1_IMPLEMENTATION`; the checkpoint is now `DONE`. This gate grants no
+further implementation, deployment, public-route, provider, database, or
+migration authority.
 
 ## Target environment
 
