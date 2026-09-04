@@ -211,6 +211,51 @@ describe('Stripe webhook provider-state convergence', () => {
     expect(context.store.projections).toHaveLength(1)
   })
 
+  test('an expired worker cannot project, release, or overwrite reclaimed leases', async () => {
+    const id = '10000000-0000-4000-8000-000000000031'
+    const context = setup(receipt(id))
+    let releaseFirst!: () => void
+    let firstEntered!: () => void
+    const firstAtProvider = new Promise<void>((resolve) => {
+      firstEntered = resolve
+    })
+    const firstBarrier = new Promise<void>((resolve) => {
+      releaseFirst = resolve
+    })
+    let subscriptionReads = 0
+    context.dependencies.provider.retrieveSubscription = async () => {
+      subscriptionReads += 1
+      if (subscriptionReads === 1) {
+        firstEntered()
+        await firstBarrier
+      }
+      return subscription()
+    }
+
+    const expiredWorker = processStripeWebhookReceipt(id, context.dependencies)
+    await firstAtProvider
+    context.setNow(new Date(baseNow.getTime() + 60_001))
+
+    const reclaimedWorker = await processStripeWebhookReceipt(
+      id,
+      context.dependencies
+    )
+    expect(reclaimedWorker).toEqual({
+      disposition: 'succeeded',
+      httpStatus: 200,
+      status: 'SUCCEEDED',
+    })
+
+    releaseFirst()
+    expect(await expiredWorker).toEqual({ disposition: 'busy', httpStatus: 503 })
+    expect(context.store.projections).toHaveLength(1)
+    expect(context.store.receipts.get(id)).toMatchObject({
+      leaseToken: null,
+      status: 'SUCCEEDED',
+    })
+    expect(context.store.objectLeases.size).toBe(0)
+  })
+
   test('per-object lease serializes distinct receipts for one subscription', async () => {
     const firstId = '10000000-0000-4000-8000-000000000021'
     const secondId = '10000000-0000-4000-8000-000000000022'
@@ -267,7 +312,26 @@ describe('Stripe webhook provider-state convergence', () => {
       (context) => context.setCustomer(customer({ deleted: true })),
       (context) =>
         context.setCustomer(customer({ metadata: { crewframeAgencyId: 'agency_b' } })),
+      (context) => context.setCustomer(customer({ id: 'cus_foreign' })),
       (context) => context.setSubscription(null),
+      (context) =>
+        context.setSubscription(subscription({ customer: 'cus_foreign' })),
+      (context) =>
+        context.setSubscription(
+          subscription({
+            items: {
+              data: [
+                {
+                  ...subscription().items.data[0],
+                  price: {
+                    ...subscription().items.data[0].price,
+                    active: false,
+                  },
+                },
+              ],
+            },
+          })
+        ),
       (context) =>
         context.setSubscription(
           subscription({

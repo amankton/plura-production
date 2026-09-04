@@ -167,12 +167,13 @@ const processStripeWebhookReceiptWithoutObservation = async (
     }
   }
 
-  const now = dependencies.now?.() ?? new Date()
+  const clock = dependencies.now ?? (() => new Date())
+  const claimNow = clock()
   const token = dependencies.randomToken ?? randomUUID
   const receiptLeaseToken = token()
   const receipt = await dependencies.store.claimReceipt({
     leaseToken: receiptLeaseToken,
-    now,
+    now: claimNow,
     receiptId,
   })
   if (!receipt) {
@@ -194,7 +195,7 @@ const processStripeWebhookReceiptWithoutObservation = async (
 
   if (!isSubscriptionLifecycleEvent(receipt.eventType)) {
     const completed = await dependencies.store.completeIgnored({
-      now,
+      now: clock(),
       reasonCode: 'unsupported_event',
       receiptId,
       receiptLeaseToken,
@@ -206,7 +207,7 @@ const processStripeWebhookReceiptWithoutObservation = async (
 
   if (receipt.accountScopeKey !== 'platform') {
     const completed = await dependencies.store.completeIgnored({
-      now,
+      now: clock(),
       reasonCode: 'connected_account_event',
       receiptId,
       receiptLeaseToken,
@@ -222,7 +223,7 @@ const processStripeWebhookReceiptWithoutObservation = async (
         'subscription_id_missing',
         'Subscription identifier is unavailable'
       ),
-      now,
+      now: clock(),
       receiptId,
       receiptLeaseToken,
     })
@@ -237,7 +238,7 @@ const processStripeWebhookReceiptWithoutObservation = async (
       objectType: 'subscription',
     },
     leaseToken: objectLeaseToken,
-    now,
+    now: clock(),
   })
   if (!objectLease) {
     return processFailure(dependencies, {
@@ -245,7 +246,7 @@ const processStripeWebhookReceiptWithoutObservation = async (
         'subscription_projection_busy',
         'Subscription projection is already being reconciled'
       ),
-      now,
+      now: clock(),
       receiptId,
       receiptLeaseToken,
     })
@@ -328,7 +329,7 @@ const processStripeWebhookReceiptWithoutObservation = async (
     }
 
     const completed = await dependencies.store.projectAndComplete({
-      now,
+      now: clock(),
       objectLease,
       projection: {
         active: normalized.active,
@@ -352,7 +353,7 @@ const processStripeWebhookReceiptWithoutObservation = async (
   } catch (error) {
     return processFailure(dependencies, {
       error,
-      now,
+      now: clock(),
       objectLease,
       receiptId,
       receiptLeaseToken,

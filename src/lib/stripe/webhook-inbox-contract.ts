@@ -234,7 +234,12 @@ export const decideReceiptFailure = (
   error: SafeWebhookError,
   now: Date
 ): ReceiptFailureDecision => {
-  if (receipt.status !== 'PROCESSING' || receipt.leaseToken !== leaseToken) {
+  if (
+    receipt.status !== 'PROCESSING' ||
+    receipt.leaseToken !== leaseToken ||
+    !receipt.leaseExpiresAt ||
+    receipt.leaseExpiresAt.getTime() <= now.getTime()
+  ) {
     throw new WebhookProcessingError(
       'invalid_receipt_lease',
       'Webhook receipt lease is no longer owned',

@@ -25,13 +25,23 @@ export type WebhookReplayAuditInput = {
   safeErrorMessage?: string
 }
 
+export type WebhookReplayExecutionResult = {
+  eligible: boolean
+  enqueued: boolean
+  reasonCode: string
+}
+
 export type WebhookReplayStore = {
   appendReplayAudit(input: WebhookReplayAuditInput): Promise<void>
   getReplayEligibility(receiptId: string): Promise<{
     eligible: boolean
     reasonCode: string
   } | null>
-  requeueTerminalReceipt(receiptId: string): Promise<boolean>
+  requeueTerminalReceiptWithAudit(input: {
+    actorId: string
+    reason: string
+    receiptId: string
+  }): Promise<WebhookReplayExecutionResult>
 }
 
 export type WebhookReplayDependencies = {
@@ -63,27 +73,26 @@ export const requestStripeWebhookReplay = async (
     )
   }
 
-  const eligibility = await dependencies.store.getReplayEligibility(
-    command.receiptId
-  )
-  if (!eligibility) {
-    await dependencies.store.appendReplayAudit({
-      actorId,
-      dryRun: command.dryRun,
-      outcome: 'FAILED',
-      reason: command.reason,
-      receiptId: command.receiptId,
-      safeErrorCode: 'receipt_not_found',
-      safeErrorMessage: 'Webhook receipt was not found',
-    })
-    throw new WebhookProcessingError(
-      'receipt_not_found',
-      'Webhook receipt was not found',
-      false
-    )
-  }
-
   if (command.dryRun) {
+    const eligibility = await dependencies.store.getReplayEligibility(
+      command.receiptId
+    )
+    if (!eligibility) {
+      await dependencies.store.appendReplayAudit({
+        actorId,
+        dryRun: true,
+        outcome: 'FAILED',
+        reason: command.reason,
+        receiptId: command.receiptId,
+        safeErrorCode: 'receipt_not_found',
+        safeErrorMessage: 'Webhook receipt was not found',
+      })
+      throw new WebhookProcessingError(
+        'receipt_not_found',
+        'Webhook receipt was not found',
+        false
+      )
+    }
     await dependencies.store.appendReplayAudit({
       actorId,
       dryRun: true,
@@ -94,21 +103,21 @@ export const requestStripeWebhookReplay = async (
     return { dryRun: true, ...eligibility }
   }
 
-  const enqueued =
-    eligibility.eligible &&
-    (await dependencies.store.requeueTerminalReceipt(command.receiptId))
-  await dependencies.store.appendReplayAudit({
+  const execution = await dependencies.store.requeueTerminalReceiptWithAudit({
     actorId,
-    dryRun: false,
-    outcome: enqueued ? 'ENQUEUED' : 'FAILED',
     reason: command.reason,
     receiptId: command.receiptId,
-    ...(enqueued
-      ? {}
-      : {
-          safeErrorCode: eligibility.reasonCode,
-          safeErrorMessage: 'Webhook receipt is not eligible for replay',
-        }),
   })
-  return { dryRun: false, eligible: eligibility.eligible, enqueued }
+  if (execution.reasonCode === 'receipt_not_found') {
+    throw new WebhookProcessingError(
+      'receipt_not_found',
+      'Webhook receipt was not found',
+      false
+    )
+  }
+  return {
+    dryRun: false,
+    eligible: execution.eligible,
+    enqueued: execution.enqueued,
+  }
 }

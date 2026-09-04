@@ -108,6 +108,7 @@ describe('Stripe webhook inbox state contract', () => {
   test('uses bounded retries and dead-letters terminal or exhausted errors', () => {
     const processing = receipt({
       attempts: 1,
+      leaseExpiresAt: new Date(now.getTime() + 60_000),
       leaseToken: 'owned',
       status: 'PROCESSING',
     })
@@ -139,11 +140,60 @@ describe('Stripe webhook inbox state contract', () => {
     expect(terminal.next.status).toBe('DEAD_LETTER')
   })
 
+  test('applies the exact bounded delay for retry attempts one through four', () => {
+    for (const [attempts, delay] of [
+      [1, 30_000],
+      [2, 120_000],
+      [3, 600_000],
+      [4, 3_600_000],
+    ] as const) {
+      const decision = decideReceiptFailure(
+        receipt({
+          attempts,
+          leaseExpiresAt: new Date(now.getTime() + 60_000),
+          leaseToken: 'owned',
+          status: 'PROCESSING',
+        }),
+        'owned',
+        {
+          code: 'provider_timeout',
+          message: 'Provider timed out',
+          retryable: true,
+        },
+        now
+      )
+      expect(decision.responseStatus).toBe(500)
+      expect(decision.next.status).toBe('RETRY_PENDING')
+      expect(decision.next.nextRetryAt?.getTime()).toBe(now.getTime() + delay)
+    }
+  })
+
   test('requires the exact receipt lease token to transition a failure', () => {
     expect(() =>
       decideReceiptFailure(
-        receipt({ attempts: 1, leaseToken: 'owned', status: 'PROCESSING' }),
+        receipt({
+          attempts: 1,
+          leaseExpiresAt: new Date(now.getTime() + 60_000),
+          leaseToken: 'owned',
+          status: 'PROCESSING',
+        }),
         'foreign',
+        { code: 'failure', message: 'Failure', retryable: true },
+        now
+      )
+    ).toThrow(WebhookProcessingError)
+  })
+
+  test('rejects a failure transition after the receipt lease expires', () => {
+    expect(() =>
+      decideReceiptFailure(
+        receipt({
+          attempts: 1,
+          leaseExpiresAt: now,
+          leaseToken: 'owned',
+          status: 'PROCESSING',
+        }),
+        'owned',
         { code: 'failure', message: 'Failure', retryable: true },
         now
       )

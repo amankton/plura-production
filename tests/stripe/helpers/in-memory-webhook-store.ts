@@ -72,7 +72,9 @@ export class InMemoryWebhookStore implements WebhookProcessingStore {
     if (
       !receipt ||
       receipt.status !== 'PROCESSING' ||
-      receipt.leaseToken !== input.receiptLeaseToken
+      receipt.leaseToken !== input.receiptLeaseToken ||
+      !receipt.leaseExpiresAt ||
+      receipt.leaseExpiresAt.getTime() <= input.now.getTime()
     ) {
       return false
     }
@@ -105,7 +107,10 @@ export class InMemoryWebhookStore implements WebhookProcessingStore {
     if (input.objectLease) {
       const key = objectKey(input.objectLease)
       const currentObjectLease = this.objectLeases.get(key)
-      if (currentObjectLease?.leaseToken !== input.objectLease.leaseToken) {
+      if (
+        currentObjectLease?.leaseToken !== input.objectLease.leaseToken ||
+        currentObjectLease.leaseExpiresAt.getTime() <= input.now.getTime()
+      ) {
         return null
       }
     }
