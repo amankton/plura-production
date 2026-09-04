@@ -44,8 +44,6 @@ B5A1 may add or update only:
   `docs/security/agency-authority/`;
 - fixed-input offline verification tooling under `scripts/`;
 - tests and synthetic fixtures under `tests/authority-inventory/`;
-- package scripts only when they invoke the fixed-input verifier without adding
-  a dependency; and
 - bounded, non-sensitive evidence under `docs/evidence/`.
 
 No file under production `src/`, `prisma/`, `public/`, provider configuration,
@@ -88,7 +86,7 @@ Every discovered surface has exactly one manifest record with:
 | `invocation` | One value from the invocation taxonomy. |
 | `effects` | Non-empty finite set from the effect taxonomy. |
 | `actorSource` | Provider subject, anonymous-public contract, internal-derived actor, or blocked. |
-| `requestedIds` | Complete deterministically ordered set of caller/route/provider-controlled selectors. |
+| `requestedIds` | Complete deterministically ordered set of caller/route/provider-controlled selectors; `[]` is allowed only when discovery proves the surface accepts none. |
 | `action` | Exact finite policy action, `PUBLIC_BOUNDED`, `INTERNAL_ONLY`, or `UNDEFINED_BLOCKED`. |
 | `ownershipPath` | Complete ordered Agency → SubAccount → resource chain, or an explicit non-tenant reason. |
 | `persistencePredicate` | Required conjunctive keys, expected state, and cardinality. |
@@ -98,9 +96,11 @@ Every discovered surface has exactly one manifest record with:
 | `disposition` | Exactly one closed disposition from the disposition taxonomy. |
 | `sourceHash` | Git blob or canonical content hash for drift detection. |
 
-Empty, unknown, free-form, duplicate, or extra fields fail validation. A
-surface cannot be authorized merely because a parent layout, UI filter, route
-shape, provider metadata, email address, or caller Boolean suggests access.
+Unknown, free-form, duplicate, or extra fields fail validation. Required
+fields cannot be empty except `requestedIds: []` under the explicit no-selector
+rule above. A surface cannot be authorized merely because a parent layout, UI
+filter, route shape, provider metadata, email address, or caller Boolean
+suggests access.
 
 ## Finite taxonomies
 
@@ -179,7 +179,8 @@ Evidence records:
 - focused and full verification commands with exit status;
 - canonical manifest and evidence hashes; and
 - explicit statements that no network, database, credential, provider,
-  environment, deployment, or production-source access occurred.
+  environment, deployment, or production-source mutation occurred, while
+  acknowledging the required read-only inspection of versioned `src` files.
 
 ## Acceptance criteria
 
@@ -229,4 +230,3 @@ public-route, or deployment rollback.
 ## Execution gate
 
 `ALLOWED_FOR_B5A1_ONLY`
-
