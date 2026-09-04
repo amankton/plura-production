@@ -646,8 +646,10 @@ the unchanged checked-in schema and synthetic fixtures only.
 rejects every positional or named argument. It reuses the accepted disposable
 MySQL safety envelope with these immutable identities:
 
-- image reference and image ID exactly
-  `mysql@sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb`;
+- image reference and sole RepoDigest exactly
+  `mysql@sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb`,
+  with Image ID separately exactly
+  `sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb`;
 - image OS/platform exactly `linux/amd64`, one exact matching RepoDigest, and
   exactly the declared image volume destination `/var/lib/mysql`;
 - Docker context exactly `desktop-linux`, endpoint exactly
