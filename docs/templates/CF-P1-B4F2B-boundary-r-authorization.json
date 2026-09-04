@@ -1,0 +1,31 @@
+{
+  "format": "Crewframe B4F2B Boundary R authorization v1",
+  "gateSha": "ab10c304d0a94b26ccfa460c6cb2dff8c4fe1f93",
+  "boundary": "R",
+  "state": "INCOMPLETE",
+  "scope": {
+    "sourceFingerprintSha256": null,
+    "targetFingerprintSha256": null,
+    "operations": [],
+    "windowStartUtc": null,
+    "windowEndUtc": null,
+    "backupMetadataSha256": null,
+    "retentionPolicySha256": null,
+    "rollbackPlanSha256": null
+  },
+  "approvals": {
+    "humanOperatorApprovalSha256": null,
+    "databaseOwnerApprovalSha256": null,
+    "dataSecurityOwnerApprovalSha256": null,
+    "architectApprovalSha256": null,
+    "verifierApprovalSha256": null,
+    "acceptanceApprovalSha256": null
+  },
+  "rules": {
+    "sourceReadOnly": false,
+    "targetIsolated": false,
+    "targetNonRoutable": false,
+    "applicationDisconnected": false,
+    "separateLeastPrivilegeRoles": false
+  }
+}

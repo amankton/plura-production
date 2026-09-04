@@ -1,0 +1,34 @@
+{
+  "format": "Crewframe B4F2B Boundary R evidence v1",
+  "gateSha": "ab10c304d0a94b26ccfa460c6cb2dff8c4fe1f93",
+  "boundary": "R",
+  "outcome": "NOT_RUN",
+  "runFingerprintSha256": null,
+  "sourceFingerprintSha256": null,
+  "targetFingerprintSha256": null,
+  "records": [],
+  "policy": {
+    "allowed": [
+      "BOUNDED_AGGREGATE_COUNT",
+      "DURATION_MILLISECONDS",
+      "EXIT_STATE",
+      "SHA256_FINGERPRINT",
+      "STRUCTURAL_CATEGORY"
+    ],
+    "forbidden": [
+      "CONNECTION_STRING",
+      "CREDENTIAL",
+      "EMAIL",
+      "HOST",
+      "PATH",
+      "PROVIDER_IDENTIFIER",
+      "RECORD_IDENTIFIER",
+      "REPRESENTATIVE_ROW",
+      "SECRET",
+      "TENANT_IDENTIFIER",
+      "URL",
+      "USER_CONTENT"
+    ],
+    "stableIdentifiers": false
+  }
+}

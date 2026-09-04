@@ -1,0 +1,473 @@
+{
+  "format": "Crewframe B4F2B Boundary P offline inventory v1",
+  "gateSha": "ab10c304d0a94b26ccfa460c6cb2dff8c4fe1f93",
+  "boundaryP": "CONTRACT_VALIDATED_SYNTHETIC_NOT_RUN",
+  "boundaryR": "BLOCKED",
+  "authorizationState": "INCOMPLETE",
+  "representativeState": "NOT_ACCESSED",
+  "currentState": {
+    "migrationBaseline": "ABSENT_REQUIRES_AUTHORIZED_BASELINE",
+    "prismaProvider": "mysql",
+    "prismaRelationMode": "prisma",
+    "permissionUserIdInPrisma": false,
+    "prismaDeclaresLogicalPlan": true,
+    "prismaDeclaresWebhookInbox": true
+  },
+  "sourceArtifacts": [
+    {
+      "path": "prisma/schema.prisma",
+      "sha256": "69ec7ba100cdb0d1907d3ba62d71a0fab206a837a24e13e09bb5cd6dabc535cb"
+    },
+    {
+      "path": "docs/architecture/ADR-0001-permission-user-id-migration.md",
+      "sha256": "c471605698cc231ec1cd3f082abdc699a573e11a237634a343d8fd28b242ef9b"
+    },
+    {
+      "path": "docs/execution/sql/CF-P1-B4D-logical-subscription-plan-expand.sql",
+      "sha256": "986397f506dcf9f9d1d163ddda6e403abdcec98da3edfb5dc172a2f279eb6fe7"
+    },
+    {
+      "path": "docs/execution/sql/CF-P1-B4F1-webhook-inbox-foundation.sql",
+      "sha256": "66195477220c545cc75efad4d269443ff0cc0492e2631e6a113cbee6f0f9621d"
+    },
+    {
+      "path": "scripts/permission-migration-preflight.ts",
+      "sha256": "3034e93e9821845fe80fef03dfdd6c159499464ffa339665a213a229150e471c"
+    },
+    {
+      "path": "scripts/subscription-plan-migration-preflight.ts",
+      "sha256": "77170a6c3ea09d3d7d5545bf666cbab29cd862b5d2888f11e6c3dea675a374f6"
+    }
+  ],
+  "contractArtifacts": [
+    {
+      "path": "docs/architecture/CF-P1-B4F2B-boundary-p-manifest.json",
+      "sha256": "6f7cf321bdd9706065549d6889fee4ce9e6dbb091df36398924708d1b9495855"
+    },
+    {
+      "path": "docs/architecture/schemas/CF-P1-B4F2B-boundary-p.schema.json",
+      "sha256": "ca44a93606eba430a3b19a78e24669942367e81cdfbc7cf6f69787d6c607f804"
+    },
+    {
+      "path": "docs/templates/CF-P1-B4F2B-boundary-r-authorization.json",
+      "sha256": "c06999c748cb71918b72e53fb3bc5e7af9016a2845b9f04f7f9e8295b60f3134"
+    },
+    {
+      "path": "docs/templates/CF-P1-B4F2B-boundary-r-evidence.json",
+      "sha256": "6cc24d5114e054cdd1a4514f9ac8a1aca4dc5854f7285c21ea003aab4aa7d5b0"
+    }
+  ],
+  "protectedSurfaces": [
+    {
+      "path": ".env.example",
+      "gateBlobSha1": "13e848789d6a6be3e22324db547f4fdfc7c6d618"
+    },
+    {
+      "path": "bun.lockb",
+      "gateBlobSha1": "9fd7455e517b55bd2cc77a882cc4468f0eebb526"
+    },
+    {
+      "path": "package.json",
+      "gateBlobSha1": "c8a1a9d11f484792d9d2ffee9d5c728144841105"
+    },
+    {
+      "path": "prisma/schema.prisma",
+      "gateBlobSha1": "68cc70de4c0e3d3d18fa29c00869d256c3230700"
+    },
+    {
+      "path": "src/app/api/stripe/webhook/route.ts",
+      "gateBlobSha1": "bec844221982137ccc085b804d5906e36283eca5"
+    },
+    {
+      "path": "src/lib/stripe/prisma-webhook-processing-store-core.ts",
+      "gateBlobSha1": "b5c19ef83a2e7d4a3f3add1f4895ba07feb4652b"
+    },
+    {
+      "path": "src/lib/stripe/webhook-processor.ts",
+      "gateBlobSha1": "b3d898f18b62b7ec0abf34646da10a6214b1231d"
+    },
+    {
+      "path": "src/lib/stripe/webhook-worker.ts",
+      "gateBlobSha1": "173e58f9bc14ff56a497e030ec77a9458ef03a25"
+    },
+    {
+      "path": "src/middleware.ts",
+      "gateBlobSha1": "2d619a87849a6749937b3472702d0ae1455a8e99"
+    },
+    {
+      "path": "docs/execution/sql/CF-P1-B4D-logical-subscription-plan-expand.sql",
+      "gateBlobSha1": "4b476bd2ca5d16e5e978cefdd7ed43640e1076a1"
+    },
+    {
+      "path": "docs/execution/sql/CF-P1-B4F1-webhook-inbox-foundation.sql",
+      "gateBlobSha1": "6b20010ab8b9a1c1072ab79b16b8f5cd87f98838"
+    }
+  ],
+  "stageGraph": [
+    {
+      "id": "P0_REPOSITORY_BASELINE",
+      "title": "Freeze repository inputs and protected surfaces",
+      "boundary": "P",
+      "dependencies": [],
+      "planStatus": "PLAN_VALIDATED",
+      "executionStatus": "BLOCKED_BOUNDARY_R",
+      "mutation": "NONE",
+      "sqlSource": null,
+      "rollback": "Discard Boundary P evidence and revert only Boundary P contract files.",
+      "lockRisk": "NONE",
+      "invariants": [
+        "Gate inputs retain exact content and protected Git blob identities."
+      ],
+      "stopCodes": [
+        "SOURCE_DRIFT",
+        "PROTECTED_SURFACE_DRIFT"
+      ],
+      "sourceRefs": [
+        "prisma/schema.prisma"
+      ]
+    },
+    {
+      "id": "P1_PERMISSION_CHARACTERIZATION_PLAN",
+      "title": "Plan bounded permission characterization",
+      "boundary": "P",
+      "dependencies": [
+        "P0_REPOSITORY_BASELINE"
+      ],
+      "planStatus": "PLAN_VALIDATED",
+      "executionStatus": "BLOCKED_BOUNDARY_R",
+      "mutation": "NONE",
+      "sqlSource": null,
+      "rollback": "No execution is authorized; discard the proposed characterization record.",
+      "lockRisk": "READ_ONLY_BOUNDARY_R_UNKNOWN",
+      "invariants": [
+        "No email, user, tenant, row, or stable record identifier may leave Boundary R."
+      ],
+      "stopCodes": [
+        "BOUNDARY_R_BLOCKED",
+        "UNBOUNDED_EVIDENCE"
+      ],
+      "sourceRefs": [
+        "docs/architecture/ADR-0001-permission-user-id-migration.md",
+        "scripts/permission-migration-preflight.ts"
+      ]
+    },
+    {
+      "id": "P2_PERMISSION_EXPAND_PLAN",
+      "title": "Design permission userId expand plan",
+      "boundary": "P",
+      "dependencies": [
+        "P1_PERMISSION_CHARACTERIZATION_PLAN"
+      ],
+      "planStatus": "PLAN_VALIDATED",
+      "executionStatus": "BLOCKED_BOUNDARY_R",
+      "mutation": "DESIGN_REQUIRED",
+      "sqlSource": null,
+      "rollback": "A future isolated rehearsal must re-restore; no reverse SQL is approved here.",
+      "lockRisk": "UNKNOWN_UNTIL_REPRESENTATIVE_CHARACTERIZATION",
+      "invariants": [
+        "Existing email authority remains readable throughout any future expand stage."
+      ],
+      "stopCodes": [
+        "DESIGN_REQUIRED",
+        "UNKNOWN_LOCK_RISK"
+      ],
+      "sourceRefs": [
+        "docs/architecture/ADR-0001-permission-user-id-migration.md",
+        "prisma/schema.prisma"
+      ]
+    },
+    {
+      "id": "P3_PERMISSION_BACKFILL_UNIQUENESS_PLAN",
+      "title": "Plan permission backfill and uniqueness proof",
+      "boundary": "P",
+      "dependencies": [
+        "P2_PERMISSION_EXPAND_PLAN"
+      ],
+      "planStatus": "PLAN_VALIDATED",
+      "executionStatus": "BLOCKED_BOUNDARY_R",
+      "mutation": "DESIGN_REQUIRED",
+      "sqlSource": null,
+      "rollback": "A future isolated rehearsal must re-restore after any incomplete or ambiguous backfill.",
+      "lockRisk": "UNKNOWN_UNTIL_REPRESENTATIVE_CHARACTERIZATION",
+      "invariants": [
+        "Every permission resolves to exactly one intended user without crossing tenant authority."
+      ],
+      "stopCodes": [
+        "UNRESOLVED_PERMISSION",
+        "DUPLICATE_PERMISSION",
+        "CROSS_TENANT_AUTHORITY"
+      ],
+      "sourceRefs": [
+        "docs/architecture/ADR-0001-permission-user-id-migration.md",
+        "scripts/permission-migration-preflight.ts"
+      ]
+    },
+    {
+      "id": "P4_SUBSCRIPTION_CHARACTERIZATION_PLAN",
+      "title": "Plan bounded subscription characterization",
+      "boundary": "P",
+      "dependencies": [
+        "P0_REPOSITORY_BASELINE"
+      ],
+      "planStatus": "PLAN_VALIDATED",
+      "executionStatus": "BLOCKED_BOUNDARY_R",
+      "mutation": "NONE",
+      "sqlSource": null,
+      "rollback": "No execution is authorized; discard the proposed characterization record.",
+      "lockRisk": "READ_ONLY_BOUNDARY_R_UNKNOWN",
+      "invariants": [
+        "Legacy plan, price, customer, subscription, and agency authority is retained without exporting values."
+      ],
+      "stopCodes": [
+        "BOUNDARY_R_BLOCKED",
+        "UNMAPPED_LEGACY_PLAN",
+        "BLANK_PROVIDER_BINDING"
+      ],
+      "sourceRefs": [
+        "prisma/schema.prisma",
+        "scripts/subscription-plan-migration-preflight.ts"
+      ]
+    },
+    {
+      "id": "P5_LOGICAL_PLAN_SYNTHETIC_EXPAND",
+      "title": "Exercise logical plan DDL on disposable synthetic MySQL",
+      "boundary": "P",
+      "dependencies": [
+        "P4_SUBSCRIPTION_CHARACTERIZATION_PLAN"
+      ],
+      "planStatus": "PLAN_VALIDATED",
+      "executionStatus": "SYNTHETIC_ONLY",
+      "mutation": "DISPOSABLE_SYNTHETIC_ONLY",
+      "sqlSource": "docs/execution/sql/CF-P1-B4D-logical-subscription-plan-expand.sql",
+      "rollback": "Destroy the isolated no-network synthetic container; the SQL remains non-applyable.",
+      "lockRisk": "SYNTHETIC_ONLY_NOT_REPRESENTATIVE",
+      "invariants": [
+        "Legacy plan and price columns remain present after additive synthetic DDL."
+      ],
+      "stopCodes": [
+        "AMBIENT_CONNECTION_INPUT",
+        "SYNTHETIC_IMAGE_UNAVAILABLE",
+        "DDL_INCOMPATIBLE"
+      ],
+      "sourceRefs": [
+        "docs/execution/sql/CF-P1-B4D-logical-subscription-plan-expand.sql",
+        "prisma/schema.prisma"
+      ]
+    },
+    {
+      "id": "P6_LOGICAL_PLAN_BACKFILL_PLAN",
+      "title": "Plan legacy-to-logical subscription mapping",
+      "boundary": "P",
+      "dependencies": [
+        "P5_LOGICAL_PLAN_SYNTHETIC_EXPAND"
+      ],
+      "planStatus": "PLAN_VALIDATED",
+      "executionStatus": "BLOCKED_BOUNDARY_R",
+      "mutation": "DESIGN_REQUIRED",
+      "sqlSource": null,
+      "rollback": "A future isolated rehearsal must re-restore after any incomplete or ambiguous backfill.",
+      "lockRisk": "UNKNOWN_UNTIL_REPRESENTATIVE_CHARACTERIZATION",
+      "invariants": [
+        "Logical plan derives only from approved legacy mappings and does not discard legacy data."
+      ],
+      "stopCodes": [
+        "UNMAPPED_LEGACY_PLAN",
+        "AMBIGUOUS_LOGICAL_PLAN"
+      ],
+      "sourceRefs": [
+        "scripts/subscription-plan-migration-preflight.ts",
+        "prisma/schema.prisma"
+      ]
+    },
+    {
+      "id": "P7_WEBHOOK_STRUCTURAL_PREFLIGHT",
+      "title": "Plan webhook inbox structural preflight",
+      "boundary": "P",
+      "dependencies": [
+        "P0_REPOSITORY_BASELINE"
+      ],
+      "planStatus": "PLAN_VALIDATED",
+      "executionStatus": "BLOCKED_BOUNDARY_R",
+      "mutation": "NONE",
+      "sqlSource": null,
+      "rollback": "No execution is authorized; discard the proposed structural record.",
+      "lockRisk": "READ_ONLY_BOUNDARY_R_UNKNOWN",
+      "invariants": [
+        "Existing table names and incompatible structures must never be masked by conditional create statements."
+      ],
+      "stopCodes": [
+        "BOUNDARY_R_BLOCKED",
+        "UNCLASSIFIED_TABLE_DRIFT"
+      ],
+      "sourceRefs": [
+        "docs/execution/sql/CF-P1-B4F1-webhook-inbox-foundation.sql",
+        "prisma/schema.prisma"
+      ]
+    },
+    {
+      "id": "P8_WEBHOOK_SYNTHETIC_EXPAND",
+      "title": "Exercise webhook inbox DDL on disposable synthetic MySQL",
+      "boundary": "P",
+      "dependencies": [
+        "P7_WEBHOOK_STRUCTURAL_PREFLIGHT"
+      ],
+      "planStatus": "PLAN_VALIDATED",
+      "executionStatus": "SYNTHETIC_ONLY",
+      "mutation": "DISPOSABLE_SYNTHETIC_ONLY",
+      "sqlSource": "docs/execution/sql/CF-P1-B4F1-webhook-inbox-foundation.sql",
+      "rollback": "Destroy the isolated no-network synthetic container; the SQL remains non-applyable.",
+      "lockRisk": "SYNTHETIC_ONLY_NOT_REPRESENTATIVE",
+      "invariants": [
+        "Synthetic proof checks all columns and indexes explicitly after DDL; table existence alone is insufficient."
+      ],
+      "stopCodes": [
+        "AMBIENT_CONNECTION_INPUT",
+        "SYNTHETIC_IMAGE_UNAVAILABLE",
+        "DDL_INCOMPATIBLE",
+        "STRUCTURE_MISMATCH"
+      ],
+      "sourceRefs": [
+        "docs/execution/sql/CF-P1-B4F1-webhook-inbox-foundation.sql",
+        "prisma/schema.prisma"
+      ]
+    },
+    {
+      "id": "P9_COMPATIBILITY_PLAN",
+      "title": "Plan provider-disabled application compatibility",
+      "boundary": "P",
+      "dependencies": [
+        "P3_PERMISSION_BACKFILL_UNIQUENESS_PLAN",
+        "P6_LOGICAL_PLAN_BACKFILL_PLAN",
+        "P8_WEBHOOK_SYNTHETIC_EXPAND"
+      ],
+      "planStatus": "PLAN_VALIDATED",
+      "executionStatus": "BLOCKED_BOUNDARY_R",
+      "mutation": "NONE",
+      "sqlSource": null,
+      "rollback": "Disconnect the future isolated application runtime and re-restore its target.",
+      "lockRisk": "NONE_AFTER_FUTURE_MIGRATION_STAGES_COMPLETE",
+      "invariants": [
+        "Providers, routes, workers, schedulers, email, and external side effects remain disabled."
+      ],
+      "stopCodes": [
+        "PROVIDER_REACHABLE",
+        "SOURCE_REACHABLE",
+        "LIVE_MODE_DETECTED",
+        "BACKGROUND_EXECUTION_ENABLED"
+      ],
+      "sourceRefs": [
+        "src/app/api/stripe/webhook/route.ts",
+        "src/lib/stripe/webhook-worker.ts",
+        "src/middleware.ts"
+      ]
+    },
+    {
+      "id": "P10_FAILURE_RERESTORE_PLAN",
+      "title": "Plan injected failures and clean re-restore",
+      "boundary": "P",
+      "dependencies": [
+        "P9_COMPATIBILITY_PLAN"
+      ],
+      "planStatus": "PLAN_VALIDATED",
+      "executionStatus": "BLOCKED_BOUNDARY_R",
+      "mutation": "NONE",
+      "sqlSource": null,
+      "rollback": "Destroy the failed isolated target and restore again from the verified owner-approved backup.",
+      "lockRisk": "BOUNDARY_R_ONLY",
+      "invariants": [
+        "No failed stage may leave an ambiguous schema or data state."
+      ],
+      "stopCodes": [
+        "AMBIGUOUS_STAGE",
+        "RERESTORE_FAILED",
+        "RECOVERY_EXPECTATION_EXCEEDED"
+      ],
+      "sourceRefs": [
+        "docs/issues/CF-P1-B4F2B-representative-database-readiness.md"
+      ]
+    },
+    {
+      "id": "P11_CLEANUP_PLAN",
+      "title": "Plan target, role, container, volume, and material cleanup",
+      "boundary": "P",
+      "dependencies": [
+        "P10_FAILURE_RERESTORE_PLAN"
+      ],
+      "planStatus": "PLAN_VALIDATED",
+      "executionStatus": "BLOCKED_BOUNDARY_R",
+      "mutation": "NONE",
+      "sqlSource": null,
+      "rollback": "Cleanup is mandatory and independently checked; retained encrypted backup follows owner policy.",
+      "lockRisk": "NONE",
+      "invariants": [
+        "No temporary role, target, handle, container, volume, dump, or decrypted material remains."
+      ],
+      "stopCodes": [
+        "CLEANUP_INCOMPLETE",
+        "ROLE_NOT_REVOKED",
+        "TEMPORARY_MATERIAL_REMAINS"
+      ],
+      "sourceRefs": [
+        "docs/issues/CF-P1-B4F2B-representative-database-readiness.md"
+      ]
+    }
+  ],
+  "criterionDisposition": [
+    {
+      "id": "CF-P1-B4F2B-01",
+      "disposition": "PLAN_VALIDATED"
+    },
+    {
+      "id": "CF-P1-B4F2B-02",
+      "disposition": "PLAN_VALIDATED"
+    },
+    {
+      "id": "CF-P1-B4F2B-03",
+      "disposition": "BLOCKED_BOUNDARY_R"
+    },
+    {
+      "id": "CF-P1-B4F2B-04",
+      "disposition": "BLOCKED_BOUNDARY_R"
+    },
+    {
+      "id": "CF-P1-B4F2B-05",
+      "disposition": "BLOCKED_BOUNDARY_R"
+    },
+    {
+      "id": "CF-P1-B4F2B-06",
+      "disposition": "BLOCKED_BOUNDARY_R"
+    },
+    {
+      "id": "CF-P1-B4F2B-07",
+      "disposition": "PLAN_VALIDATED"
+    },
+    {
+      "id": "CF-P1-B4F2B-08",
+      "disposition": "BLOCKED_BOUNDARY_R"
+    },
+    {
+      "id": "CF-P1-B4F2B-09",
+      "disposition": "BLOCKED_BOUNDARY_R"
+    },
+    {
+      "id": "CF-P1-B4F2B-10",
+      "disposition": "BLOCKED_BOUNDARY_R"
+    },
+    {
+      "id": "CF-P1-B4F2B-11",
+      "disposition": "PLAN_VALIDATED"
+    },
+    {
+      "id": "CF-P1-B4F2B-12",
+      "disposition": "BLOCKED_BOUNDARY_R"
+    },
+    {
+      "id": "CF-P1-B4F2B-13",
+      "disposition": "BLOCKED_BOUNDARY_R"
+    },
+    {
+      "id": "CF-P1-B4F2B-14",
+      "disposition": "BLOCKED_BOUNDARY_R"
+    }
+  ]
+}

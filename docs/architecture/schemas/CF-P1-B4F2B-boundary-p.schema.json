@@ -1,0 +1,349 @@
+{
+  "format": "Crewframe B4F2B closed contract schema v1",
+  "oneOf": [
+    { "$ref": "#/$defs/manifest" },
+    { "$ref": "#/$defs/authorizationPacket" },
+    { "$ref": "#/$defs/evidencePacket" }
+  ],
+  "$defs": {
+    "nullableSha256": {
+      "oneOf": [
+        { "type": "null" },
+        { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+      ]
+    },
+    "manifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "format",
+        "gateSha",
+        "status",
+        "boundaries",
+        "inputPolicy",
+        "blockedActions",
+        "sourceArtifacts",
+        "protectedSurfaces",
+        "stageGraph",
+        "criterionDisposition",
+        "validationStates",
+        "stopCodes"
+      ],
+      "properties": {
+        "format": { "const": "Crewframe B4F2B Boundary P manifest v1" },
+        "gateSha": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+        "status": { "const": "BOUNDARY_P_CONTRACT_ONLY" },
+        "boundaries": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["P", "R"],
+          "properties": {
+            "P": { "const": "ALLOWED_OFFLINE_SYNTHETIC_ONLY" },
+            "R": { "const": "BLOCKED" }
+          }
+        },
+        "inputPolicy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "acceptsArguments",
+            "acceptsCredentials",
+            "acceptsEnvironmentConfiguration",
+            "acceptsRepresentativeMetadata",
+            "acceptsUrls",
+            "fixedRepositoryFilesOnly"
+          ],
+          "properties": {
+            "acceptsArguments": { "const": false },
+            "acceptsCredentials": { "const": false },
+            "acceptsEnvironmentConfiguration": { "const": false },
+            "acceptsRepresentativeMetadata": { "const": false },
+            "acceptsUrls": { "const": false },
+            "fixedRepositoryFilesOnly": { "const": true }
+          }
+        },
+        "blockedActions": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[A-Z0-9_]+$" }
+        },
+        "sourceArtifacts": {
+          "type": "array",
+          "minItems": 6,
+          "maxItems": 6,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "sha256", "execution"],
+            "properties": {
+              "path": { "type": "string" },
+              "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+              "execution": { "const": "FORBIDDEN" }
+            }
+          }
+        },
+        "protectedSurfaces": {
+          "type": "array",
+          "minItems": 11,
+          "maxItems": 11,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "gateBlobSha1"],
+            "properties": {
+              "path": { "type": "string" },
+              "gateBlobSha1": { "type": "string", "pattern": "^[a-f0-9]{40}$" }
+            }
+          }
+        },
+        "stageGraph": {
+          "type": "array",
+          "minItems": 12,
+          "maxItems": 12,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title",
+              "boundary",
+              "dependencies",
+              "planStatus",
+              "executionStatus",
+              "mutation",
+              "sqlSource",
+              "rollback",
+              "lockRisk",
+              "invariants",
+              "stopCodes",
+              "sourceRefs"
+            ],
+            "properties": {
+              "id": { "type": "string", "pattern": "^P([0-9]|1[01])_[A-Z0-9_]+$" },
+              "title": { "type": "string", "minLength": 1, "maxLength": 120 },
+              "boundary": { "const": "P" },
+              "dependencies": {
+                "type": "array",
+                "uniqueItems": true,
+                "items": { "type": "string", "pattern": "^P([0-9]|1[01])_[A-Z0-9_]+$" }
+              },
+              "planStatus": { "const": "PLAN_VALIDATED" },
+              "executionStatus": {
+                "enum": ["SYNTHETIC_ONLY", "BLOCKED_BOUNDARY_R"]
+              },
+              "mutation": {
+                "enum": ["NONE", "DESIGN_REQUIRED", "DISPOSABLE_SYNTHETIC_ONLY"]
+              },
+              "sqlSource": {
+                "oneOf": [
+                  { "type": "null" },
+                  { "type": "string", "enum": [
+                    "docs/execution/sql/CF-P1-B4D-logical-subscription-plan-expand.sql",
+                    "docs/execution/sql/CF-P1-B4F1-webhook-inbox-foundation.sql"
+                  ] }
+                ]
+              },
+              "rollback": { "type": "string", "minLength": 1, "maxLength": 240 },
+              "lockRisk": { "type": "string", "pattern": "^[A-Z0-9_]+$" },
+              "invariants": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 8,
+                "items": { "type": "string", "minLength": 1, "maxLength": 240 }
+              },
+              "stopCodes": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 8,
+                "uniqueItems": true,
+                "items": { "type": "string", "pattern": "^[A-Z0-9_]+$" }
+              },
+              "sourceRefs": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 8,
+                "uniqueItems": true,
+                "items": { "type": "string", "minLength": 1, "maxLength": 180 }
+              }
+            }
+          }
+        },
+        "criterionDisposition": {
+          "type": "array",
+          "minItems": 14,
+          "maxItems": 14,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "disposition"],
+            "properties": {
+              "id": { "type": "string", "pattern": "^CF-P1-B4F2B-(0[1-9]|1[0-4])$" },
+              "disposition": {
+                "enum": ["PLAN_VALIDATED", "SYNTHETIC_ONLY", "BLOCKED_BOUNDARY_R", "NOT_APPLICABLE"]
+              }
+            }
+          }
+        },
+        "validationStates": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "uniqueItems": true,
+          "items": {
+            "enum": ["INVALID", "INCOMPLETE", "COMPLETE_AWAITING_EXTERNAL_APPROVAL"]
+          }
+        },
+        "stopCodes": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[A-Z0-9_]+$" }
+        }
+      }
+    },
+    "authorizationPacket": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "gateSha", "boundary", "state", "scope", "approvals", "rules"],
+      "properties": {
+        "format": { "const": "Crewframe B4F2B Boundary R authorization v1" },
+        "gateSha": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+        "boundary": { "const": "R" },
+        "state": { "enum": ["INCOMPLETE", "COMPLETE_AWAITING_EXTERNAL_APPROVAL"] },
+        "scope": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "sourceFingerprintSha256",
+            "targetFingerprintSha256",
+            "operations",
+            "windowStartUtc",
+            "windowEndUtc",
+            "backupMetadataSha256",
+            "retentionPolicySha256",
+            "rollbackPlanSha256"
+          ],
+          "properties": {
+            "sourceFingerprintSha256": { "$ref": "#/$defs/nullableSha256" },
+            "targetFingerprintSha256": { "$ref": "#/$defs/nullableSha256" },
+            "operations": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "enum": [
+                  "READ_ONLY_STRUCTURAL_FINGERPRINT",
+                  "OWNER_APPROVED_BACKUP_METADATA_READ",
+                  "ISOLATED_TARGET_RESTORE",
+                  "ISOLATED_TARGET_PREFLIGHT",
+                  "ISOLATED_TARGET_EXPAND_REHEARSAL",
+                  "ISOLATED_TARGET_FAILURE_INJECTION",
+                  "ISOLATED_TARGET_CLEANUP"
+                ]
+              }
+            },
+            "windowStartUtc": { "oneOf": [{ "type": "null" }, { "type": "string", "format": "date-time" }] },
+            "windowEndUtc": { "oneOf": [{ "type": "null" }, { "type": "string", "format": "date-time" }] },
+            "backupMetadataSha256": { "$ref": "#/$defs/nullableSha256" },
+            "retentionPolicySha256": { "$ref": "#/$defs/nullableSha256" },
+            "rollbackPlanSha256": { "$ref": "#/$defs/nullableSha256" }
+          }
+        },
+        "approvals": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "humanOperatorApprovalSha256",
+            "databaseOwnerApprovalSha256",
+            "dataSecurityOwnerApprovalSha256",
+            "architectApprovalSha256",
+            "verifierApprovalSha256",
+            "acceptanceApprovalSha256"
+          ],
+          "properties": {
+            "humanOperatorApprovalSha256": { "$ref": "#/$defs/nullableSha256" },
+            "databaseOwnerApprovalSha256": { "$ref": "#/$defs/nullableSha256" },
+            "dataSecurityOwnerApprovalSha256": { "$ref": "#/$defs/nullableSha256" },
+            "architectApprovalSha256": { "$ref": "#/$defs/nullableSha256" },
+            "verifierApprovalSha256": { "$ref": "#/$defs/nullableSha256" },
+            "acceptanceApprovalSha256": { "$ref": "#/$defs/nullableSha256" }
+          }
+        },
+        "rules": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["sourceReadOnly", "targetIsolated", "targetNonRoutable", "applicationDisconnected", "separateLeastPrivilegeRoles"],
+          "properties": {
+            "sourceReadOnly": { "type": "boolean" },
+            "targetIsolated": { "type": "boolean" },
+            "targetNonRoutable": { "type": "boolean" },
+            "applicationDisconnected": { "type": "boolean" },
+            "separateLeastPrivilegeRoles": { "type": "boolean" }
+          }
+        }
+      }
+    },
+    "evidenceRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["stageId", "outcome", "category", "count", "durationMilliseconds", "sha256"],
+      "properties": {
+        "stageId": { "type": "string", "pattern": "^[PR][0-9]+_[A-Z0-9_]+$" },
+        "outcome": { "enum": ["NOT_RUN", "BLOCKED", "SUCCEEDED", "FAILED", "STOPPED"] },
+        "category": { "enum": ["STRUCTURE", "AGGREGATE_INVARIANT", "LOCK_RISK", "BACKUP", "RESTORE", "CLEANUP"] },
+        "count": { "type": "integer", "minimum": 0, "maximum": 1000000000000 },
+        "durationMilliseconds": { "type": "integer", "minimum": 0, "maximum": 86400000 },
+        "sha256": { "$ref": "#/$defs/nullableSha256" }
+      }
+    },
+    "evidencePacket": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "format",
+        "gateSha",
+        "boundary",
+        "outcome",
+        "runFingerprintSha256",
+        "sourceFingerprintSha256",
+        "targetFingerprintSha256",
+        "records",
+        "policy"
+      ],
+      "properties": {
+        "format": { "const": "Crewframe B4F2B Boundary R evidence v1" },
+        "gateSha": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+        "boundary": { "const": "R" },
+        "outcome": { "enum": ["NOT_RUN", "BLOCKED", "SUCCEEDED", "FAILED", "STOPPED"] },
+        "runFingerprintSha256": { "$ref": "#/$defs/nullableSha256" },
+        "sourceFingerprintSha256": { "$ref": "#/$defs/nullableSha256" },
+        "targetFingerprintSha256": { "$ref": "#/$defs/nullableSha256" },
+        "records": {
+          "type": "array",
+          "maxItems": 128,
+          "items": { "$ref": "#/$defs/evidenceRecord" }
+        },
+        "policy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["allowed", "forbidden", "stableIdentifiers"],
+          "properties": {
+            "allowed": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": { "enum": ["BOUNDED_AGGREGATE_COUNT", "DURATION_MILLISECONDS", "EXIT_STATE", "SHA256_FINGERPRINT", "STRUCTURAL_CATEGORY"] }
+            },
+            "forbidden": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": { "enum": ["CONNECTION_STRING", "CREDENTIAL", "EMAIL", "HOST", "PATH", "PROVIDER_IDENTIFIER", "RECORD_IDENTIFIER", "REPRESENTATIVE_ROW", "SECRET", "TENANT_IDENTIFIER", "URL", "USER_CONTENT"] }
+            },
+            "stableIdentifiers": { "const": false }
+          }
+        }
+      }
+    }
+  }
+}
