@@ -10,10 +10,24 @@
 - Verifier contract token: `PASS_B4F2A1_CONTRACT`
 - Acceptance implementation clearance: `GO_B4F2A1_IMPLEMENTATION`
 - Provisional freeze clearance: `GO_B4F2A1_CANDIDATE_FREEZE_AUDIT_PENDING`
-- Implementation SHA: **pending immutable candidate**
-- Independent implementation verification: **pending**
+- Implementation SHA: `73336f38bb9877f2f1210316a721fa958ceb41e9`
+- Architect implementation approval: `APPROVE_B4F2A1_CANDIDATE`
+- Audit amendment commit: `c3186d3967995d5259e9b27c9aabceb695f063d4`
+- Acceptance audit amendment:
+  `AMEND_B4F2A1_AUDIT_EVIDENCE_STALE_UNREVALIDATED`
+- Architect audit-amendment approval: `APPROVE_B4F2A1_AUDIT_AMENDMENT`
+- Verifier audit-amendment approval: `PASS_B4F2A1_AUDIT_AMENDMENT`
+- Independent implementation verification:
+  `PASS_B4F2A1_CANDIDATE_WITH_AUDIT_AMENDMENT`
 - Remediation rounds used: 0 of 2
+- Evidence-policy change-control events: 1
+- Dependency-audit classification: **STALE_UNREVALIDATED**
+- Current dependency-advisory state: **UNKNOWN**
+- Development readiness: **FAIL**
+- Staging readiness: **FAIL**
+- Pilot readiness: **FAIL**
 - Production readiness: **FAIL** (intentional)
+- Public-runtime readiness: **FAIL**
 
 ## Outcome
 
@@ -76,6 +90,8 @@ only inside generated disposable MySQL 8.4 containers.
 - `bun run typecheck`: pass.
 - Focused B4F/B4F2A1 tests: 45 passed, 0 failed, 257 expectations.
 - Complete `bun test`: 262 passed, 0 failed, 1,153 expectations across 36 files.
+- Independent A1-specific tests: 19 passed, 0 failed, 89 expectations.
+- Independent combined webhook tests: 60 passed, 0 failed, 351 expectations.
 - `bun run build`: pass; compilation and 13/13 static-page generation completed.
 - Disposable MySQL 8.4 missing-table path: pass; intake failed closed.
 - Disposable MySQL 8.4 concurrent race: pass; 20 real Prisma calls converged
@@ -93,10 +109,10 @@ only inside generated disposable MySQL 8.4 containers.
   allowlist, subscription synchronizer, and prior sealed records: unchanged
   from the issue-gate parent.
 - `git diff --check`: pass.
-- Dependency evidence is provisionally packaged with explicit
-  `STALE_UNREVALIDATED` provenance because the registry bulk-advisory POST did
-  not respond. Immutable-candidate review and the bounded post-freeze retry are
-  pending. Final checkpoint PASS remains blocked.
+- Dependency evidence was accepted for this non-deployable checkpoint only
+  under amendment `c3186d3967995d5259e9b27c9aabceb695f063d4`. It remains
+  explicitly `STALE_UNREVALIDATED`; current vulnerability intelligence is
+  unknown and hard gate `CF-P1-AUDIT-FRESH-01` remains open.
 
 The first local disposable collision rehearsal used a synthetic event ID that
 did not satisfy B4F1's provider-ID grammar. The proof failed and its `finally`
@@ -126,11 +142,21 @@ runtime validator; the complete proof then passed.
 - Stale sealed result: 63 advisories (0 critical, 34 high, 25 moderate,
   4 low). This is not a fresh vulnerability-database result.
 
-Native Bun 1.3.11, the digest-pinned official Bun 1.3.11 container, and a direct
+Native Bun 1.3.11, the digest-recorded official Bun 1.3.11 container, and a direct
 npm bulk-advisory POST each received zero advisory JSON within a bounded
-15-second attempt. The inherited advisories and missing current query remain a
-release/public-runtime blocker. B4F2A1 introduces no package or lockfile change
-and does not claim that the stale findings are current, safe, or resolved.
+15-second attempt. One bounded retry after candidate freeze and one after
+substantive review also returned no advisory JSON. The inherited advisories and
+missing current query remain a release/public-runtime blocker. B4F2A1
+introduces no package or lockfile change and does not claim that the stale
+findings are current, safe, or resolved.
+
+The exact implementation candidate passed Agency Architect review with
+`APPROVE_B4F2A1_CANDIDATE`. The independent Verifier reproduced the complete
+build, routing, hygiene, and disposable MySQL evidence and first returned
+`PASS_B4F2A1_IMPLEMENTATION_AUDIT_HELD`. After the Acceptance Orchestrator,
+Architect, and Verifier approved the exact documentation-only audit amendment,
+the Verifier returned `PASS_B4F2A1_CANDIDATE_WITH_AUDIT_AMENDMENT`. No source
+remediation was required.
 
 ## Rollback
 
@@ -143,8 +169,8 @@ on both success and failure.
 
 ## Remaining blockers
 
-1. Freeze an immutable implementation candidate and obtain exact-SHA Architect,
-   Verifier, and Acceptance clearance.
+1. Verify this documentation-only execution seal, then complete a separately
+   verified lifecycle seal before advancing.
 2. Implement and prove B4F2A2's local processor/runner before any newly stored
    receipt may receive `2xx`.
 3. Obtain database-owner authorization and representative schema, drift,
@@ -157,5 +183,7 @@ on both success and failure.
 6. Complete Customer recovery, subscription concurrency, Connect OAuth, CSP,
    permission migration, dependency remediation, and later CRM gates.
 7. Obtain a privacy-owner decision for production receipt and audit retention.
-8. Stripe Tax remains disabled pending business registrations, jurisdiction and
+8. Pass `CF-P1-AUDIT-FRESH-01` before any public endpoint, shared environment,
+   deployment, release-readiness claim, or dependency-security closure.
+9. Stripe Tax remains disabled pending business registrations, jurisdiction and
    product configuration, location handling, and qualified tax review.
