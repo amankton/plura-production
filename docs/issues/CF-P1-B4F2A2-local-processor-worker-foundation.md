@@ -31,9 +31,9 @@ available or externally connected runtime.
 - B4F2A1 execution seal:
   `ba08406771ad6ed5a666247d84da85b9733bb91a`.
 - Intake clearance: `GO_B4F2A2_INTAKE`.
-- Requested Architect entry token:
+- Architect entry token:
   `GO_B4F2A2_LOCAL_PROCESSOR_WORKER_FOUNDATION`.
-- Requested Verifier contract token: `PASS_B4F2A2_CONTRACT`.
+- Verifier contract token: `PASS_B4F2A2_CONTRACT`.
 - `CF-P1-AUDIT-FRESH-01` remains open and blocks every shared, public,
   deployed, or release-ready runtime.
 
@@ -273,9 +273,8 @@ Connect, Live Mode, Stripe Tax, and `CF-P1-AUDIT-FRESH-01` remain later gates.
 
 ## Execution Gate
 
-`BLOCKED` — obtain exact Architect and Verifier contract tokens for the
-versioned issue, record them in a documentation-only child, and receive
-Acceptance implementation clearance.
+`BLOCKED` — exact Architect and Verifier contract tokens are recorded;
+Acceptance implementation clearance remains pending.
 
 ## Target environment
 
