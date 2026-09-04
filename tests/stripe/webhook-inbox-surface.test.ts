@@ -1,14 +1,14 @@
 import { describe, expect, test } from 'bun:test'
 
-describe('B4F1 non-deployable webhook inbox surface', () => {
-  test('keeps the runtime route and public allowlist disconnected', async () => {
+describe('B4F webhook inbox surface', () => {
+  test('keeps the runtime processor and public allowlist disconnected', async () => {
     const [route, routing] = await Promise.all([
       Bun.file('src/app/api/stripe/webhook/route.ts').text(),
       Bun.file('src/lib/routing/middleware-routing.ts').text(),
     ])
-    expect(route).not.toContain('webhook-intake')
+    expect(route).toContain('webhook-intake')
     expect(route).not.toContain('webhook-processor')
-    expect(route).not.toContain('StripeWebhookReceipt')
+    expect(route).not.toContain('subscription-sync')
     expect(routing).toContain("PUBLIC_ROUTES = ['/site', '/api/uploadthing']")
     expect(routing).not.toContain('/api/stripe/webhook')
   })
