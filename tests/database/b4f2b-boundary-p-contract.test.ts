@@ -1,4 +1,7 @@
 import { describe, expect, test } from 'bun:test'
+import { copyFile, mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
 import {
   B4F2B_AUTHORIZATION_TEMPLATE_PATH,
   B4F2B_CONTRACT_PATHS,
@@ -53,10 +56,16 @@ const offlineEnvironment = () => {
   return environment
 }
 
-const runCli = (extraArguments: string[] = [], environment = offlineEnvironment()) => {
+const validatorPath = path.resolve('scripts/verify-b4f2b-boundary-p.ts')
+
+const runCli = (
+  extraArguments: string[] = [],
+  environment = offlineEnvironment(),
+  cwd = process.cwd()
+) => {
   const child = Bun.spawn(
-    [process.execPath, 'scripts/verify-b4f2b-boundary-p.ts', ...extraArguments],
-    { env: environment, stderr: 'pipe', stdout: 'pipe' }
+    [process.execPath, validatorPath, ...extraArguments],
+    { cwd, env: environment, stderr: 'pipe', stdout: 'pipe' }
   )
   return Promise.all([
     new Response(child.stdout).text(),
@@ -221,6 +230,49 @@ describe('B4F2B Boundary P closed offline contract', () => {
     expect(`${environmentResult[0]}${environmentResult[1]}`).not.toContain(
       ambientMarker
     )
+  })
+
+  test('CLI rejects a redirected output without changing the outside sentinel', async () => {
+    const ownerDirectory = await mkdtemp(path.join(tmpdir(), 'crewframe-b4f2b-'))
+    const repositoryFixture = path.join(ownerDirectory, 'repository')
+    const outsideDirectory = path.join(ownerDirectory, 'outside-target')
+    const sentinelPath = path.join(outsideDirectory, 'sentinel.txt')
+    try {
+      await mkdir(repositoryFixture)
+      const fixedInputs = new Set([
+        ...B4F2B_CONTRACT_PATHS,
+        ...B4F2B_OFFLINE_SOURCE_PATHS,
+        ...B4F2B_PROTECTED_SURFACE_PATHS,
+      ])
+      for (const fixedInput of Array.from(fixedInputs)) {
+        const destination = path.join(repositoryFixture, fixedInput)
+        await mkdir(path.dirname(destination), { recursive: true })
+        await copyFile(path.resolve(fixedInput), destination)
+      }
+      const evidenceDirectory = path.join(repositoryFixture, 'docs', 'evidence')
+      await mkdir(evidenceDirectory, { recursive: true })
+      await mkdir(outsideDirectory)
+      await writeFile(sentinelPath, 'OUTSIDE_SENTINEL_UNCHANGED\n', 'utf8')
+      await symlink(
+        outsideDirectory,
+        path.join(evidenceDirectory, 'CF-P1-B4F2B-boundary-p-inventory.json'),
+        'junction'
+      )
+      const [stdout, stderr, exitCode] = await runCli(
+        [],
+        offlineEnvironment(),
+        repositoryFixture
+      )
+      expect(exitCode).not.toBe(0)
+      expect(stdout).toBe('')
+      expect(stderr).toBe('Boundary P offline contract failed.\n')
+      expect(await Bun.file(sentinelPath).text()).toBe(
+        'OUTSIDE_SENTINEL_UNCHANGED\n'
+      )
+      expect(`${stdout}${stderr}`).not.toContain(sentinelPath)
+    } finally {
+      await rm(ownerDirectory, { force: true, recursive: true })
+    }
   })
 
   test('tool has no database, provider, network, process, or shell adapter', async () => {

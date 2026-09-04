@@ -16,6 +16,12 @@
 - Status: `CANDIDATE_AWAITING_EXACT_REVIEW`.
 - Boundary R: `BLOCKED`.
 - Maximum remediation rounds: 2.
+- Original candidate: `a1205e2699aec50cce892ec562ed320be101c90d`.
+- Original Architect decision: `APPROVAL_WITHHELD` for output-target
+  symlink/reparse handling.
+- Original Verifier decision: `HOLD` / `B4F2B-P-01` for the same independently
+  identified write-boundary defect.
+- Remediation rounds used: 1 of 2.
 
 ## Outcome
 
@@ -62,6 +68,11 @@ database-reading preflight wrappers. It does not execute either SQL draft.
 - reads only a compiled allowlist of repository-relative files;
 - rejects symlinked files, non-files, and paths that resolve outside the real
   repository root;
+- resolves and re-verifies the evidence directory, rejects an existing output
+  target that is a symlink, reparse point, non-regular file, or escaped path,
+  writes an exclusively created mode-0600 regular temporary file in that same
+  directory, syncs and closes it, rechecks the destination, then atomically
+  renames it over the authorized output;
 - verifies normalized SHA-256 identities for the six source artifacts;
 - recomputes Git blob identities for eleven protected surfaces, including the
   binary lockfile, against the Boundary P gate;
@@ -92,10 +103,10 @@ database findings.
 
 ## Verification
 
-- Focused Boundary P contract tests: 8 passed, 0 failed, 36 expectations.
+- Focused Boundary P contract tests: 9 passed, 0 failed, 41 expectations.
 - `bun run typecheck`: pass.
 - `bun run lint`: pass with no warnings or errors.
-- Complete `bun test`: 285 passed, 0 failed, 1,258 expectations across 40
+- Complete `bun test`: 286 passed, 0 failed, 1,263 expectations across 40
   files.
 - `bun run build`: pass; compilation and 13/13 static-page generation
   completed.
@@ -103,6 +114,10 @@ database findings.
 - The CLI success path is repeated and produces byte-identical evidence.
 - Argument and ambient-configuration denial paths produce only the generic
   failure line and do not echo the supplied marker.
+- A separate temporary-repository regression substitutes a junction/reparse
+  output target that resolves outside the repository. The validator fails with
+  only the generic line, and the outside sentinel remains byte-for-byte
+  unchanged.
 - Source and protected-surface drift, open schemas, graph cycles, executable
   dispositions, unexpected authorization fields, and row-level evidence fields
   are rejected in focused tests.
