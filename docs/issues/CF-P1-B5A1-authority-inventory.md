@@ -225,8 +225,28 @@ public-route, or deployment rollback.
 
 ## Status
 
-`READY`
+`DONE`
+
+## Lifecycle seal
+
+- Accepted implementation:
+  `a7d9329279d7fe865633e874fb61acfb992be41a`.
+- Documentation/evidence execution seal:
+  `d4244b8dfec744c50c40c162bc1a5fd212ec71b7`.
+- Architect implementation token: `APPROVE_B5A1_CANDIDATE`.
+- Verifier implementation token: `PASS_B5A1_CANDIDATE`.
+- Acceptance seal clearance: `GO_B5A1_CANDIDATE_SEAL`.
+- Execution-seal verification: `PASS_B5A1_SEAL`.
+- Remediation rounds used: 1 of 2.
+- This lifecycle transition records only the completed, repository-only B5A1
+  inventory. It creates no present or future authority to modify production
+  behavior, access a provider, database, credential, or representative data,
+  publish a route, deploy, re-theme, change a readiness classification, or
+  begin B5A2 through B5A8.
+- The parent B5A authority-closure issue remains `READY`. Audit, advisory,
+  permission-migration, public-runtime, readiness, re-theme, and CRM/Odoo
+  holds remain unchanged.
 
 ## Execution gate
 
-`ALLOWED_FOR_B5A1_ONLY`
+`HISTORICAL_EXECUTION_ONLY`; any new B5A1 work requires a new exact gate.
