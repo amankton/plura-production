@@ -59,13 +59,18 @@ The value:
   projection exposes an existing create-subaccount capability;
 - is absent for `SUBACCOUNT_USER`, `SUBACCOUNT_GUEST`, unauthenticated,
   unprovisioned, null-agency, denied, and tenant-free onboarding outcomes;
-- is never accepted from the client, provider profile/metadata, email,
-  request, route, cookie, header, or another actor record;
+- cannot originate from or be populated by a client, provider
+  profile/metadata, email lookup, request, route, cookie, header, or another
+  actor record;
 - is mapped only to the unchanged `SubAccountDetails.userName` property in the
   two source-to-sink flows above;
-- never participates in identity, role, permission, authorization, ownership,
-  tenant selection, persistence predicates, query keys, cache keys, routing,
-  logging, error handling, or another UI display; and
+- is then, by the frozen legacy client behavior, interpolated into the
+  caller-authored `description`, submitted to
+  `saveActivityLogsNotification`, and persisted in the Notification message;
+- is never trusted for identity, actor resolution, role, permission,
+  authorization, ownership, tenant selection, persistence predicates, query
+  keys, cache keys, routing, or error handling and never reaches a diagnostic
+  log or a sink other than that frozen legacy notification writer; and
 - cannot be re-exported through a generic actor/user DTO or queried through a
   new action, route, loader, callback, or provider call.
 
@@ -102,7 +107,9 @@ The exact B5A2A gate must require fixed-input tests that prove:
 1. `legacyActivityActorName` appears in only the projection declaration,
    server mapping, and the two allowlisted source-to-sink paths.
 2. No action, API route, provider callback, public loader, or client input can
-   request, set, override, or independently retrieve it.
+   originate, populate, or independently retrieve the projection property.
+   The test explicitly acknowledges that the frozen client later submits the
+   interpolated description to the existing generic writer.
 3. Owner/admin success maps the persisted exact-actor value without widening
    the projection to another User field.
 4. Guest, `SUBACCOUNT_USER`, onboarding, anonymous, unprovisioned,
@@ -111,7 +118,8 @@ The exact B5A2A gate must require fixed-input tests that prove:
 5. A different user record, provider name, email-derived record, route value,
    request value, or caller value can never become the property.
 6. The value is consumed only as the existing `SubAccountDetails.userName`
-   prop in both allowlisted create-subaccount paths.
+   prop in both allowlisted create-subaccount paths, then follows only the
+   frozen description-to-Notification persistence path.
 7. The subaccount settings page continues to use its already accepted bounded
    actor-profile `name` and does not import or consume the compatibility field.
 8. `SubAccountDetails` remains byte-identical and the activity-writer AST
@@ -147,7 +155,7 @@ consumer remains. No later B5A3-B5A8 child may inherit it.
 | B5A2A-COMPAT-01 | Exactly one optional property named `legacyActivityActorName` is authorized; no other intake field bound changes. |
 | B5A2A-COMPAT-02 | The value is derived only from the exact server-resolved persisted actor and is absent outside owner/admin create-subaccount projections. |
 | B5A2A-COMPAT-03 | Exactly two create-subaccount source-to-sink paths consume the property and only through `SubAccountDetails.userName`. |
-| B5A2A-COMPAT-04 | The property has zero authority, ownership, persistence-key, route, cache, error, logging, provider, and independent-callable use. |
+| B5A2A-COMPAT-04 | The property has zero authority, ownership, predicate, route, cache, error, provider, diagnostic-log, and independent-callable use; its sole temporary sink is the explicitly frozen client-description-to-Notification persistence path. |
 | B5A2A-COMPAT-05 | `SubAccountDetails` remains byte-identical and the legacy activity-writer AST digest remains exact throughout B5A2A. |
 | B5A2A-COMPAT-06 | Fixed synthetic role, source-discovery, serialization, and drift tests reject every unauthorized presence, source, sink, or use. |
 | B5A2A-COMPAT-07 | B5A2B removal is an explicit hard completion condition for the parent B5A2 lifecycle. |
