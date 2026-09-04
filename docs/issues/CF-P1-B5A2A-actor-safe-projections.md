@@ -314,6 +314,44 @@ At the immutable parent, additional caller hashes are:
 New, removed, renamed, duplicate, or hash-drifted callers fail the fixed-input
 verification unless the exact candidate ledger explains the allowed change.
 
+## Whole-remainder protection for writable legacy files
+
+Three writable legacy files contain behavior outside B5A2A. The verifier must
+parse the accepted parent and candidate with the repository TypeScript version,
+normalize line endings, print the normalized AST with LF newlines, remove or
+type-erase only the exact allowlisted nodes below, and compare the complete
+remainder digest. Statement reordering, import drift, another declaration
+change, or an unrecognized AST difference fails.
+
+| File | Sole ignored/normalized difference | Required identical remainder SHA-256 |
+| --- | --- | --- |
+| `src/lib/queries.ts` | Remove only the complete top-level declarations named `getAuthUserDetails` and `getSubAccountTeamMembers` from both parent and candidate before printing. | `sha256:a8abbbcbb72826980143b1da92bb7562f3e0033af7b9333719f0cc9aed73fab7` |
+| `src/lib/types.ts` | Remove only the `./db` import, the `getAuthUserDetails` import specifier, `__getUsersWithAgencySubAccountPermissionsSidebarOptions`, and the two type aliases `AuthUserWithAgencySigebarOptionsSubAccounts` and `UsersWithAgencySubAccountPermissionsSidebarOptions` from both trees before printing. | `sha256:cf5eaa285a4d8486056828203dc822e9a0d41eec017eed1dc73c1d3549449252` |
+| `src/components/forms/agency-details.tsx` | Remove only the `Agency` import specifier and normalize the `Props.data` type node to one `unknown` sentinel in both trees before printing; the candidate must contain the exact 12-field purpose type before normalization. | `sha256:1679d010911a9fb351bbd27dc7df85776b77f0e2fb56ee3787f0350210363d0e` |
+
+The algorithm is versioned in `scripts/verify-b5a2a-projections.ts`; it cannot
+accept file paths, ignore lists, hashes, or symbols from arguments or the
+environment. Tests mutate fixed temporary copies to prove that drift in every
+non-ignored statement fails.
+
+In addition to whole-remainder equivalence, the mutation-bearing
+`AgencyDetails` nodes remain individually bound:
+
+| Frozen handler or effect | Normalized AST SHA-256 |
+| --- | --- |
+| `handleSubmit` declaration | `sha256:d1d2b24c34c785d578963f849d3f18b9a3b604ad2bc50469a6cf4ca1917059f0` |
+| `provisionAgencyOwner()` call | `sha256:4f9d92776f9917c78448551c93fcb573a085df8b58e7019a76f6c21253f26f40` |
+| `upsertAgency(...)` call | `sha256:2b88b82e273f55edec0fa47e7c8a41d06fbd6bbf99fd721ec48dfa20d3b68e5a` |
+| `/api/stripe/create-customer` fetch call | `sha256:a66562ba4bb9e88cc67bb819554a6f4f620daec14ff343405dc370dc82cce882` |
+| `handleDeleteAgency` declaration | `sha256:3a24b21d6de9fff1bb00c469f1eafcfe7e6df9239f2fb0402a8d3afa83995fe1` |
+| `deleteAgency(...)` call | `sha256:fe642117eb8bf1d4b603994ad1009be4f1f52acb81cb014822a9359d662bbe73` |
+| Goal `onValueChange` JSX attribute | `sha256:2b8880338472392bec4e6fc37d9749342b22923001a6d0db63c0ec17841093f2` |
+| `updateAgencyGoal(...)` call | `sha256:5d603ec92586286702feb900ffcc2e0f12e824cb2d4d7e75b43da19251fdfd8b` |
+
+Focused tests assert these hashes and the existing provisioning, agency
+upsert, Stripe-customer request, delete, goal-update, toast, refresh, and error
+paths. No type-only change can mask behavior drift.
+
 ## Concrete file allowlist
 
 After exact implementation approval, B5A2A may add or modify only these files.
@@ -334,11 +372,14 @@ After exact implementation approval, B5A2A may add or modify only these files.
 - `src/app/(main)/agency/[agencyId]/all-subaccounts/_components/create-subaccount-btn.tsx`
 - `src/components/sidebar/index.tsx`
 - `src/components/sidebar/menu-options.tsx`
-- `src/components/forms/agency-details.tsx`
+- `src/components/forms/agency-details.tsx` (only the exact `Agency` import
+  removal and `data` prop type narrowing; normalized remainder is immutable)
 - `src/components/forms/subaccount-details.tsx`
 - `src/components/forms/ticket-form.tsx`
-- `src/lib/queries.ts`
-- `src/lib/types.ts`
+- `src/lib/queries.ts` (only the exact two owned declaration removals;
+  normalized remainder is immutable)
+- `src/lib/types.ts` (only the exact broad helper/import/type removals;
+  normalized remainder is immutable)
 
 ### Fixed verification and inventory reconciliation
 
@@ -412,6 +453,9 @@ verification-only frozen inputs, not writable files.
 - source mutations proving rejection of a broad import, `any`, cast, spread,
   wrapper, direct DB page/type query, retired export/caller, fourth details
   consumer, third name sink, fifth account-entry call, or new client action;
+- whole-remainder mutation fixtures for `queries.ts`, `types.ts`, and
+  `agency-details.tsx`, including drift in every non-B5A2A server export and in
+  the provisioning, upsert, Stripe, delete, and goal-update paths;
 - all frozen file/node hashes and notification zero-change assertions; and
 - inventory reconciliation for removed, replaced, retained, and new surfaces.
 
@@ -436,9 +480,10 @@ Required candidate commands, all at the exact candidate SHA:
 
 Evidence records exact parent/candidate SHAs, 14-row closure ledger, old/new
 surface counts and hashes, projection/denial/cardinality/test counts, frozen
-hashes, command and exit status, inventory/lock hash, and explicit zero-use
-statements for network, provider, representative database/data, credentials,
-schema, packages, public routes, notification behavior, and deployment.
+node and whole-remainder hashes, command and exit status, inventory/lock hash,
+and explicit zero-use statements for network, provider, representative
+database/data, credentials, schema, packages, public routes, notification
+behavior, and deployment.
 
 Evidence emits no source text, actor names, emails, runtime IDs, payloads,
 provider/database errors, environment values, secrets, credentials, stack
@@ -451,10 +496,10 @@ traces, or representative data.
 | B5A2A-01 | All 14 bound B5A1 records have one explicit removed, replaced, or retained closure and no other B5A2 record is changed semantically. |
 | B5A2A-02 | Every projection derives immutable server identity and actor/tenant context; caller identity, role, email, UI state, and layout reachability grant no authority. |
 | B5A2A-03 | Entry, redirect, sidebar, all-subaccounts, settings, and assignee DTOs contain exactly their allowlisted fields and no broad Prisma graph. |
-| B5A2A-04 | Every database read contains actor-derived agency and exact tenant predicates with finite cardinality, duplicate, missing, deletion, and deterministic-order behavior. |
+| B5A2A-04 | Every database read contains the operation-appropriate actor-derived predicate in the persistence table; tenant reads additionally contain exact actor-agency and requested-subaccount predicates, with finite cardinality, duplicate, missing, deletion, and deterministic-order behavior. |
 | B5A2A-05 | Broad legacy exports, their callers, page/type database imports, broad model props, `any`, casts, spreads, wrappers, and dead ID props are absent. |
 | B5A2A-06 | Authorized entry, sidebar, settings, all-subaccounts, create-subaccount, and ticket-assignee UI behavior remains stable under exact synthetic fixtures. |
-| B5A2A-07 | Four invitation/provisioning calls, accepted account actions, two scoped layouts, and all notification/activity runtime nodes remain exact. |
+| B5A2A-07 | Four invitation/provisioning calls, accepted account actions, two scoped layouts, all notification/activity runtime nodes, all AgencyDetails mutation handlers, and all three writable-legacy-file remainder digests remain exact. |
 | B5A2A-08 | Cross-agency, cross-subaccount, wrong-parent, broad-projection, duplicate permission, stale/deleted, onboarding, guest, and confused-deputy tests pass with zero unauthorized side effects. |
 | B5A2A-09 | The temporary name is owner/admin-only, reaches exactly two frozen legacy sinks, grants no authority, and remains marked for mandatory B5A2B removal. |
 | B5A2A-10 | The exact agency-ID prop, ten-field details DTO, three consumers, five dead-userId removals, and all amendment AST hashes reconcile. |
@@ -500,12 +545,37 @@ This gate cannot weaken or close another hold.
 
 ## Rollback
 
-Implementation rollback removes the three agency-projection feature files and
-focused verifier, restores the exact allowlisted consumers/query/type files to
-parent `32ffcc27a78eadf6344cc3d262e72bc260a02e2e`, and restores the prior
-inventory and lock. Frozen layouts, account actions, notification/activity
-behavior, schema, packages, public routes, providers, data, and deployment
-require no rollback because they do not change.
+Implementation rollback is closed over the complete allowlist:
+
+- remove the three new `src/features/agency-projections/` files;
+- remove both new `tests/agency-projections/` files and
+  `scripts/verify-b5a2a-projections.ts`;
+- restore `src/app/(main)/agency/page.tsx`,
+  `src/app/(main)/subaccount/page.tsx`,
+  `src/app/(main)/agency/[agencyId]/all-subaccounts/page.tsx`,
+  `src/app/(main)/agency/[agencyId]/settings/page.tsx`,
+  `src/app/(main)/subaccount/[subaccountId]/settings/page.tsx`,
+  `src/app/(main)/agency/[agencyId]/all-subaccounts/_components/create-subaccount-btn.tsx`,
+  `src/components/sidebar/index.tsx`,
+  `src/components/sidebar/menu-options.tsx`,
+  `src/components/forms/agency-details.tsx`,
+  `src/components/forms/subaccount-details.tsx`,
+  `src/components/forms/ticket-form.tsx`, `src/lib/queries.ts`, and
+  `src/lib/types.ts` exactly to parent
+  `32ffcc27a78eadf6344cc3d262e72bc260a02e2e`;
+- restore `scripts/agency-authority-inventory-lib.ts` and
+  `tests/authority-inventory/agency-authority-inventory.test.ts` exactly to
+  that parent;
+- restore `docs/security/agency-authority/inventory.json` and
+  `inventory.lock.json` exactly to that parent; and
+- retain the committed candidate evidence and execution record unchanged as
+  immutable historical evidence, then append the rollback commit and outcome
+  only to this issue's lifecycle metadata.
+
+The restored full test and inventory suites must pass after rollback. Frozen
+layouts, account actions, notification/activity behavior, schema, packages,
+public routes, providers, data, and deployment require no rollback because
+they do not change.
 
 ## Status
 
