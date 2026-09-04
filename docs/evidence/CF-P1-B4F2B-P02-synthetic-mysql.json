@@ -1,0 +1,75 @@
+{
+  "format": "Crewframe B4F2B P-02 synthetic MySQL proof v1",
+  "gateSha": "44deadc0e89616b31524efed6f70faa2c89e838c",
+  "acceptedContractSha": "33b29ddd80e198725605a85892fb6855437ab061",
+  "boundary": "P",
+  "boundaryR": "BLOCKED",
+  "representativeState": "NOT_ACCESSED",
+  "image": {
+    "digest": "sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb",
+    "platform": "linux/amd64",
+    "pull": "NEVER",
+    "network": "NONE",
+    "publishedPorts": 0,
+    "requestedMounts": 0,
+    "retainedVolumes": 0
+  },
+  "inputArtifacts": [
+    {
+      "id": "P02_WORK_ITEM",
+      "sha256": "2e0928f6ad5f63f5305a9be241eeecfa42e863042dcc0f70163c906907666c4f"
+    },
+    {
+      "id": "BOUNDARY_P_MANIFEST",
+      "sha256": "6f7cf321bdd9706065549d6889fee4ce9e6dbb091df36398924708d1b9495855"
+    },
+    {
+      "id": "SYNTHETIC_FIXTURE",
+      "sha256": "196913a510fc2165c2f4d1ed649a6b6a94124150a8a8f3d09654c913a291d52e"
+    },
+    {
+      "id": "B4D_SQL",
+      "sha256": "986397f506dcf9f9d1d163ddda6e403abdcec98da3edfb5dc172a2f279eb6fe7"
+    },
+    {
+      "id": "B4F1_SQL",
+      "sha256": "66195477220c545cc75efad4d269443ff0cc0492e2631e6a113cbee6f0f9621d"
+    }
+  ],
+  "permissionStage": "DESIGN_REQUIRED",
+  "logicalPlan": {
+    "rows": 5,
+    "legacyPlanValues": 4,
+    "legacyPriceValues": 5,
+    "mappedBasic": 1,
+    "mappedUnlimited": 1,
+    "unmapped": 2,
+    "conflictPreserved": 1,
+    "repeatRejected": true,
+    "incompatibleColumnRejected": true
+  },
+  "webhook": {
+    "tables": 3,
+    "columns": 40,
+    "indexEntries": 20,
+    "explicitDefaults": 7,
+    "collationMismatches": 0,
+    "rawPayloadColumns": 0,
+    "receiptDuplicateRejected": true,
+    "objectDuplicateRejected": true,
+    "incompatibleExistingTableDetected": true
+  },
+  "cleanup": {
+    "successContainers": 0,
+    "successRetainedVolumes": 0,
+    "injectedFailureContainers": 0,
+    "injectedFailureRetainedVolumes": 0,
+    "dumps": 0,
+    "temporaryFiles": 0,
+    "openHandles": 0
+  },
+  "audit": "STALE_UNREVALIDATED",
+  "advisories": "UNKNOWN",
+  "readiness": "FAIL",
+  "openHardGate": "CF-P1-AUDIT-FRESH-01"
+}
